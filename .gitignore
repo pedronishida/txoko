@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+.npm
+
+# next.js
+.next/
+out/
+
+# turbo
+.turbo/
+
+# build
+dist/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# debug
+npm-debug.log*
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# supabase
+supabase/.temp/
+
+# cloudflare
+.wrangler/
+.dev.vars

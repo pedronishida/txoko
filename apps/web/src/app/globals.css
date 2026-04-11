@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-night: #1A1A1A;
+  --color-night-light: #2A2A2A;
+  --color-night-lighter: #3A3A3A;
+  --color-leaf: #4ADE80;
+  --color-leaf-dark: #22C55E;
+  --color-leaf-light: #86EFAC;
+  --color-warm: #F59E0B;
+  --color-warm-dark: #D97706;
+  --color-warm-light: #FCD34D;
+  --color-coral: #EF4444;
+  --color-coral-dark: #DC2626;
+  --color-coral-light: #FCA5A5;
+  --color-cloud: #FAFAF8;
+  --color-cloud-dark: #F0F0EC;
+  --color-stone: #78716C;
+  --color-stone-light: #A8A29E;
+  --color-stone-dark: #57534E;
+
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@layer base {
+  * {
+    border-color: theme(colors.night-lighter);
+  }
+
+  body {
+    background-color: theme(colors.night);
+    color: theme(colors.cloud);
+    font-family: theme(fontFamily.sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: theme(colors.leaf);
+    color: theme(colors.night);
+  }
+}
+
+@layer utilities {
+  .font-data {
+    font-family: theme(fontFamily.mono);
+    font-variant-numeric: tabular-nums;
+  }
+}

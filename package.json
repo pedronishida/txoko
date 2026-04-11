@@ -1,0 +1,20 @@
+{
+  "name": "txoko",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.6.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "dev:web": "npm run dev --workspace=apps/web"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  }
+}
