@@ -1,55 +1,327 @@
 @import "tailwindcss";
 
-@theme {
-  --color-night: #1A1A1A;
-  --color-night-light: #2A2A2A;
-  --color-night-lighter: #3A3A3A;
-  --color-leaf: #4ADE80;
-  --color-leaf-dark: #22C55E;
-  --color-leaf-light: #86EFAC;
-  --color-warm: #F59E0B;
-  --color-warm-dark: #D97706;
-  --color-warm-light: #FCD34D;
-  --color-coral: #EF4444;
-  --color-coral-dark: #DC2626;
-  --color-coral-light: #FCA5A5;
-  --color-cloud: #FAFAF8;
-  --color-cloud-dark: #F0F0EC;
-  --color-stone: #78716C;
-  --color-stone-light: #A8A29E;
-  --color-stone-dark: #57534E;
+/* Dark mode via .dark class (controlado por next-themes) */
+@custom-variant dark (&:where(.dark, .dark *));
 
-  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'Space Mono', ui-monospace, monospace;
+/* =============================================================
+   Design tokens — mapeamento semantico pra light + dark mode
+   Paleta: iFood x 99Food fusion
+   - Primary: iFood red (vermelho vibrante, CTAs)
+   - Accent: 99 yellow (destaque, promocao)
+   - Neutros: escala de cinza sofisticada
+============================================================= */
+
+:root {
+  /* Base */
+  --bg: #FFFFFF;
+  --bg-elevated: #FAFAFA;
+  --surface: #F6F6F5;
+  --surface-hover: #EFEEEC;
+  --border: #E8E6E3;
+  --border-strong: #D4D1CD;
+
+  /* Texto */
+  --foreground: #0F0F0F;
+  --foreground-muted: #4A4744;
+  --muted: #8C8885;
+  --muted-soft: #B8B4B0;
+  --muted-subtle: #E8E6E3;
+
+  /* Brand — iFood red */
+  --primary: #EA1D2C;
+  --primary-hover: #C71525;
+  --primary-soft: #FFE8EA;
+  --primary-muted: #FFF0F1;
+
+  /* Accent — 99 yellow */
+  --accent: #FFC700;
+  --accent-hover: #E6B300;
+  --accent-soft: #FFF4CC;
+  --accent-muted: #FFFAE6;
+
+  /* Success */
+  --success: #16A34A;
+  --success-soft: #DCFCE7;
+
+  /* Warning */
+  --warning: #F59E0B;
+  --warning-soft: #FEF3C7;
+
+  /* Destructive */
+  --destructive: #DC2626;
+  --destructive-hover: #B91C1C;
+  --destructive-soft: #FEE2E2;
+
+  /* Foreground sobre cores fortes */
+  --primary-foreground: #FFFFFF;
+  --accent-foreground: #1A1400;
+  --success-foreground: #FFFFFF;
+  --destructive-foreground: #FFFFFF;
+}
+
+/* Forca tema light em um subtree (usado no menu publico) */
+.theme-light {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --bg-elevated: #FAFAFA;
+  --surface: #F6F6F5;
+  --surface-hover: #EFEEEC;
+  --border: #E8E6E3;
+  --border-strong: #D4D1CD;
+  --foreground: #0F0F0F;
+  --foreground-muted: #4A4744;
+  --muted: #8C8885;
+  --muted-soft: #B8B4B0;
+  --muted-subtle: #E8E6E3;
+  --primary: #EA1D2C;
+  --primary-hover: #C71525;
+  --primary-soft: #FFE8EA;
+  --primary-muted: #FFF0F1;
+  --accent: #FFC700;
+  --accent-hover: #E6B300;
+  --accent-soft: #FFF4CC;
+  --success: #16A34A;
+  --success-soft: #DCFCE7;
+  --warning: #F59E0B;
+  --warning-soft: #FEF3C7;
+  --destructive: #DC2626;
+  --destructive-hover: #B91C1C;
+  --destructive-soft: #FEE2E2;
+  --primary-foreground: #FFFFFF;
+  --accent-foreground: #1A1400;
+}
+
+.dark {
+  --bg: #0B0B0B;
+  --bg-elevated: #141414;
+  --surface: #1A1A1A;
+  --surface-hover: #242424;
+  --border: #262626;
+  --border-strong: #363636;
+
+  --foreground: #FAFAFA;
+  --foreground-muted: #D4D4D4;
+  --muted: #A3A3A3;
+  --muted-soft: #737373;
+  --muted-subtle: #404040;
+
+  --primary: #FF3346;
+  --primary-hover: #FF5260;
+  --primary-soft: #2D0A0D;
+  --primary-muted: #1F0709;
+
+  --accent: #FFD23F;
+  --accent-hover: #FFDB5C;
+  --accent-soft: #2A2208;
+  --accent-muted: #1C1706;
+
+  --success: #22C55E;
+  --success-soft: #0A2013;
+
+  --warning: #FBBF24;
+  --warning-soft: #2A1F08;
+
+  --destructive: #EF4444;
+  --destructive-hover: #F87171;
+  --destructive-soft: #2A0A0A;
+
+  --primary-foreground: #FFFFFF;
+  --accent-foreground: #1A1400;
+  --success-foreground: #FFFFFF;
+  --destructive-foreground: #FFFFFF;
+}
+
+/* =============================================================
+   Tailwind theme — mapeia tokens antigos pros novos mantendo
+   compatibilidade com todas as classes existentes no codigo
+============================================================= */
+
+@theme inline {
+  /* Tokens novos semanticos (use em codigo novo) */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+
+  /* Tokens antigos — mapeados pra compatibilidade.
+     night=bg, night-light=surface, night-lighter=border,
+     leaf=primary, warm=accent, coral=destructive,
+     cloud=foreground, stone=muted */
+  --color-night: var(--bg);
+  --color-night-light: var(--surface);
+  --color-night-lighter: var(--border);
+
+  --color-cloud: var(--foreground);
+  --color-cloud-dark: var(--foreground-muted);
+
+  --color-stone: var(--muted);
+  --color-stone-light: var(--foreground-muted);
+  --color-stone-dark: var(--muted-soft);
+
+  --color-leaf: var(--success);
+  --color-leaf-dark: var(--success);
+  --color-leaf-light: var(--success-soft);
+
+  --color-warm: var(--accent);
+  --color-warm-dark: var(--accent-hover);
+  --color-warm-light: var(--accent-soft);
+
+  --color-coral: var(--destructive);
+  --color-coral-dark: var(--destructive-hover);
+  --color-coral-light: var(--destructive-soft);
+
+  --font-sans: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
 }
+
+/* =============================================================
+   Base
+============================================================= */
 
 @layer base {
   * {
-    border-color: theme(colors.night-lighter);
+    border-color: var(--border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
-    background-color: theme(colors.night);
-    color: theme(colors.cloud);
-    font-family: theme(fontFamily.sans);
+    background-color: var(--bg);
+    color: var(--foreground);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
-    background-color: theme(colors.leaf);
-    color: theme(colors.night);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* Scrollbar polido */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-soft);
   }
 }
 
 @layer utilities {
   .font-data {
-    font-family: theme(fontFamily.mono);
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  /* ========== Animacoes de entrada ========== */
+
+  @keyframes txoko-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes txoko-fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes txoko-slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes txoko-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: txoko-fade-in 300ms ease-out backwards;
+  }
+
+  .animate-fade-in-up {
+    animation: txoko-fade-in-up 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .animate-slide-in-right {
+    animation: txoko-slide-in-right 350ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .animate-scale-in {
+    animation: txoko-scale-in 250ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .stagger-1 { animation-delay: 60ms; }
+  .stagger-2 { animation-delay: 120ms; }
+  .stagger-3 { animation-delay: 180ms; }
+  .stagger-4 { animation-delay: 240ms; }
+  .stagger-5 { animation-delay: 300ms; }
+  .stagger-6 { animation-delay: 360ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-fade-in-up,
+    .animate-slide-in-right,
+    .animate-scale-in {
+      animation: none;
+    }
   }
 }

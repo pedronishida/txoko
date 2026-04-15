@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "txoko-app",
+  "account_id": "bb07b1c8e7b8cdf5368ab3972465b892",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    {
+      "pattern": "app.txoko.com.br",
+      "custom_domain": true
+    },
+    {
+      "pattern": "txoko.com.br",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.txoko.com.br",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://amrigajsegjztylucdnc.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_Adlpg7NtOcJBX4QBMMzzOA_wbMDUdo-",
+    "NEXT_PUBLIC_SITE_URL": "https://app.txoko.com.br",
+    "NEXT_PUBLIC_APP_NAME": "Txoko"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

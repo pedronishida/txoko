@@ -22,7 +22,7 @@ export function MenuHeader({ restaurantName, tableNumber }: MenuHeaderProps) {
             <Bell size={14} />
             Garcom
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-leaf/10 text-leaf text-xs font-medium hover:bg-leaf/20 transition-colors">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-leaf/20 transition-colors">
             <Receipt size={14} />
             Conta
           </button>

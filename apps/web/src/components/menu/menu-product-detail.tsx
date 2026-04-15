@@ -1,7 +1,7 @@
 'use client'
 
 import type { Product } from '@txoko/shared'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, optimizeImage } from '@/lib/utils'
 import { X, Clock, UtensilsCrossed, Plus, Minus } from 'lucide-react'
 import { useState } from 'react'
 
@@ -17,9 +17,17 @@ export function MenuProductDetail({ product, onClose }: MenuProductDetailProps) 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70">
       <div className="bg-night-light border border-night-lighter rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
-        {/* Image area */}
-        <div className="relative h-48 bg-night-lighter flex items-center justify-center">
-          <UtensilsCrossed size={48} className="text-stone/20" />
+        <div className="relative h-56 bg-night-lighter flex items-center justify-center overflow-hidden">
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={optimizeImage(product.image_url, 800, 85) ?? product.image_url}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <UtensilsCrossed size={48} className="text-stone/20" />
+          )}
           <button
             onClick={onClose}
             className="absolute top-3 right-3 p-2 rounded-full bg-night/80 text-cloud hover:bg-night transition-colors"
@@ -67,7 +75,7 @@ export function MenuProductDetail({ product, onClose }: MenuProductDetailProps) 
               onChange={e => setNotes(e.target.value)}
               placeholder="Ex: sem cebola, ponto mal passado..."
               rows={2}
-              className="w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-leaf/50 resize-none"
+              className="w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
             />
           </div>
 
@@ -88,7 +96,7 @@ export function MenuProductDetail({ product, onClose }: MenuProductDetailProps) 
                 <Plus size={16} />
               </button>
             </div>
-            <button className="flex-1 py-3 bg-leaf text-night font-semibold rounded-lg text-sm hover:bg-leaf-dark transition-colors">
+            <button className="flex-1 py-3 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-hover transition-colors">
               Adicionar {formatCurrency(product.price * quantity)}
             </button>
           </div>

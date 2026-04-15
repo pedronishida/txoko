@@ -1,196 +1,137 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { getActiveRestaurantId } from '@/lib/server/restaurant'
+import { formatCurrency } from '@/lib/utils'
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+  Package,
+  Receipt,
+  Shield,
+} from 'lucide-react'
 
-import { useState, useMemo } from 'react'
-import { cn, formatCurrency } from '@/lib/utils'
-import { MOCK_INVOICES } from '@/lib/mock-financial'
-import { FileText, CheckCircle2, Clock, XCircle, Copy, ExternalLink } from 'lucide-react'
+export const dynamic = 'force-dynamic'
 
-type InvoiceStatus = 'all' | 'authorized' | 'pending' | 'cancelled'
+export default async function NotasPage() {
+  const supabase = await createClient()
+  const restaurantId = await getActiveRestaurantId()
 
-const STATUS_CONFIG = {
-  authorized: { label: 'Autorizada', color: 'text-leaf', bg: 'bg-leaf/10', icon: CheckCircle2 },
-  pending: { label: 'Pendente', color: 'text-warm', bg: 'bg-warm/10', icon: Clock },
-  cancelled: { label: 'Cancelada', color: 'text-coral', bg: 'bg-coral/10', icon: XCircle },
-}
+  const monthStart = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1
+  ).toISOString()
 
-export default function NotasPage() {
-  const [statusFilter, setStatusFilter] = useState<InvoiceStatus>('all')
-  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const { data: ordersRaw } = await supabase
+    .from('orders')
+    .select('id, total, created_at, status')
+    .eq('restaurant_id', restaurantId)
+    .gte('created_at', monthStart)
+    .eq('status', 'closed')
 
-  const filtered = useMemo(() => {
-    return MOCK_INVOICES.filter(inv => {
-      if (statusFilter !== 'all' && inv.status !== statusFilter) return false
-      return true
-    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  }, [statusFilter])
-
-  const counts = {
-    all: MOCK_INVOICES.length,
-    authorized: MOCK_INVOICES.filter(i => i.status === 'authorized').length,
-    pending: MOCK_INVOICES.filter(i => i.status === 'pending').length,
-    cancelled: MOCK_INVOICES.filter(i => i.status === 'cancelled').length,
-  }
-
-  const selected = selectedInvoice ? MOCK_INVOICES.find(i => i.id === selectedInvoice) : null
-
-  function handleCopyKey() {
-    if (selected?.access_key) {
-      navigator.clipboard.writeText(selected.access_key)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
-
-  function formatDate(dateStr: string | null) {
-    if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-  }
+  const orders = ordersRaw ?? []
+  const invoiceableCount = orders.length
+  const invoiceableTotal = orders.reduce((s, o) => s + Number(o.total), 0)
 
   return (
     <div className="space-y-5">
-      {/* Summary */}
-      <div className="grid grid-cols-4 gap-3">
-        {(['all', 'authorized', 'pending', 'cancelled'] as const).map(s => {
-          const cfg = s === 'all' ? null : STATUS_CONFIG[s]
-          return (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={cn(
-                'bg-night-light border rounded-xl p-3 text-left transition-colors',
-                statusFilter === s ? 'border-leaf/30' : 'border-night-lighter hover:border-night-lighter/80'
-              )}
-            >
-              <p className="text-xs text-stone mb-1">{s === 'all' ? 'Total' : cfg?.label}</p>
-              <p className={cn('text-xl font-bold font-data', s === 'all' ? 'text-cloud' : cfg?.color)}>
-                {counts[s]}
-              </p>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="flex gap-4">
-        {/* Invoice List */}
-        <div className="flex-1 bg-night-light border border-night-lighter rounded-xl">
-          <div className="px-5 py-3 border-b border-night-lighter flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText size={16} className="text-stone-light" />
-              <h2 className="text-sm font-semibold text-cloud">Notas Emitidas</h2>
-            </div>
-            <span className="text-xs text-stone font-data">{filtered.length} notas</span>
-          </div>
-          <div className="divide-y divide-night-lighter max-h-[60vh] overflow-y-auto">
-            {filtered.map(inv => {
-              const cfg = STATUS_CONFIG[inv.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending
-              const Icon = cfg.icon
-              return (
-                <button
-                  key={inv.id}
-                  onClick={() => setSelectedInvoice(inv.id)}
-                  className={cn(
-                    'w-full px-5 py-3 flex items-center gap-4 text-left transition-colors hover:bg-night/30',
-                    selectedInvoice === inv.id && 'bg-night/50'
-                  )}
-                >
-                  <Icon size={16} className={cfg.color} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-data font-medium text-cloud">
-                        {inv.type.toUpperCase()} #{inv.number}
-                      </span>
-                      <span className="text-[10px] text-stone">Serie {inv.series}</span>
-                    </div>
-                    <p className="text-[10px] text-stone font-data mt-0.5">
-                      {formatDate(inv.issued_at || inv.created_at)}
-                    </p>
-                  </div>
-                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-medium', cfg.bg, cfg.color)}>
-                    {cfg.label}
-                  </span>
-                </button>
-              )
-            })}
+      <div className="bg-warm/10 border border-warm/30 rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <AlertCircle size={20} className="text-warm shrink-0 mt-0.5" />
+          <div>
+            <h2 className="text-sm font-bold text-warm">
+              Integracao fiscal em desenvolvimento
+            </h2>
+            <p className="text-xs text-stone-light mt-1 leading-relaxed">
+              O Txoko ainda nao emite NFC-e/NF-e automaticamente. A emissao fiscal exige
+              homologacao com a SEFAZ, certificado digital A1, inscricao estadual e regime
+              tributario configurado — etapas que serao entregues junto com o microservico{' '}
+              <code className="text-leaf">services/fiscal</code> previsto no monorepo.
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Detail Panel */}
-        {selected && (
-          <div className="w-80 bg-night-light border border-night-lighter rounded-xl">
-            <div className="px-4 py-3 border-b border-night-lighter">
-              <h3 className="font-semibold text-cloud">{selected.type.toUpperCase()} #{selected.number}</h3>
-              <p className="text-xs text-stone mt-0.5">Serie {selected.series}</p>
-            </div>
-
-            <div className="p-4 space-y-4">
-              <div>
-                <p className="text-xs text-stone mb-1">Status</p>
-                {(() => {
-                  const cfg = STATUS_CONFIG[selected.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending
-                  return (
-                    <span className={cn('px-2 py-1 rounded-lg text-xs font-medium', cfg.bg, cfg.color)}>
-                      {cfg.label}
-                    </span>
-                  )
-                })()}
-              </div>
-
-              <div>
-                <p className="text-xs text-stone mb-1">Emissao</p>
-                <p className="text-sm text-cloud font-data">{formatDate(selected.issued_at)}</p>
-              </div>
-
-              <div>
-                <p className="text-xs text-stone mb-1">Pedido</p>
-                <p className="text-sm text-leaf font-data">#{selected.order_id?.split('-')[1]}</p>
-              </div>
-
-              {selected.access_key && (
-                <div>
-                  <p className="text-xs text-stone mb-1">Chave de Acesso</p>
-                  <div className="flex items-start gap-2">
-                    <p className="text-[10px] text-stone-light font-data break-all flex-1 bg-night rounded-lg p-2">
-                      {selected.access_key}
-                    </p>
-                    <button
-                      onClick={handleCopyKey}
-                      className="p-1.5 text-stone hover:text-leaf transition-colors shrink-0"
-                      title="Copiar chave"
-                    >
-                      <Copy size={14} />
-                    </button>
-                  </div>
-                  {copied && <p className="text-[10px] text-leaf mt-1">Copiado!</p>}
-                </div>
-              )}
-
-              {selected.sefaz_response && (
-                <div>
-                  <p className="text-xs text-stone mb-1">Retorno SEFAZ</p>
-                  <p className="text-xs text-stone-light font-data">
-                    {(selected.sefaz_response as { code: string; message: string }).code} — {(selected.sefaz_response as { code: string; message: string }).message}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                {selected.xml_url && (
-                  <button className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-night-lighter rounded-lg text-xs text-stone-light hover:text-cloud transition-colors">
-                    <ExternalLink size={12} />
-                    XML
-                  </button>
-                )}
-                {selected.pdf_url && (
-                  <button className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-night-lighter rounded-lg text-xs text-stone-light hover:text-cloud transition-colors">
-                    <FileText size={12} />
-                    DANFE
-                  </button>
-                )}
-              </div>
-            </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-night-light border border-night-lighter rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Receipt size={16} className="text-cloud" />
+            <span className="text-xs text-stone">Pedidos elegiveis (mes)</span>
           </div>
-        )}
+          <p className="text-2xl font-bold font-data text-cloud">{invoiceableCount}</p>
+          <p className="text-[10px] text-stone mt-1">
+            Todos os pedidos fechados poderao emitir NFC-e
+          </p>
+        </div>
+        <div className="bg-night-light border border-night-lighter rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Package size={16} className="text-leaf" />
+            <span className="text-xs text-stone">Faturamento mensal</span>
+          </div>
+          <p className="text-2xl font-bold font-data text-leaf">
+            {formatCurrency(invoiceableTotal)}
+          </p>
+          <p className="text-[10px] text-stone mt-1">
+            Base de calculo para emissao em lote
+          </p>
+        </div>
+        <div className="bg-night-light border border-night-lighter rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText size={16} className="text-stone" />
+            <span className="text-xs text-stone">Notas emitidas</span>
+          </div>
+          <p className="text-2xl font-bold font-data text-stone">0</p>
+          <p className="text-[10px] text-stone mt-1">Aguardando habilitacao SEFAZ</p>
+        </div>
+      </div>
+
+      <div className="bg-night-light border border-night-lighter rounded-xl">
+        <div className="px-5 py-3 border-b border-night-lighter flex items-center gap-2">
+          <Shield size={14} className="text-stone-light" />
+          <h2 className="text-sm font-semibold text-cloud">
+            O que sera entregue quando a integracao chegar
+          </h2>
+        </div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+          {[
+            'Emissao automatica de NFC-e ao fechar pedido',
+            'Emissao de NF-e para vendas B2B/delivery',
+            'Contingencia offline (SAT / emissao posterior)',
+            'Cancelamento dentro da janela legal (30 min)',
+            'Inutilizacao de numeros',
+            'Download de XML e PDF (DANFE)',
+            'Envio automatico para contabilidade (SPED)',
+            'Retencao de impostos (ICMS, PIS, COFINS)',
+            'Regime tributario por restaurante (MEI, Simples, Lucro Real)',
+            'Integracao com certificado digital A1',
+          ].map((feature) => (
+            <div key={feature} className="flex items-center gap-2 text-xs text-stone-light">
+              <CheckCircle2 size={14} className="text-leaf shrink-0" />
+              <span>{feature}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-night-light border border-night-lighter rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-cloud mb-3">Prerequisitos pra ligar</h3>
+        <ol className="space-y-2 text-xs text-stone-light list-decimal list-inside">
+          <li>
+            Cadastrar em{' '}
+            <a href="/dashboard/configuracoes" className="text-leaf hover:underline">
+              Configuracoes
+            </a>
+            : razao social, CNPJ, inscricao estadual e regime tributario.
+          </li>
+          <li>
+            Enviar certificado digital A1 (formato .pfx) via upload seguro (Cloudflare R2).
+          </li>
+          <li>Homologar CNPJ na SEFAZ do estado (processo de 1-3 dias uteis).</li>
+          <li>
+            Habilitar o microservico <code className="text-leaf">services/fiscal</code> (Fly.io).
+          </li>
+          <li>Rodar sequencia de teste em ambiente homologacao antes de producao.</li>
+        </ol>
       </div>
     </div>
   )

@@ -1,31 +1,34 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { DashboardShell } from '@/components/dashboard-shell'
+import {
+  getActiveRestaurantId,
+  listMemberships,
+} from '@/lib/server/restaurant'
 
-import { useState } from 'react'
-import { Sidebar } from '@/components/sidebar'
-import { Header } from '@/components/header'
-import { StoreProvider } from '@/lib/store'
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  const memberships = await listMemberships()
+  const activeId =
+    memberships.length > 0 ? await getActiveRestaurantId() : null
 
   return (
-    <StoreProvider>
-      <div className="min-h-screen bg-night">
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
-        <div
-          className="transition-all duration-200"
-          style={{ paddingLeft: collapsed ? '4rem' : '14rem' }}
-        >
-          <Header />
-          <main className="p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-    </StoreProvider>
+    <DashboardShell
+      user={{ id: user.id, email: user.email ?? '' }}
+      memberships={memberships}
+      activeRestaurantId={activeId}
+    >
+      {children}
+    </DashboardShell>
   )
 }

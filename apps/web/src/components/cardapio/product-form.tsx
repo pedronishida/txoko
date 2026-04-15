@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import type { Product, Category } from '@txoko/shared'
-import { X } from 'lucide-react'
+import { ImagePlus, X } from 'lucide-react'
+import { uploadProductImage } from '@/app/dashboard/cardapio/actions'
 
 interface ProductFormProps {
   product: Product | null
@@ -20,6 +21,9 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
   const [prepTime, setPrepTime] = useState('')
   const [allergens, setAllergens] = useState('')
   const [tags, setTags] = useState('')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [uploading, startUpload] = useTransition()
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (product) {
@@ -31,8 +35,27 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
       setPrepTime(product.prep_time_minutes?.toString() || '')
       setAllergens(product.allergens.join(', '))
       setTags(product.tags.join(', '))
+      setImageUrl(product.image_url || null)
+    } else {
+      setImageUrl(null)
     }
   }, [product])
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    startUpload(async () => {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await uploadProductImage(fd)
+      if ('error' in res && res.error) {
+        setUploadError(res.error)
+        return
+      }
+      if ('url' in res) setImageUrl(res.url as string)
+    })
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -42,7 +65,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
       price: parseFloat(price),
       cost: cost ? parseFloat(cost) : null,
       category_id: categoryId || categories[0]?.id || '',
-      image_url: product?.image_url || null,
+      image_url: imageUrl,
       is_active: product?.is_active ?? true,
       prep_time_minutes: prepTime ? parseInt(prepTime) : null,
       allergens: allergens ? allergens.split(',').map(s => s.trim()).filter(Boolean) : [],
@@ -52,7 +75,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
     onClose()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-leaf/50 focus:border-leaf/50 transition-colors'
+  const inputClass = 'w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/50 transition-colors'
   const labelClass = 'block text-sm font-medium text-stone-light mb-1'
 
   return (
@@ -68,6 +91,46 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className={labelClass}>Imagem</label>
+            <div className="flex items-center gap-3">
+              <label className="relative w-20 h-20 rounded-lg border-2 border-dashed border-night-lighter bg-night flex items-center justify-center cursor-pointer hover:border-leaf/40 transition-colors overflow-hidden">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <ImagePlus size={20} className="text-stone" />
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </label>
+              <div className="flex-1 text-xs text-stone">
+                {uploading ? (
+                  <p className="text-leaf">Enviando...</p>
+                ) : imageUrl ? (
+                  <>
+                    <p className="text-cloud">Imagem enviada</p>
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl(null)}
+                      className="text-coral text-[10px] hover:underline mt-0.5"
+                    >
+                      Remover
+                    </button>
+                  </>
+                ) : (
+                  <p>PNG, JPG ou WebP. Maximo 5MB.</p>
+                )}
+                {uploadError && <p className="text-coral mt-1">{uploadError}</p>}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>Nome *</label>
             <input
@@ -173,7 +236,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-leaf text-night font-semibold rounded-lg text-sm hover:bg-leaf-dark transition-colors"
+              className="flex-1 py-2.5 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-hover transition-colors"
             >
               {product ? 'Salvar' : 'Criar Produto'}
             </button>

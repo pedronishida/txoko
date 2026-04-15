@@ -1,7 +1,7 @@
 'use client'
 
 import type { Product } from '@txoko/shared'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, optimizeImage } from '@/lib/utils'
 import { Clock, UtensilsCrossed } from 'lucide-react'
 
 interface MenuProductCardProps {
@@ -13,12 +13,21 @@ export function MenuProductCard({ product, onClick }: MenuProductCardProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full bg-night-light border border-night-lighter rounded-xl p-4 text-left hover:border-leaf/20 transition-colors"
+      className="w-full bg-night-light border border-night-lighter rounded-xl p-4 text-left hover:border-primary/20 transition-colors"
     >
       <div className="flex gap-3">
-        {/* Image placeholder */}
-        <div className="w-20 h-20 rounded-lg bg-night-lighter flex items-center justify-center shrink-0">
-          <UtensilsCrossed size={24} className="text-stone/30" />
+        <div className="w-20 h-20 rounded-lg bg-night-lighter flex items-center justify-center shrink-0 overflow-hidden">
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={optimizeImage(product.image_url, 200) ?? product.image_url}
+              alt={product.name}
+              loading="lazy"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <UtensilsCrossed size={24} className="text-stone/30" />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">

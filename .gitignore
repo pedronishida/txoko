@@ -33,3 +33,6 @@ supabase/.temp/
 # cloudflare
 .wrangler/
 .dev.vars
+
+# Local Claude Code config (never commit)
+.claude/

@@ -11,6 +11,14 @@ import type {
   Plan,
   FinancialTransactionType,
   ReviewSentiment,
+  ChannelType,
+  ChannelStatus,
+  ConversationStatus,
+  ConversationPriority,
+  ConversationIntent,
+  MessageDirection,
+  MessageSenderType,
+  MessageStatus,
 } from '../constants'
 
 export interface Restaurant {
@@ -244,5 +252,89 @@ export interface Review {
   sentiment: ReviewSentiment | null
   is_anonymous: boolean
   source: string
+  created_at: string
+}
+
+export interface Channel {
+  id: string
+  restaurant_id: string
+  type: ChannelType
+  name: string
+  status: ChannelStatus
+  config: Record<string, unknown>
+  external_id: string | null
+  last_synced_at: string | null
+  last_error: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Contact {
+  id: string
+  restaurant_id: string
+  customer_id: string | null
+  display_name: string
+  avatar_url: string | null
+  locale: string | null
+  notes: string | null
+  tags: string[]
+  first_contact_at: string
+  last_contact_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Conversation {
+  id: string
+  restaurant_id: string
+  contact_id: string
+  channel_id: string
+  external_thread_id: string | null
+  subject: string | null
+  status: ConversationStatus
+  priority: ConversationPriority
+  assignee_id: string | null
+  unread_count: number
+  last_message_at: string
+  last_message_preview: string | null
+  ai_summary: string | null
+  ai_intent: ConversationIntent | null
+  ai_sentiment: ReviewSentiment | null
+  sla_due_at: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface ConversationWithRelations extends Conversation {
+  contact: Pick<Contact, 'id' | 'display_name' | 'avatar_url' | 'tags'> | null
+  channel: Pick<Channel, 'id' | 'type' | 'name' | 'status'> | null
+}
+
+export interface Message {
+  id: string
+  conversation_id: string
+  direction: MessageDirection
+  sender_type: MessageSenderType
+  sender_user_id: string | null
+  body: string | null
+  attachments: unknown[]
+  external_message_id: string | null
+  status: MessageStatus
+  reply_to_id: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface MessageTemplate {
+  id: string
+  restaurant_id: string
+  name: string
+  body: string
+  shortcut: string | null
+  category: string | null
+  channels: string[]
+  usage_count: number
+  created_by: string | null
   created_at: string
 }

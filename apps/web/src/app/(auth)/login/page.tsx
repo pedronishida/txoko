@@ -1,86 +1,119 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useActionState, useState } from 'react'
+import { Mail, Lock } from 'lucide-react'
+import { Logo } from '@/components/logo'
+import { loginAction, signupAction, type AuthState } from '../actions'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    // Mock login — sera substituido por Supabase Auth
-    if (email && password) {
-      await new Promise((r) => setTimeout(r, 500))
-      router.push('/dashboard')
-    } else {
-      setError('Preencha todos os campos')
-    }
-    setLoading(false)
-  }
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [state, action, pending] = useActionState<AuthState, FormData>(
+    mode === 'login' ? loginAction : signupAction,
+    null
+  )
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-cloud">
-          txoko
+    <div className="space-y-8">
+      <div className="lg:hidden mb-8">
+        <Logo size={36} showWordmark />
+      </div>
+
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          {mode === 'login' ? 'Entrar' : 'Criar conta'}
         </h1>
-        <p className="text-stone-light mt-2 text-sm">
-          Gestao inteligente para restaurantes
+        <p className="text-sm text-muted-foreground">
+          {mode === 'login'
+            ? 'Acesse seu painel com email e senha'
+            : 'Crie sua conta e comece a gerenciar seu restaurante'}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-stone-light mb-1.5">
+      <form action={action} className="space-y-4">
+        <div className="space-y-1.5">
+          <label
+            htmlFor="email"
+            className="block text-xs font-medium text-foreground"
+          >
             E-mail
           </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
-            className="w-full px-3 py-2.5 bg-night-light border border-night-lighter rounded-lg text-cloud placeholder:text-stone focus:outline-none focus:ring-2 focus:ring-leaf/50 focus:border-leaf transition-colors"
-          />
+          <div className="relative">
+            <Mail
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="seu@email.com"
+              className="w-full pl-10 pr-3 py-3 bg-surface border border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            />
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-stone-light mb-1.5">
+        <div className="space-y-1.5">
+          <label
+            htmlFor="password"
+            className="block text-xs font-medium text-foreground"
+          >
             Senha
           </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-3 py-2.5 bg-night-light border border-night-lighter rounded-lg text-cloud placeholder:text-stone focus:outline-none focus:ring-2 focus:ring-leaf/50 focus:border-leaf transition-colors"
-          />
+          <div className="relative">
+            <Lock
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              placeholder="••••••••"
+              className="w-full pl-10 pr-3 py-3 bg-surface border border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            />
+          </div>
         </div>
 
-        {error && (
-          <p className="text-coral text-sm">{error}</p>
+        {state?.error && (
+          <div className="px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            {state.error}
+          </div>
         )}
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-leaf text-night font-semibold rounded-lg hover:bg-leaf-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={pending}
+          className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary-hover shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {pending
+            ? mode === 'login'
+              ? 'Entrando...'
+              : 'Criando...'
+            : mode === 'login'
+            ? 'Entrar'
+            : 'Criar conta'}
         </button>
 
-        <p className="text-center text-sm text-stone">
-          Esqueceu a senha?{' '}
-          <button type="button" className="text-leaf hover:underline">
-            Recuperar
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-bg px-3 text-muted-foreground">ou</span>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {mode === 'login' ? 'Nao tem conta?' : 'Ja tem conta?'}{' '}
+          <button
+            type="button"
+            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            className="text-primary font-semibold hover:underline"
+          >
+            {mode === 'login' ? 'Criar conta' : 'Entrar'}
           </button>
         </p>
       </form>

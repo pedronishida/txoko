@@ -15,3 +15,21 @@ export function formatCurrency(value: number): string {
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat('pt-BR').format(value)
 }
+
+/**
+ * Otimiza URL de imagem via Supabase Image Transformation
+ * (so funciona pra URLs hospedadas no Supabase Storage).
+ * Se a URL for externa, retorna como esta.
+ */
+export function optimizeImage(
+  url: string | null | undefined,
+  width: number,
+  quality = 80
+): string | null {
+  if (!url) return null
+  if (url.includes('/storage/v1/object/public/')) {
+    const sep = url.includes('?') ? '&' : '?'
+    return `${url}${sep}width=${width}&quality=${quality}&resize=cover`
+  }
+  return url
+}

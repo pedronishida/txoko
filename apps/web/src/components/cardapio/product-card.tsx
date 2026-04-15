@@ -1,7 +1,7 @@
 'use client'
 
 import type { Product } from '@txoko/shared'
-import { cn, formatCurrency } from '@/lib/utils'
+import { cn, formatCurrency, optimizeImage } from '@/lib/utils'
 import { Clock, Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
 
 interface ProductCardProps {
@@ -19,7 +19,16 @@ export function ProductCard({ product, categoryName, onEdit, onToggle }: Product
         !product.is_active && 'opacity-50'
       )}
     >
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start gap-3 mb-2">
+        {product.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={optimizeImage(product.image_url, 140) ?? product.image_url}
+            alt={product.name}
+            loading="lazy"
+            className="w-14 h-14 rounded-lg object-cover shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-cloud truncate">{product.name}</h3>
           <p className="text-xs text-stone mt-0.5">{categoryName}</p>
