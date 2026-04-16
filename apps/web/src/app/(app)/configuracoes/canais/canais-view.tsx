@@ -17,6 +17,7 @@ import {
   syncZapiConnectedPhone,
   updateChannel,
 } from './actions'
+import { IfoodPanel } from './ifood-panel'
 
 // =============================================================
 // Canais — configuracao de integracoes de atendimento.
@@ -221,6 +222,13 @@ export function CanaisView({
           })}
         </div>
       )}
+
+      {/* ============================================================= */}
+      {/* Integracao iFood — pedidos chegam via polling ou webhook push  */}
+      {/* ============================================================= */}
+      <section className="mt-12 border border-night-lighter rounded-lg p-6">
+        <IfoodPanel baseUrl={baseUrl} />
+      </section>
 
       {showNew && (
         <NewChannelModal
