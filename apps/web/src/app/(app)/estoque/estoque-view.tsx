@@ -5,6 +5,8 @@ import { cn, formatCurrency } from '@/lib/utils'
 import type { Ingredient, Supplier } from '@txoko/shared'
 import { Plus, X } from 'lucide-react'
 import { deleteIngredient, saveIngredient } from './actions'
+import { MetricBand } from '@/components/metric-band'
+import { TabBar } from '@/components/tab-bar'
 
 const STORAGE_LOCATIONS = ['geladeira', 'deposito', 'cozinha', 'bar']
 const UNITS = ['kg', 'g', 'l', 'ml', 'un']
@@ -114,23 +116,35 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
     return 'ok'
   }
 
+  const locationTabs = [
+    { key: '', label: 'Todos', count: ingredients.length },
+    ...STORAGE_LOCATIONS.map((loc) => ({
+      key: loc,
+      label: loc.charAt(0).toUpperCase() + loc.slice(1),
+      count: ingredients.filter((i) => i.storage_location === loc).length,
+    })),
+  ]
+
   return (
     <div>
       {/* KPI band */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6 pb-8 mb-8 border-b border-night-lighter">
-        <Metric label="Total" value={String(ingredients.length)} />
-        <Metric
-          label="Critico"
-          value={String(alertCount)}
-          tone={alertCount > 0 ? 'primary' : 'neutral'}
-        />
-        <Metric
-          label="Atencao"
-          value={String(warningCount)}
-          tone={warningCount > 0 ? 'warm' : 'neutral'}
-        />
-        <Metric label="Valor em estoque" value={formatCurrency(totalCost)} />
-      </section>
+      <MetricBand
+        metrics={[
+          { label: 'Total', value: String(ingredients.length) },
+          {
+            label: 'Critico',
+            value: String(alertCount),
+            tone: alertCount > 0 ? 'negative' : 'neutral',
+          },
+          {
+            label: 'Atencao',
+            value: String(warningCount),
+            tone: 'neutral',
+          },
+          { label: 'Valor em estoque', value: formatCurrency(totalCost) },
+        ]}
+        columns={4}
+      />
 
       {/* Controls */}
       <div className="flex items-center gap-6 mb-6">
@@ -150,50 +164,12 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
         </button>
       </div>
 
-      <div className="flex items-center gap-6 mb-6 pb-4 border-b border-night-lighter overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setFilterLocation(null)}
-          className={cn(
-            'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4 whitespace-nowrap shrink-0',
-            !filterLocation
-              ? 'text-cloud'
-              : 'text-stone hover:text-stone-light'
-          )}
-        >
-          Todos
-          <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-            {ingredients.length}
-          </span>
-          {!filterLocation && (
-            <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-          )}
-        </button>
-        {STORAGE_LOCATIONS.map((loc) => {
-          const count = ingredients.filter(
-            (i) => i.storage_location === loc
-          ).length
-          const active = filterLocation === loc
-          return (
-            <button
-              key={loc}
-              onClick={() =>
-                setFilterLocation(loc === filterLocation ? null : loc)
-              }
-              className={cn(
-                'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4 capitalize whitespace-nowrap shrink-0',
-                active ? 'text-cloud' : 'text-stone hover:text-stone-light'
-              )}
-            >
-              {loc}
-              <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-                {count}
-              </span>
-              {active && (
-                <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-              )}
-            </button>
-          )
-        })}
+      <div className="mb-6">
+        <TabBar
+          tabs={locationTabs}
+          active={filterLocation ?? ''}
+          onChange={(k) => setFilterLocation(k === '' ? null : k)}
+        />
       </div>
 
       {/* Table */}
@@ -389,34 +365,6 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function Metric({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string
-  value: string
-  tone?: 'neutral' | 'primary' | 'warm'
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-        {label}
-      </p>
-      <p
-        className={cn(
-          'text-[28px] font-medium tracking-[-0.03em] leading-none font-data mt-3',
-          tone === 'neutral' && 'text-cloud',
-          tone === 'primary' && 'text-primary',
-          tone === 'warm' && 'text-warm'
-        )}
-      >
-        {value}
-      </p>
     </div>
   )
 }

@@ -210,12 +210,12 @@ export default async function HomePage() {
   return (
     <div className="-mx-8 -mt-6">
       {/* Page header */}
-      <header className="px-8 pt-6 pb-10 border-b border-night-lighter">
+      <header className="px-8 pt-6 pb-5 border-b border-night-lighter">
         <p className="text-[11px] text-stone-dark tracking-tight uppercase font-medium">
           {greeting} — {today}
         </p>
         <div className="flex items-end justify-between mt-3">
-          <h1 className="text-[28px] font-medium tracking-[-0.03em] text-cloud leading-none">
+          <h1 className="text-[20px] font-medium tracking-[-0.02em] text-cloud leading-none">
             {restaurant?.name ?? 'Txoko'}
           </h1>
           <Link

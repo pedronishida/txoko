@@ -5,6 +5,8 @@ import { cn, formatCurrency } from '@/lib/utils'
 import type { Customer } from '@txoko/shared'
 import { Plus, X } from 'lucide-react'
 import { deleteCustomer, saveCustomer } from './actions'
+import { MetricBand } from '@/components/metric-band'
+import { TabBar } from '@/components/tab-bar'
 
 export type CustomerWithStats = Customer & {
   total_orders: number
@@ -147,15 +149,24 @@ export function ClientesView({ customers }: Props) {
     return Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
   }
 
+  const segmentTabs = (['all', 'vip', 'frequent', 'new', 'inactive'] as const).map((seg) => ({
+    key: seg,
+    label: SEGMENT_LABEL[seg],
+    count: counts[seg],
+  }))
+
   return (
     <div>
       {/* KPI band */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6 pb-8 mb-8 border-b border-night-lighter">
-        <Metric label="Total" value={String(counts.all)} />
-        <Metric label="VIPs" value={String(counts.vip)} />
-        <Metric label="Frequentes" value={String(counts.frequent)} />
-        <Metric label="Inativos" value={String(counts.inactive)} />
-      </section>
+      <MetricBand
+        metrics={[
+          { label: 'Total', value: String(counts.all) },
+          { label: 'VIPs', value: String(counts.vip) },
+          { label: 'Frequentes', value: String(counts.frequent) },
+          { label: 'Inativos', value: String(counts.inactive) },
+        ]}
+        columns={4}
+      />
 
       {/* Controls */}
       <div className="flex items-center gap-6 mb-6">
@@ -175,28 +186,12 @@ export function ClientesView({ customers }: Props) {
         </button>
       </div>
 
-      <div className="flex items-center gap-6 mb-6 pb-4 border-b border-night-lighter overflow-x-auto no-scrollbar">
-        {(['all', 'vip', 'frequent', 'new', 'inactive'] as const).map((seg) => {
-          const active = segmentFilter === seg
-          return (
-            <button
-              key={seg}
-              onClick={() => setSegmentFilter(seg)}
-              className={cn(
-                'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4 whitespace-nowrap shrink-0',
-                active ? 'text-cloud' : 'text-stone hover:text-stone-light'
-              )}
-            >
-              {SEGMENT_LABEL[seg]}
-              <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-                {counts[seg as keyof typeof counts]}
-              </span>
-              {active && (
-                <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-              )}
-            </button>
-          )
-        })}
+      <div className="mb-6">
+        <TabBar
+          tabs={segmentTabs}
+          active={segmentFilter}
+          onChange={(k) => setSegmentFilter(k as Segment)}
+        />
       </div>
 
       <div className="flex gap-8">
@@ -537,19 +532,6 @@ export function ClientesView({ customers }: Props) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-        {label}
-      </p>
-      <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
-        {value}
-      </p>
     </div>
   )
 }

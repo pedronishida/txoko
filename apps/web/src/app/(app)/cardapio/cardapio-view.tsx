@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/cardapio/product-card'
 import { ProductForm } from '@/components/cardapio/product-form'
 import { createCategory, saveProduct, toggleProductActive } from './actions'
+import { PageHeader } from '@/components/page-header'
 
 type Props = {
   products: Product[]
@@ -78,27 +79,23 @@ export function CardapioView({ products, categories }: Props) {
   return (
     <div>
       {/* Header */}
-      <header className="flex items-end justify-between mb-8">
-        <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-            Cardapio
-          </h1>
-          <p className="text-[13px] text-stone mt-2 tracking-tight">
-            {products.length}{' '}
-            {products.length === 1 ? 'produto cadastrado' : 'produtos cadastrados'}
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingProduct(null)
-            setShowForm(true)
-          }}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
-        >
-          <Plus size={14} strokeWidth={2} />
-          Novo produto
-        </button>
-      </header>
+      <PageHeader
+        title="Cardapio"
+        subtitle={`${products.length} ${products.length === 1 ? 'produto cadastrado' : 'produtos cadastrados'}`}
+        action={
+          <button
+            onClick={() => {
+              setEditingProduct(null)
+              setShowForm(true)
+            }}
+            className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+          >
+            <Plus size={14} strokeWidth={2} />
+            Novo produto
+          </button>
+        }
+        className="mb-8"
+      />
 
       {error && (
         <div className="mb-6 px-3.5 py-2.5 bg-primary/5 border border-primary/20 rounded-md text-[12px] text-primary tracking-tight">

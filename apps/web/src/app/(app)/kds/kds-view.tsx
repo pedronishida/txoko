@@ -5,6 +5,8 @@ import type { Order, OrderItem, OrderItemStatus, Table } from '@txoko/shared'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { acceptOrder, markOrderDelivered, markOrderReady } from './actions'
+import { PageHeader } from '@/components/page-header'
+import { TabBar } from '@/components/tab-bar'
 
 export type ProductWithStation = {
   id: string
@@ -188,43 +190,29 @@ export function KdsView({
     })
   }
 
+  const STATION_TABS = (
+    ['all', 'kitchen', 'bar', 'dessert'] as const
+  ).map((s) => ({ key: s, label: STATION_LABEL[s] }))
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] -mx-8 -mt-6">
       {/* Header */}
-      <header className="px-8 pt-6 pb-5 border-b border-night-lighter flex items-end justify-between">
-        <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-            KDS
-          </h1>
-          <p className="text-[13px] text-stone mt-2 tracking-tight">
-            {cards.length === 0
+      <div className="px-8 pt-6">
+        <PageHeader
+          title="KDS"
+          subtitle={
+            cards.length === 0
               ? 'Nenhum pedido ativo'
-              : `${cards.length} ${cards.length === 1 ? 'pedido ativo' : 'pedidos ativos'}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-5">
-          {(['all', 'kitchen', 'bar', 'dessert'] as const).map((s) => {
-            const active = station === s
-            return (
-              <button
-                key={s}
-                onClick={() => setStation(s)}
-                className={cn(
-                  'relative text-[12px] font-medium tracking-tight transition-colors pb-1',
-                  active
-                    ? 'text-cloud'
-                    : 'text-stone hover:text-stone-light'
-                )}
-              >
-                {STATION_LABEL[s]}
-                {active && (
-                  <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </header>
+              : `${cards.length} ${cards.length === 1 ? 'pedido ativo' : 'pedidos ativos'}`
+          }
+          border={false}
+        />
+        <TabBar
+          tabs={STATION_TABS}
+          active={station}
+          onChange={(key) => setStation(key as Station)}
+        />
+      </div>
 
       {/* Columns */}
       <div className="flex-1 grid grid-cols-3 min-h-0">

@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import type { Customer, Review, ReviewSentiment } from '@txoko/shared'
 import { Plus, X } from 'lucide-react'
 import { createReview } from './actions'
+import { PageHeader } from '@/components/page-header'
+import { MetricBand } from '@/components/metric-band'
+import { TabBar } from '@/components/tab-bar'
 
 type SentimentFilter = 'all' | ReviewSentiment
 
@@ -163,63 +166,58 @@ export function AvaliacoesView({
     return Array.from({ length: 5 }, (_, i) => (i < rating ? '★' : '·')).join('')
   }
 
+  const sentimentTabs = [
+    { key: 'all', label: 'Todas', count: stats.total },
+    { key: 'positive', label: 'Positivo', count: stats.sentiments.positive },
+    { key: 'neutral', label: 'Neutro', count: stats.sentiments.neutral },
+    { key: 'negative', label: 'Negativo', count: stats.sentiments.negative },
+  ]
+
   return (
     <div className="-mx-8 -mt-6">
       {/* Header */}
-      <header className="px-8 pt-6 pb-8 border-b border-night-lighter flex items-end justify-between">
-        <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-            Avaliacoes
-          </h1>
-          <p className="text-[13px] text-stone mt-2 tracking-tight">
-            Sentimento classificado automaticamente pelo Claude
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            setError(null)
-            setShowForm(true)
-          }}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
-        >
-          <Plus size={14} strokeWidth={2} />
-          Nova avaliacao
-        </button>
-      </header>
+      <div className="px-8 pt-6 pb-5">
+        <PageHeader
+          title="Avaliacoes"
+          subtitle="Sentimento classificado automaticamente pelo Claude"
+          action={
+            <button
+              onClick={() => {
+                setError(null)
+                setShowForm(true)
+              }}
+              className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+            >
+              <Plus size={14} strokeWidth={2} />
+              Nova avaliacao
+            </button>
+          }
+        />
+      </div>
 
       {/* KPI band */}
-      <section className="px-8 py-8 border-b border-night-lighter grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-8">
-        <Metric
-          label="NPS"
-          value={String(stats.nps)}
-          caption={
-            stats.nps >= 70
-              ? 'Excelente'
-              : stats.nps >= 50
-                ? 'Bom'
-                : 'Precisa melhorar'
-          }
+      <div className="px-8">
+        <MetricBand
+          metrics={[
+            {
+              label: 'NPS',
+              value: String(stats.nps),
+              tone: stats.nps >= 50 ? 'positive' : 'neutral',
+            },
+            { label: 'Nota media', value: stats.avg.toFixed(1), tone: 'neutral' },
+            { label: 'Total', value: String(stats.total), tone: 'neutral' },
+            {
+              label: 'Sentimento',
+              value:
+                stats.total > 0
+                  ? `${Math.round((stats.sentiments.positive / stats.total) * 100)}%`
+                  : '—',
+              tone: 'positive',
+            },
+          ]}
+          columns={4}
         />
-        <Metric
-          label="Nota media"
-          value={stats.avg.toFixed(1)}
-          caption={renderStars(Math.round(stats.avg))}
-        />
-        <Metric label="Total" value={String(stats.total)} />
-        <Metric
-          label="Sentimento"
-          value={
-            stats.total > 0
-              ? `${Math.round((stats.sentiments.positive / stats.total) * 100)}%`
-              : '—'
-          }
-          caption={
-            stats.total > 0
-              ? `${Math.round((stats.sentiments.negative / stats.total) * 100)}% negativo`
-              : 'Sem dados'
-          }
-        />
-      </section>
+      </div>
 
       <div className="px-8 py-10 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-x-12 gap-y-10">
         {/* Distribution */}
@@ -253,30 +251,12 @@ export function AvaliacoesView({
 
         {/* List */}
         <section>
-          <div className="flex items-center gap-5 mb-6 pb-4 border-b border-night-lighter">
-            {(['all', 'positive', 'neutral', 'negative'] as const).map((s) => {
-              const count =
-                s === 'all' ? stats.total : stats.sentiments[s]
-              const active = sentimentFilter === s
-              return (
-                <button
-                  key={s}
-                  onClick={() => setSentimentFilter(s)}
-                  className={cn(
-                    'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4',
-                    active ? 'text-cloud' : 'text-stone hover:text-stone-light'
-                  )}
-                >
-                  {s === 'all' ? 'Todas' : SENTIMENT_LABEL[s]}
-                  <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-                    {count}
-                  </span>
-                  {active && (
-                    <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-                  )}
-                </button>
-              )
-            })}
+          <div className="mb-6">
+            <TabBar
+              tabs={sentimentTabs}
+              active={sentimentFilter}
+              onChange={(k) => setSentimentFilter(k as SentimentFilter)}
+            />
           </div>
 
           {filtered.length === 0 ? (
@@ -470,28 +450,3 @@ export function AvaliacoesView({
   )
 }
 
-function Metric({
-  label,
-  value,
-  caption,
-}: {
-  label: string
-  value: string
-  caption?: string
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-        {label}
-      </p>
-      <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
-        {value}
-      </p>
-      {caption && (
-        <p className="text-[11px] text-stone-dark mt-2 tracking-tight">
-          {caption}
-        </p>
-      )}
-    </div>
-  )
-}

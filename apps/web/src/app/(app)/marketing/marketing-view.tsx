@@ -18,6 +18,8 @@ import {
   launchCampaign,
   updateCampaignStatus,
 } from './actions'
+import { PageHeader } from '@/components/page-header'
+import { MetricBand } from '@/components/metric-band'
 
 const STATUS_LABEL: Record<CampaignStatus, string> = {
   draft: 'Rascunho',
@@ -101,49 +103,45 @@ export function MarketingView({ campaigns, templates, audiences }: Props) {
 
   return (
     <div className="-mx-8 -mt-6">
-      <header className="px-8 pt-6 pb-8 border-b border-night-lighter">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-              Marketing
-            </h1>
-            <p className="text-[13px] text-stone mt-2 tracking-tight">
-              Campanhas, templates e audiencias para WhatsApp, email e SMS
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setError(null)
-              setShowNew(true)
-            }}
-            className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
-          >
-            <Plus size={14} strokeWidth={2} />
-            Nova campanha
-          </button>
-        </div>
-      </header>
+      <div className="px-8 pt-6 pb-5">
+        <PageHeader
+          title="Marketing"
+          subtitle="Campanhas, templates e audiencias para WhatsApp, email e SMS"
+          action={
+            <button
+              onClick={() => {
+                setError(null)
+                setShowNew(true)
+              }}
+              className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+            >
+              <Plus size={14} strokeWidth={2} />
+              Nova campanha
+            </button>
+          }
+        />
+      </div>
 
       {/* KPI band */}
-      <section className="px-8 py-8 border-b border-night-lighter">
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-x-8 gap-y-6">
-          <Metric label="Campanhas" value={String(stats.total)} />
-          <Metric label="Rascunhos" value={String(stats.draft)} />
-          <Metric label="Em execucao" value={String(stats.running)} />
-          <Metric label="Concluidas" value={String(stats.completed)} />
-          <Metric
-            label="Enviadas"
-            value={stats.totalSent.toLocaleString('pt-BR')}
-          />
-          <Metric
-            label="Taxa de leitura"
-            value={
-              stats.totalDelivered > 0
-                ? `${Math.round((stats.totalRead / stats.totalDelivered) * 100)}%`
-                : '—'
-            }
-          />
-        </div>
+      <section className="px-8 pb-8 border-b border-night-lighter">
+        <MetricBand
+          metrics={[
+            { label: 'Campanhas', value: String(stats.total) },
+            { label: 'Rascunhos', value: String(stats.draft) },
+            { label: 'Em execucao', value: String(stats.running), tone: stats.running > 0 ? 'positive' : 'neutral' },
+            { label: 'Concluidas', value: String(stats.completed) },
+            { label: 'Enviadas', value: stats.totalSent.toLocaleString('pt-BR') },
+            {
+              label: 'Taxa de leitura',
+              value:
+                stats.totalDelivered > 0
+                  ? `${Math.round((stats.totalRead / stats.totalDelivered) * 100)}%`
+                  : '—',
+            },
+          ]}
+          columns={4}
+          border={false}
+        />
 
         {/* Channel breakdown */}
         {campaigns.length > 0 && (
@@ -329,19 +327,6 @@ export function MarketingView({ campaigns, templates, audiences }: Props) {
           onError={setError}
         />
       )}
-    </div>
-  )
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-        {label}
-      </p>
-      <p className="text-[22px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
-        {value}
-      </p>
     </div>
   )
 }

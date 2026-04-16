@@ -167,3 +167,78 @@ export function shouldClassify(totalMessages: number, lastClassifiedAt?: number)
   const diff = totalMessages - lastClassifiedAt
   return diff >= 10
 }
+
+// =============================================================
+// Resumo detalhado de conversa (para o painel de contato)
+// =============================================================
+// Retorna 2-4 frases descrevendo pontos-chave, acoes pendentes
+// e humor do cliente.
+// =============================================================
+
+const SUMMARY_MAX_MESSAGES = 30
+
+function buildSummaryTranscript(messages: Message[]): string {
+  const recent = messages.slice(-SUMMARY_MAX_MESSAGES)
+  return recent
+    .filter((m) => m.body && m.body.trim().length > 0)
+    .map((m) => {
+      const role =
+        m.direction === 'inbound'
+          ? 'cliente'
+          : m.sender_type === 'bot'
+            ? 'bot'
+            : 'agente'
+      return `[${role}]: ${(m.body as string).slice(0, 800)}`
+    })
+    .join('\n')
+}
+
+function summaryFallback(messages: Message[]): string {
+  const lastInbound = [...messages]
+    .reverse()
+    .find((m) => m.direction === 'inbound' && m.body)
+  return lastInbound?.body?.slice(0, 300) ?? 'Conversa sem mensagens do cliente.'
+}
+
+export async function generateDetailedSummary(
+  messages: Message[]
+): Promise<{ summary: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey || messages.length === 0) {
+    return { summary: summaryFallback(messages) }
+  }
+
+  const transcript = buildSummaryTranscript(messages)
+  if (transcript.trim().length === 0) {
+    return { summary: summaryFallback(messages) }
+  }
+
+  try {
+    const anthropic = new Anthropic({ apiKey })
+    const response = await anthropic.messages.create({
+      model: CLASSIFY_MODEL,
+      max_tokens: 400,
+      system: [
+        'Voce analisa conversas de atendimento de um restaurante brasileiro.',
+        'Gere um resumo de 2 a 4 frases (portugues, sem emoji, sem markdown) que descreva:',
+        '1. O que o cliente quer ou discutiu',
+        '2. Acoes pendentes ou resolvidas',
+        '3. Humor geral do cliente',
+        '',
+        'Responda APENAS com o texto do resumo, sem JSON, sem titulo, sem explicacoes.',
+      ].join('\n'),
+      messages: [
+        {
+          role: 'user',
+          content: `Transcript da conversa:\n\n${transcript}\n\nGere o resumo:`,
+        },
+      ],
+    })
+
+    const block = response.content.find((b) => b.type === 'text')
+    const raw = block && block.type === 'text' ? block.text.trim() : ''
+    return { summary: raw.slice(0, 600) || summaryFallback(messages) }
+  } catch {
+    return { summary: summaryFallback(messages) }
+  }
+}

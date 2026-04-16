@@ -305,10 +305,36 @@ export interface Conversation {
   ai_summary: string | null
   ai_intent: ConversationIntent | null
   ai_sentiment: ReviewSentiment | null
+  ai_paused: boolean
+  ai_summary_generated_at: string | null
   sla_due_at: string | null
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+export interface ConversationNote {
+  id: string
+  conversation_id: string
+  author_id: string | null
+  body: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AiSuggestedReply {
+  text: string
+  tone?: 'friendly' | 'formal' | 'apologetic' | 'promotional' | 'informative'
+}
+
+export interface AiSuggestionsBatch {
+  id: string
+  conversation_id: string
+  context_hash: string
+  suggestions: AiSuggestedReply[]
+  model: string | null
+  generated_at: string
+  expires_at: string
 }
 
 export interface ConversationWithRelations extends Conversation {

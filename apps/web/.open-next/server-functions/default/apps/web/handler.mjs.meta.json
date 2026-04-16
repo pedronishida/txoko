@@ -3232,217 +3232,217 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route_client-reference-manifest.js": {
-      "bytes": 17420,
+      "bytes": 17698,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/campaigns/[id]/page_client-reference-manifest.js": {
-      "bytes": 18130,
+      "bytes": 18360,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js": {
-      "bytes": 18009,
+      "bytes": 18239,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js": {
-      "bytes": 17807,
+      "bytes": 18085,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page_client-reference-manifest.js": {
-      "bytes": 18063,
+      "bytes": 18293,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/audiences/page_client-reference-manifest.js": {
-      "bytes": 18015,
+      "bytes": 18245,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js": {
-      "bytes": 18011,
+      "bytes": 18241,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js": {
-      "bytes": 17408,
+      "bytes": 17686,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
-      "bytes": 17406,
+      "bytes": 17684,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js": {
-      "bytes": 17897,
+      "bytes": 18243,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/notas/page_client-reference-manifest.js": {
-      "bytes": 17772,
+      "bytes": 18118,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/caixa/page_client-reference-manifest.js": {
-      "bytes": 17994,
+      "bytes": 18340,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/manifest.webmanifest/route_client-reference-manifest.js": {
-      "bytes": 17402,
+      "bytes": 17680,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
-      "bytes": 17400,
+      "bytes": 17678,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page_client-reference-manifest.js": {
-      "bytes": 17991,
+      "bytes": 18221,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/page_client-reference-manifest.js": {
-      "bytes": 17565,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js": {
-      "bytes": 17924,
+      "bytes": 17843,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/reviews/public/route_client-reference-manifest.js": {
-      "bytes": 17398,
+      "bytes": 17676,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js": {
+      "bytes": 18202,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/opengraph-image/route_client-reference-manifest.js": {
-      "bytes": 17392,
+      "bytes": 17670,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/page_client-reference-manifest.js": {
-      "bytes": 17660,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js": {
-      "bytes": 17508,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page_client-reference-manifest.js": {
-      "bytes": 17608,
+      "bytes": 18006,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page_client-reference-manifest.js": {
-      "bytes": 17607,
+      "bytes": 17885,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page_client-reference-manifest.js": {
+      "bytes": 17886,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js": {
+      "bytes": 17786,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/assistente/route_client-reference-manifest.js": {
-      "bytes": 17390,
+      "bytes": 17668,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/page_client-reference-manifest.js": {
-      "bytes": 17819,
+      "bytes": 18049,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/page_client-reference-manifest.js": {
-      "bytes": 17766,
+      "bytes": 17996,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/cardapio/page_client-reference-manifest.js": {
-      "bytes": 17502,
+      "bytes": 17780,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pedidos/page_client-reference-manifest.js": {
-      "bytes": 17599,
+      "bytes": 17877,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/page_client-reference-manifest.js": {
-      "bytes": 17761,
+      "bytes": 17991,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/sitemap.xml/route_client-reference-manifest.js": {
-      "bytes": 17384,
+      "bytes": 17662,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(auth)/login/page_client-reference-manifest.js": {
-      "bytes": 17446,
+      "bytes": 17724,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/robots.txt/route_client-reference-manifest.js": {
-      "bytes": 17382,
+      "bytes": 17660,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/apple-icon/route_client-reference-manifest.js": {
-      "bytes": 17382,
+      "bytes": 17660,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/page_client-reference-manifest.js": {
-      "bytes": 17642,
+      "bytes": 17920,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page_client-reference-manifest.js": {
-      "bytes": 17593,
+      "bytes": 17871,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page_client-reference-manifest.js": {
-      "bytes": 17592,
+      "bytes": 17870,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/_not-found/page_client-reference-manifest.js": {
-      "bytes": 17380,
+      "bytes": 17658,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/home/page_client-reference-manifest.js": {
-      "bytes": 17402,
+      "bytes": 17680,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js": {
-      "bytes": 17487,
+      "bytes": 17765,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js": {
-      "bytes": 17587,
+      "bytes": 17865,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/icon/route_client-reference-manifest.js": {
-      "bytes": 17370,
+      "bytes": 17648,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/page_client-reference-manifest.js": {
-      "bytes": 17275,
+      "bytes": 17553,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.external.js": {
-      "bytes": 118684,
+      "bytes": 123009,
       "imports": [
         {
           "path": "path",
@@ -3545,14 +3545,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/reviews/public/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/reviews/public/route_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/opengraph-image/route_client-reference-manifest.js",
@@ -3565,9 +3565,9 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page_client-reference-manifest.js",
@@ -3575,9 +3575,9 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/assistente/route_client-reference-manifest.js",
@@ -4173,7 +4173,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/159.js": {
-      "bytes": 82036,
+      "bytes": 82041,
       "imports": [],
       "format": "cjs"
     },
@@ -4239,7 +4239,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/chunks/8820.js": {
-      "bytes": 9772,
+      "bytes": 11036,
       "imports": [],
       "format": "cjs"
     },
@@ -4523,7 +4523,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page.js": {
-      "bytes": 31180,
+      "bytes": 32088,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -4589,7 +4589,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page.js": {
-      "bytes": 29379,
+      "bytes": 30288,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -4655,7 +4655,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/audiences/page.js": {
-      "bytes": 33776,
+      "bytes": 35040,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -4721,7 +4721,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page.js": {
-      "bytes": 39237,
+      "bytes": 40506,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -4899,7 +4899,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page.js": {
-      "bytes": 32162,
+      "bytes": 33073,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -4965,7 +4965,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/caixa/page.js": {
-      "bytes": 25061,
+      "bytes": 25972,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5031,7 +5031,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/notas/page.js": {
-      "bytes": 23477,
+      "bytes": 24388,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5199,7 +5199,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page.js": {
-      "bytes": 29904,
+      "bytes": 30812,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5316,7 +5316,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/page.js": {
-      "bytes": 27354,
+      "bytes": 27788,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5525,7 +5525,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page.js": {
-      "bytes": 22815,
+      "bytes": 23226,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5591,7 +5591,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js": {
-      "bytes": 25862,
+      "bytes": 26107,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5657,7 +5657,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js": {
-      "bytes": 30414,
+      "bytes": 31399,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5723,7 +5723,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/page.js": {
-      "bytes": 27484,
+      "bytes": 29060,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5845,7 +5845,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/page.js": {
-      "bytes": 30315,
+      "bytes": 30383,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5911,7 +5911,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/cardapio/page.js": {
-      "bytes": 33409,
+      "bytes": 33777,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5977,7 +5977,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/page.js": {
-      "bytes": 36001,
+      "bytes": 36763,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6043,7 +6043,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pedidos/page.js": {
-      "bytes": 32187,
+      "bytes": 33088,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6109,7 +6109,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/page.js": {
-      "bytes": 32695,
+      "bytes": 32998,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6398,8 +6398,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js": {
-      "bytes": 55169,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page.js": {
+      "bytes": 27941,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6464,8 +6464,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page.js": {
-      "bytes": 27572,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js": {
+      "bytes": 184768,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6511,6 +6511,11 @@
           "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/dynamic-access-async-storage.external.js",
           "kind": "require-call",
           "original": "next/dist/server/app-render/dynamic-access-async-storage.external.js"
+        },
+        {
+          "path": "crypto",
+          "kind": "require-call",
+          "external": true
         },
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/work-unit-async-storage.external.js",
@@ -6663,7 +6668,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/home/page.js": {
-      "bytes": 25251,
+      "bytes": 25250,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6729,7 +6734,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page.js": {
-      "bytes": 25371,
+      "bytes": 26237,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6795,7 +6800,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page.js": {
-      "bytes": 32302,
+      "bytes": 32227,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -7541,14 +7546,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/apple-icon/route.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/page.js",
@@ -9045,6 +9050,11 @@
           "external": true
         },
         {
+          "path": "crypto",
+          "kind": "require-call",
+          "external": true
+        },
+        {
           "path": "util",
           "kind": "require-call",
           "external": true
@@ -9912,133 +9922,133 @@
           "bytesInOutput": 589
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route_client-reference-manifest.js": {
-          "bytesInOutput": 15689
+          "bytesInOutput": 15930
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/campaigns/[id]/page_client-reference-manifest.js": {
-          "bytesInOutput": 16398
+          "bytesInOutput": 16591
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js": {
-          "bytesInOutput": 16274
+          "bytesInOutput": 16467
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js": {
-          "bytesInOutput": 16072
+          "bytesInOutput": 16313
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page_client-reference-manifest.js": {
-          "bytesInOutput": 16327
+          "bytesInOutput": 16520
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/audiences/page_client-reference-manifest.js": {
-          "bytesInOutput": 16279
+          "bytesInOutput": 16472
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js": {
-          "bytesInOutput": 16275
+          "bytesInOutput": 16468
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js": {
-          "bytesInOutput": 15672
+          "bytesInOutput": 15913
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
-          "bytesInOutput": 15669
+          "bytesInOutput": 15910
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js": {
-          "bytesInOutput": 16159
+          "bytesInOutput": 16468
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/notas/page_client-reference-manifest.js": {
-          "bytesInOutput": 16033
+          "bytesInOutput": 16342
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/caixa/page_client-reference-manifest.js": {
-          "bytesInOutput": 16255
+          "bytesInOutput": 16564
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/manifest.webmanifest/route_client-reference-manifest.js": {
-          "bytesInOutput": 15663
+          "bytesInOutput": 15904
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
-          "bytesInOutput": 15660
+          "bytesInOutput": 15901
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page_client-reference-manifest.js": {
-          "bytesInOutput": 16251
+          "bytesInOutput": 16444
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/page_client-reference-manifest.js": {
-          "bytesInOutput": 15824
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js": {
-          "bytesInOutput": 16183
+          "bytesInOutput": 16065
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/reviews/public/route_client-reference-manifest.js": {
-          "bytesInOutput": 15657
+          "bytesInOutput": 15898
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page_client-reference-manifest.js": {
+          "bytesInOutput": 16424
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/opengraph-image/route_client-reference-manifest.js": {
-          "bytesInOutput": 15648
+          "bytesInOutput": 15889
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/page_client-reference-manifest.js": {
-          "bytesInOutput": 15916
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js": {
-          "bytesInOutput": 15764
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page_client-reference-manifest.js": {
-          "bytesInOutput": 15864
+          "bytesInOutput": 16225
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page_client-reference-manifest.js": {
-          "bytesInOutput": 15863
+          "bytesInOutput": 16104
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page_client-reference-manifest.js": {
+          "bytesInOutput": 16105
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page_client-reference-manifest.js": {
+          "bytesInOutput": 16005
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/assistente/route_client-reference-manifest.js": {
-          "bytesInOutput": 15645
+          "bytesInOutput": 15886
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/page_client-reference-manifest.js": {
-          "bytesInOutput": 16074
+          "bytesInOutput": 16267
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/page_client-reference-manifest.js": {
-          "bytesInOutput": 16020
+          "bytesInOutput": 16213
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/cardapio/page_client-reference-manifest.js": {
-          "bytesInOutput": 15756
+          "bytesInOutput": 15997
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pedidos/page_client-reference-manifest.js": {
-          "bytesInOutput": 15852
+          "bytesInOutput": 16093
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/page_client-reference-manifest.js": {
-          "bytesInOutput": 16014
+          "bytesInOutput": 16207
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/sitemap.xml/route_client-reference-manifest.js": {
-          "bytesInOutput": 15636
+          "bytesInOutput": 15877
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(auth)/login/page_client-reference-manifest.js": {
-          "bytesInOutput": 15698
+          "bytesInOutput": 15939
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/robots.txt/route_client-reference-manifest.js": {
-          "bytesInOutput": 15634
+          "bytesInOutput": 15875
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/apple-icon/route_client-reference-manifest.js": {
-          "bytesInOutput": 15634
+          "bytesInOutput": 15875
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/page_client-reference-manifest.js": {
-          "bytesInOutput": 15893
+          "bytesInOutput": 16134
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page_client-reference-manifest.js": {
-          "bytesInOutput": 15844
+          "bytesInOutput": 16085
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page_client-reference-manifest.js": {
-          "bytesInOutput": 15843
+          "bytesInOutput": 16084
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/_not-found/page_client-reference-manifest.js": {
-          "bytesInOutput": 15630
+          "bytesInOutput": 15871
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/home/page_client-reference-manifest.js": {
-          "bytesInOutput": 15652
+          "bytesInOutput": 15893
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js": {
-          "bytesInOutput": 15736
+          "bytesInOutput": 15977
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js": {
-          "bytesInOutput": 15836
+          "bytesInOutput": 16077
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/icon/route_client-reference-manifest.js": {
-          "bytesInOutput": 15616
+          "bytesInOutput": 15857
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/page_client-reference-manifest.js": {
-          "bytesInOutput": 15514
+          "bytesInOutput": 15755
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.external.js": {
-          "bytesInOutput": 95491
+          "bytesInOutput": 99567
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/app-render/action-async-storage-instance.js": {
           "bytesInOutput": 504
@@ -10104,7 +10114,7 @@
           "bytesInOutput": 171697
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/159.js": {
-          "bytesInOutput": 87938
+          "bytesInOutput": 87943
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/1688.js": {
           "bytesInOutput": 201738
@@ -10140,7 +10150,7 @@
           "bytesInOutput": 37709
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/8820.js": {
-          "bytesInOutput": 10270
+          "bytesInOutput": 11577
         },
         ".open-next/server-functions/default/apps/web/.next/server/chunks/8825.js": {
           "bytesInOutput": 32289
@@ -10161,16 +10171,16 @@
           "bytesInOutput": 46901
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page.js": {
-          "bytesInOutput": 31910
+          "bytesInOutput": 32868
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page.js": {
-          "bytesInOutput": 30032
+          "bytesInOutput": 30991
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/audiences/page.js": {
-          "bytesInOutput": 34631
+          "bytesInOutput": 35944
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page.js": {
-          "bytesInOutput": 40136
+          "bytesInOutput": 41454
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route.js": {
           "bytesInOutput": 10136
@@ -10179,13 +10189,13 @@
           "bytesInOutput": 29482
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page.js": {
-          "bytesInOutput": 32931
+          "bytesInOutput": 33892
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/caixa/page.js": {
-          "bytesInOutput": 25579
+          "bytesInOutput": 26540
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/notas/page.js": {
-          "bytesInOutput": 23902
+          "bytesInOutput": 24863
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/manifest.webmanifest/route.js": {
           "bytesInOutput": 11812
@@ -10194,13 +10204,13 @@
           "bytesInOutput": 11792
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page.js": {
-          "bytesInOutput": 30665
+          "bytesInOutput": 31623
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/reviews/public/route.js": {
           "bytesInOutput": 8655
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/page.js": {
-          "bytesInOutput": 27962
+          "bytesInOutput": 28430
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/avaliar/page.js": {
           "bytesInOutput": 29650
@@ -10212,34 +10222,34 @@
           "bytesInOutput": 10299
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page.js": {
-          "bytesInOutput": 23267
+          "bytesInOutput": 23703
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js": {
-          "bytesInOutput": 26414
+          "bytesInOutput": 26719
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js": {
-          "bytesInOutput": 31089
+          "bytesInOutput": 32128
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/page.js": {
-          "bytesInOutput": 28118
+          "bytesInOutput": 29772
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/assistente/route.js": {
           "bytesInOutput": 15451
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/page.js": {
-          "bytesInOutput": 31025
+          "bytesInOutput": 31099
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/cardapio/page.js": {
-          "bytesInOutput": 34234
+          "bytesInOutput": 34628
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/page.js": {
-          "bytesInOutput": 36873
+          "bytesInOutput": 37652
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pedidos/page.js": {
-          "bytesInOutput": 32874
+          "bytesInOutput": 33830
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/page.js": {
-          "bytesInOutput": 33503
+          "bytesInOutput": 33857
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/sitemap.xml/route.js": {
           "bytesInOutput": 11961
@@ -10253,11 +10263,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/apple-icon/route.js": {
           "bytesInOutput": 8832
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js": {
-          "bytesInOutput": 56529
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page.js": {
-          "bytesInOutput": 28173
+          "bytesInOutput": 28570
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js": {
+          "bytesInOutput": 201969
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/page.js": {
           "bytesInOutput": 37429
@@ -10266,13 +10276,13 @@
           "bytesInOutput": 16045
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/home/page.js": {
-          "bytesInOutput": 25746
+          "bytesInOutput": 25745
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page.js": {
-          "bytesInOutput": 25959
+          "bytesInOutput": 26871
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page.js": {
-          "bytesInOutput": 33028
+          "bytesInOutput": 32972
         },
         ".open-next/server-functions/default/node_modules/react/cjs/react-jsx-runtime.production.js": {
           "bytesInOutput": 744
@@ -10440,7 +10450,7 @@
           "bytesInOutput": 66255
         }
       },
-      "bytes": 6184487
+      "bytes": 6361377
     }
   }
 }

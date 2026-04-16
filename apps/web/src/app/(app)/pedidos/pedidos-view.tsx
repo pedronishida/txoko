@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { PageHeader } from '@/components/page-header'
+import { TabBar } from '@/components/tab-bar'
 import type {
   Address,
   Order,
@@ -224,38 +226,23 @@ export function PedidosView({
   return (
     <div className="-mx-8 -mt-6">
       {/* Header */}
-      <header className="px-8 pt-6 pb-6 border-b border-night-lighter">
-        <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-          Pedidos
-        </h1>
-        <p className="text-[13px] text-stone mt-2 tracking-tight">
-          {orders.length} {orders.length === 1 ? 'pedido recente' : 'pedidos recentes'}
-        </p>
-
-        {/* Filters */}
-        <div className="mt-6 flex items-center gap-7">
-          {STATUS_FILTERS.map((s) => {
-            const active = statusFilter === s.key
-            return (
-              <button
-                key={s.key}
-                onClick={() => setStatusFilter(s.key)}
-                className={cn(
-                  'relative text-[12px] font-medium tracking-tight transition-colors pb-2 -mb-2',
-                  active ? 'text-cloud' : 'text-stone hover:text-stone-light'
-                )}
-              >
-                {s.label}
-                <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-                  {s.count}
-                </span>
-                {active && (
-                  <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-                )}
-              </button>
-            )
-          })}
-          <div className="ml-auto flex items-center gap-5">
+      <div className="px-8 pt-6">
+        <PageHeader
+          title="Pedidos"
+          subtitle={`${orders.length} ${orders.length === 1 ? 'pedido recente' : 'pedidos recentes'}`}
+          border={false}
+        />
+        <div className="flex items-end justify-between gap-4">
+          <TabBar
+            tabs={STATUS_FILTERS.map((s) => ({
+              key: s.key,
+              label: s.label,
+              count: s.count,
+            }))}
+            active={statusFilter}
+            onChange={(key) => setStatusFilter(key as StatusFilter)}
+          />
+          <div className="flex items-center gap-5 pb-3 shrink-0">
             {TYPE_TABS.map((t) => {
               const active = typeFilter === t.key
               return (
@@ -273,7 +260,7 @@ export function PedidosView({
             })}
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="flex min-h-[calc(100vh-14rem)]">
         {/* List */}

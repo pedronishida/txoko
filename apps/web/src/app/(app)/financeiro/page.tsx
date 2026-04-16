@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
 import { cn, formatCurrency } from '@/lib/utils'
+import { MetricBand } from '@/components/metric-band'
 
 export const dynamic = 'force-dynamic'
 
@@ -208,20 +209,19 @@ export default async function FinanceiroPage() {
   return (
     <div>
       {/* KPI band */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6 pb-8 mb-10 border-b border-night-lighter">
-        <Metric label="Receita do mes" value={formatCurrency(revenue)} />
-        <Metric
-          label="Despesas pagas"
-          value={formatCurrency(totalExpenses)}
-          tone={totalExpenses > 0 ? 'stone' : 'neutral'}
-        />
-        <Metric
-          label="Lucro liquido"
-          value={formatCurrency(netProfit)}
-          tone={netProfit >= 0 ? 'leaf' : 'primary'}
-        />
-        <Metric label="Pedidos" value={orderCount.toLocaleString('pt-BR')} />
-      </section>
+      <MetricBand
+        metrics={[
+          { label: 'Receita do mes', value: formatCurrency(revenue) },
+          { label: 'Despesas pagas', value: formatCurrency(totalExpenses) },
+          {
+            label: 'Lucro liquido',
+            value: formatCurrency(netProfit),
+            tone: netProfit >= 0 ? 'positive' : 'negative',
+          },
+          { label: 'Pedidos', value: orderCount.toLocaleString('pt-BR') },
+        ]}
+        columns={4}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-10">
         {/* Revenue 7 days */}
@@ -385,31 +385,3 @@ export default async function FinanceiroPage() {
   )
 }
 
-function Metric({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string
-  value: string
-  tone?: 'neutral' | 'leaf' | 'primary' | 'stone'
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-        {label}
-      </p>
-      <p
-        className={cn(
-          'text-[28px] font-medium tracking-[-0.03em] leading-none font-data mt-3',
-          tone === 'neutral' && 'text-cloud',
-          tone === 'leaf' && 'text-leaf',
-          tone === 'primary' && 'text-primary',
-          tone === 'stone' && 'text-stone-light'
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  )
-}

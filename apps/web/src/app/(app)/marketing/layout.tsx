@@ -1,13 +1,13 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { usePathname, useRouter } from 'next/navigation'
+import { PageHeader } from '@/components/page-header'
+import { TabBar } from '@/components/tab-bar'
 
-const tabs = [
-  { name: 'Campanhas', href: '/marketing' },
-  { name: 'Templates', href: '/marketing/templates' },
-  { name: 'Audiencias', href: '/marketing/audiences' },
+const TABS = [
+  { key: '/marketing', label: 'Campanhas' },
+  { key: '/marketing/templates', label: 'Templates' },
+  { key: '/marketing/audiences', label: 'Audiencias' },
 ]
 
 export default function MarketingLayout({
@@ -16,37 +16,31 @@ export default function MarketingLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
 
   // Sub-rotas de campanhas usam o tab "Campanhas"
-  const activeTab = tabs.find(
-    (t) =>
-      pathname === t.href ||
-      (t.href !== '/marketing' && pathname.startsWith(t.href))
-  )?.href ?? '/marketing'
+  const activeTab =
+    TABS.find(
+      (t) =>
+        pathname === t.key ||
+        (t.key !== '/marketing' && pathname.startsWith(t.key))
+    )?.key ?? '/marketing'
 
   return (
-    <div>
-      <div className="flex items-center gap-6 mb-6 -mt-2">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.href
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'relative text-[12px] font-medium tracking-tight transition-colors pb-2',
-                isActive ? 'text-cloud' : 'text-stone hover:text-stone-light'
-              )}
-            >
-              {tab.name}
-              {isActive && (
-                <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-              )}
-            </Link>
-          )
-        })}
+    <div className="-mx-8 -mt-6">
+      <div className="px-8 pt-6">
+        <PageHeader
+          title="Marketing"
+          subtitle="Campanhas, templates e audiencias"
+          border={false}
+        />
+        <TabBar
+          tabs={TABS}
+          active={activeTab}
+          onChange={(key) => router.push(key)}
+        />
       </div>
-      {children}
+      <div className="px-8 py-8">{children}</div>
     </div>
   )
 }

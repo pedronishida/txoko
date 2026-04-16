@@ -12,6 +12,7 @@ import type {
 } from '@txoko/shared'
 import { Minus, Plus, X } from 'lucide-react'
 import { createOrder } from './actions'
+import { TabBar } from '@/components/tab-bar'
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Dinheiro',
@@ -154,41 +155,39 @@ export function PdvView({ products, categories, tables, customers }: Props) {
     })
   }
 
+  const orderTypeTabs = (Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map((type) => ({
+    key: type,
+    label: ORDER_TYPE_LABELS[type],
+  }))
+
+  const categoryTabs = [
+    { key: '', label: 'Todos', count: products.length },
+    ...categories.map((cat) => ({
+      key: cat.id,
+      label: cat.name,
+      count: products.filter((p) => p.category_id === cat.id).length,
+    })),
+  ]
+
   return (
     <div className="flex h-[calc(100vh-8rem)] -mx-8 -mt-6 border-t border-night-lighter">
       {/* Catalog */}
       <section className="flex-1 flex flex-col min-w-0 border-r border-night-lighter">
         {/* Header row */}
-        <div className="px-8 pt-6 pb-4 flex items-end justify-between">
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
+        <div className="px-8 pt-5 pb-3 flex items-center justify-between gap-6">
+          <h1 className="text-[20px] font-medium tracking-[-0.02em] text-cloud leading-none shrink-0">
             PDV
           </h1>
-          <div className="flex items-center gap-5">
-            {(Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map((type) => {
-              const active = orderType === type
-              return (
-                <button
-                  key={type}
-                  onClick={() => setOrderType(type)}
-                  className={cn(
-                    'relative text-[12px] font-medium tracking-tight transition-colors pb-1',
-                    active
-                      ? 'text-cloud'
-                      : 'text-stone hover:text-stone-light'
-                  )}
-                >
-                  {ORDER_TYPE_LABELS[type]}
-                  {active && (
-                    <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
+          <TabBar
+            tabs={orderTypeTabs}
+            active={orderType}
+            onChange={(k) => setOrderType(k as OrderType)}
+            className="flex-1 border-0 pb-0"
+          />
         </div>
 
         {/* Search */}
-        <div className="px-8 pb-3">
+        <div className="px-8 pb-2">
           <input
             type="text"
             placeholder="Buscar produto"
@@ -199,44 +198,12 @@ export function PdvView({ products, categories, tables, customers }: Props) {
         </div>
 
         {/* Categories */}
-        <div className="px-8 pb-5 border-b border-night-lighter overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-5">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={cn(
-                'text-[11px] font-medium tracking-tight transition-colors shrink-0',
-                !selectedCategory
-                  ? 'text-cloud'
-                  : 'text-stone hover:text-stone-light'
-              )}
-            >
-              Todos
-              <span className="ml-1.5 text-[10px] text-stone-dark font-data">
-                {products.length}
-              </span>
-            </button>
-            {categories.map((cat) => {
-              const count = products.filter((p) => p.category_id === cat.id).length
-              const active = selectedCategory === cat.id
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() =>
-                    setSelectedCategory(cat.id === selectedCategory ? null : cat.id)
-                  }
-                  className={cn(
-                    'text-[11px] font-medium tracking-tight whitespace-nowrap transition-colors shrink-0',
-                    active ? 'text-cloud' : 'text-stone hover:text-stone-light'
-                  )}
-                >
-                  {cat.name}
-                  <span className="ml-1.5 text-[10px] text-stone-dark font-data">
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+        <div className="px-8">
+          <TabBar
+            tabs={categoryTabs}
+            active={selectedCategory ?? ''}
+            onChange={(k) => setSelectedCategory(k === '' ? null : k)}
+          />
         </div>
 
         {/* Products grid */}

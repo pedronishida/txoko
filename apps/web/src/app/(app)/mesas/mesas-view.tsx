@@ -6,6 +6,7 @@ import type { Order, OrderItem, Product, Table, TableStatus } from '@txoko/share
 import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateTableStatus } from './actions'
+import { PageHeader } from '@/components/page-header'
 
 const STATUS_LABEL: Record<TableStatus, string> = {
   available: 'Disponivel',
@@ -158,47 +159,42 @@ export function MesasView({
   return (
     <div className="-mx-8 -mt-6">
       {/* Header */}
-      <header className="px-8 pt-6 pb-6 border-b border-night-lighter">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-              Mesas
-            </h1>
-            <p className="text-[13px] text-stone mt-2 tracking-tight">
-              {counts.occupied} ocupadas · {counts.available} disponiveis ·{' '}
-              {counts.reserved} reservadas
-            </p>
-          </div>
-          {areas.length > 1 && (
-            <div className="flex items-center gap-5">
-              <button
-                onClick={() => setFilterArea(null)}
-                className={cn(
-                  'text-[12px] font-medium tracking-tight transition-colors',
-                  !filterArea ? 'text-cloud' : 'text-stone hover:text-stone-light'
-                )}
-              >
-                Todas
-              </button>
-              {areas.map((area) => (
+      <div className="px-8 pt-6 pb-5 border-b border-night-lighter">
+        <PageHeader
+          title="Mesas"
+          subtitle={`${counts.occupied} ocupadas · ${counts.available} disponiveis · ${counts.reserved} reservadas`}
+          border={false}
+          action={
+            areas.length > 1 ? (
+              <div className="flex items-center gap-5">
                 <button
-                  key={area}
-                  onClick={() => setFilterArea(area === filterArea ? null : area)}
+                  onClick={() => setFilterArea(null)}
                   className={cn(
-                    'text-[12px] font-medium tracking-tight transition-colors capitalize',
-                    filterArea === area
-                      ? 'text-cloud'
-                      : 'text-stone hover:text-stone-light'
+                    'text-[12px] font-medium tracking-tight transition-colors',
+                    !filterArea ? 'text-cloud' : 'text-stone hover:text-stone-light'
                   )}
                 >
-                  {AREA_LABEL[area] ?? area}
+                  Todas
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-6 mt-5">
+                {areas.map((area) => (
+                  <button
+                    key={area}
+                    onClick={() => setFilterArea(area === filterArea ? null : area)}
+                    className={cn(
+                      'text-[12px] font-medium tracking-tight transition-colors capitalize',
+                      filterArea === area
+                        ? 'text-cloud'
+                        : 'text-stone hover:text-stone-light'
+                    )}
+                  >
+                    {AREA_LABEL[area] ?? area}
+                  </button>
+                ))}
+              </div>
+            ) : undefined
+          }
+        />
+        <div className="flex items-center gap-6 mt-3">
           {(Object.keys(STATUS_LABEL) as TableStatus[]).map((status) => (
             <div key={status} className="flex items-center gap-2">
               <StatusDot tone={STATUS_DOT_TONE[status]} />
@@ -211,7 +207,7 @@ export function MesasView({
             </div>
           ))}
         </div>
-      </header>
+      </div>
 
       <div className="flex min-h-[calc(100vh-14rem)]">
         {/* Grid */}

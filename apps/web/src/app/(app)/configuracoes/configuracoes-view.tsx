@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { cn } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
 import { updateRestaurant } from './actions'
+import { PageHeader } from '@/components/page-header'
 
 export type RestaurantFormData = {
   id: string
@@ -99,14 +100,10 @@ export function ConfiguracoesView({ initial }: { initial: RestaurantFormData }) 
 
   return (
     <div className="max-w-3xl">
-      <header className="pb-10 border-b border-night-lighter">
-        <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-          Configuracoes
-        </h1>
-        <p className="text-[13px] text-stone mt-2 tracking-tight">
-          Restaurante, operacao e integracoes
-        </p>
-      </header>
+      <PageHeader
+        title="Configuracoes"
+        subtitle="Restaurante, operacao e integracoes"
+      />
 
       {/* Dados do restaurante */}
       <Section

@@ -22,7 +22,8 @@ import type {
   MessageTemplate,
   ReviewSentiment,
 } from '@txoko/shared'
-import { MoreHorizontal, Plus, Send, X } from 'lucide-react'
+import { MoreHorizontal, Send, X, SidebarClose, SidebarOpen } from 'lucide-react'
+import { PageHeader } from '@/components/page-header'
 import {
   assignConversationToMe,
   classifyConversation,
@@ -33,6 +34,9 @@ import {
   updateConversationPriority,
   updateConversationStatus,
 } from './actions'
+import { getContactDetails } from './contact-actions'
+import type { ContactDetails } from './contact-actions'
+import { ContactPanel } from '@/components/inbox/contact-panel'
 
 // =============================================================
 // Inbox — dashboard de conversas (Linear / Raycast vibe)
@@ -114,11 +118,16 @@ export function InboxView({
   const [messages, setMessages] = useState<Message[]>([])
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [composer, setComposer] = useState('')
-  const [showNewModal, setShowNewModal] = useState(false)
+
   const [showActionsMenu, setShowActionsMenu] = useState(false)
   const [showTemplatesPanel, setShowTemplatesPanel] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // Contact panel
+  const [showContactPanel, setShowContactPanel] = useState(true)
+  const [contactDetails, setContactDetails] = useState<ContactDetails | null>(null)
+  const [loadingContact, setLoadingContact] = useState(false)
 
   const threadEndRef = useRef<HTMLDivElement>(null)
 
@@ -169,6 +178,23 @@ export function InboxView({
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Load contact details when conversation changes
+  useEffect(() => {
+    if (!selectedId) {
+      setContactDetails(null)
+      return
+    }
+    setLoadingContact(true)
+    getContactDetails(selectedId).then((res) => {
+      if ('ok' in res && res.ok) {
+        setContactDetails(res.data)
+      } else {
+        setContactDetails(null)
+      }
+      setLoadingContact(false)
+    })
+  }, [selectedId])
 
   useEffect(() => {
     const supabase = createClient()
@@ -344,34 +370,20 @@ export function InboxView({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] -mx-6 -mt-4">
-      {/* Page header — typography only */}
-      <header className="px-8 pt-6 pb-6 border-b border-night-lighter flex items-end justify-between">
-        <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-            Inbox
-          </h1>
-          <p className="text-[13px] text-stone mt-2 tracking-tight">
-            {conversations.length === 0
-              ? 'Nenhuma conversa ainda'
-              : `${filtered.length} de ${conversations.length} ${
-                  conversations.length === 1 ? 'conversa' : 'conversas'
-                }`}
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            setError(null)
-            setShowNewModal(true)
-          }}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
-        >
-          <Plus size={14} strokeWidth={2} />
-          Nova conversa
-        </button>
-      </header>
+    <div className="flex flex-col h-[calc(100vh-140px)] -mx-8 -mt-6">
+      {/* Page header */}
+      <div className="px-8 pt-6">
+        <PageHeader title="Inbox" border={false} />
+      </div>
 
-      <div className="flex-1 grid grid-cols-[340px_1fr] min-h-0">
+      <div
+        className={cn(
+          'flex-1 grid min-h-0',
+          showContactPanel && selected
+            ? 'grid-cols-[340px_1fr_320px]'
+            : 'grid-cols-[340px_1fr]'
+        )}
+      >
         {/* LIST COLUMN */}
         <aside className="border-r border-night-lighter flex flex-col min-h-0">
           {/* Filter tabs */}
@@ -557,6 +569,19 @@ export function InboxView({
                   </div>
                 </div>
 
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setShowContactPanel((v) => !v)}
+                    className="w-8 h-8 flex items-center justify-center rounded-md text-stone-light hover:text-cloud hover:bg-night-light transition-colors hidden xl:flex"
+                    aria-label={showContactPanel ? 'Ocultar painel do contato' : 'Mostrar painel do contato'}
+                    title={showContactPanel ? 'Ocultar painel' : 'Mostrar painel'}
+                  >
+                    {showContactPanel ? (
+                      <SidebarClose size={16} strokeWidth={2} />
+                    ) : (
+                      <SidebarOpen size={16} strokeWidth={2} />
+                    )}
+                  </button>
                 <div className="relative">
                   <button
                     onClick={() => setShowActionsMenu((v) => !v)}
@@ -641,6 +666,7 @@ export function InboxView({
                       ))}
                     </div>
                   )}
+                </div>
                 </div>
               </div>
 
@@ -862,25 +888,45 @@ export function InboxView({
                   </div>
                 </div>
                 <p className="text-[10px] text-stone-dark mt-2 font-data tracking-tight">
-                  ⌘↵ para enviar
+                  {'\u2318\u21B5'} para enviar
                 </p>
               </div>
             </>
           )}
         </section>
+
+        {/* CONTACT PANEL COLUMN — hidden on < xl, 320px on xl+ */}
+        {selected && showContactPanel && (
+          <div className="hidden xl:block min-h-0 overflow-hidden">
+            {loadingContact ? (
+              <div className="flex items-center justify-center h-full border-l border-night-lighter">
+                <span className="text-[11px] text-stone tracking-tight animate-pulse">
+                  Carregando
+                </span>
+              </div>
+            ) : contactDetails ? (
+              <ContactPanel
+                conversationId={selected.id}
+                contact={contactDetails.contact}
+                customer={contactDetails.customer}
+                stats={contactDetails.stats}
+                aiSummary={selected.ai_summary}
+                aiSummaryGeneratedAt={selected.ai_summary_generated_at}
+                aiPaused={selected.ai_paused}
+                channelType={selected.channel?.type ?? null}
+                onClose={() => setShowContactPanel(false)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full border-l border-night-lighter">
+                <span className="text-[11px] text-stone tracking-tight">
+                  Sem dados do contato
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {showNewModal && (
-        <NewConversationModal
-          channels={channels}
-          onClose={() => setShowNewModal(false)}
-          onCreated={(id) => {
-            setShowNewModal(false)
-            setSelectedId(id)
-          }}
-          onError={setError}
-        />
-      )}
     </div>
   )
 }

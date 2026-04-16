@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Send } from 'lucide-react'
+import { PageHeader } from '@/components/page-header'
 
 type ChatMessage = {
   id: string
@@ -109,14 +110,12 @@ export default function AssistentePage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] -mx-8 -mt-6">
-      <header className="px-8 pt-6 pb-6 border-b border-night-lighter">
-        <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-          Assistente
-        </h1>
-        <p className="text-[13px] text-stone mt-2 tracking-tight">
-          Claude Opus 4.6 · perguntas sobre o seu restaurante
-        </p>
-      </header>
+      <div className="px-8 pt-6">
+        <PageHeader
+          title="Assistente"
+          subtitle="Claude Opus 4.6 · perguntas sobre o seu restaurante"
+        />
+      </div>
 
       <div
         ref={scrollRef}

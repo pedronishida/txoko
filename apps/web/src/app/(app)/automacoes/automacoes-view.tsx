@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { toggleAutomation } from './actions'
+import { PageHeader } from '@/components/page-header'
+import { MetricBand } from '@/components/metric-band'
+import { TabBar } from '@/components/tab-bar'
 
 export type AutomationRow = {
   id: string
@@ -143,50 +146,36 @@ export function AutomacoesView({
     return `${Math.floor(mins / 1440)}d atras`
   }
 
+  const areaTabs = [
+    { key: 'all', label: 'Todas', count: automations.length },
+    ...areas.map((area) => ({
+      key: area,
+      label: AREA_LABEL[area] || area,
+      count: automations.filter((a) => a.area === area).length,
+    })),
+  ]
+
   return (
     <div className="-mx-8 -mt-6">
       {/* Header */}
-      <header className="px-8 pt-6 pb-6 border-b border-night-lighter">
-        <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-          Automacoes
-        </h1>
-        <p className="text-[13px] text-stone mt-2 tracking-tight">
-          Gatilhos automaticos — {liveCount} ligadas a eventos reais
-        </p>
-      </header>
+      <div className="px-8 pt-6 pb-5">
+        <PageHeader
+          title="Automacoes"
+          subtitle={`Gatilhos automaticos — ${liveCount} ligadas a eventos reais`}
+        />
+      </div>
 
       {/* KPI band */}
-      <section className="px-8 py-8 border-b border-night-lighter grid grid-cols-3 gap-x-10">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-            Ativas
-          </p>
-          <div className="flex items-baseline gap-2 mt-3">
-            <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data">
-              {activeCount}
-            </p>
-            <span className="text-[13px] text-stone-dark font-data">
-              de {automations.length}
-            </span>
-          </div>
-        </div>
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-            Execucoes hoje
-          </p>
-          <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
-            {totalExec}
-          </p>
-        </div>
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-            Taxa de sucesso
-          </p>
-          <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
-            {successRate.toFixed(1)}%
-          </p>
-        </div>
-      </section>
+      <div className="px-8">
+        <MetricBand
+          metrics={[
+            { label: 'Ativas', value: `${activeCount} / ${automations.length}`, tone: 'neutral' },
+            { label: 'Execucoes hoje', value: String(totalExec), tone: 'neutral' },
+            { label: 'Taxa de sucesso', value: `${successRate.toFixed(1)}%`, tone: successRate >= 90 ? 'positive' : 'neutral' },
+          ]}
+          columns={3}
+        />
+      </div>
 
       <div className="px-8 py-10 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-x-12 gap-y-10">
         <section>
@@ -196,48 +185,12 @@ export function AutomacoesView({
             </div>
           )}
 
-          <div className="flex items-center gap-5 mb-6 pb-4 border-b border-night-lighter overflow-x-auto no-scrollbar">
-            <button
-              onClick={() => setAreaFilter('all')}
-              className={cn(
-                'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4 whitespace-nowrap shrink-0',
-                areaFilter === 'all'
-                  ? 'text-cloud'
-                  : 'text-stone hover:text-stone-light'
-              )}
-            >
-              Todas
-              <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-                {automations.length}
-              </span>
-              {areaFilter === 'all' && (
-                <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-              )}
-            </button>
-            {areas.map((area) => {
-              const active = areaFilter === area
-              const count = automations.filter((a) => a.area === area).length
-              return (
-                <button
-                  key={area}
-                  onClick={() =>
-                    setAreaFilter(area === areaFilter ? 'all' : area)
-                  }
-                  className={cn(
-                    'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4 whitespace-nowrap shrink-0',
-                    active ? 'text-cloud' : 'text-stone hover:text-stone-light'
-                  )}
-                >
-                  {AREA_LABEL[area] || area}
-                  <span className="ml-1.5 text-[10px] font-data text-stone-dark">
-                    {count}
-                  </span>
-                  {active && (
-                    <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
-                  )}
-                </button>
-              )
-            })}
+          <div className="mb-6">
+            <TabBar
+              tabs={areaTabs}
+              active={areaFilter}
+              onChange={setAreaFilter}
+            />
           </div>
 
           <div className="divide-y divide-night-lighter">
