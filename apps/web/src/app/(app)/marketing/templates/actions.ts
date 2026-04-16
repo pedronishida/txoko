@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
 import { validateContent, type ContentIssue } from '@/lib/server/marketing/content-validator'
 import { getOrCreateVariations } from '@/lib/server/marketing/variation-cache'
+import { generateVariations } from '@/lib/server/ai/message-variation'
 
 export async function saveTemplate(input: {
   id?: string
@@ -84,6 +85,39 @@ export async function deleteTemplate(id: string) {
   return { ok: true }
 }
 
+export async function duplicateTemplate(id: string) {
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: original } = await supabase
+    .from('campaign_templates')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!original) return { error: 'Template nao encontrado' }
+
+  const { id: _id, created_at: _created_at, updated_at: _updated_at, ...rest } = original as Record<string, unknown>
+  void _id
+  void _created_at
+  void _updated_at
+
+  const { error } = await supabase.from('campaign_templates').insert({
+    ...rest,
+    restaurant_id,
+    name: `Copia de ${original.name as string}`,
+    created_by: user?.id ?? null,
+    usage_count: 0,
+  })
+
+  if (error) return { error: error.message }
+  revalidatePath('/marketing/templates')
+  return { ok: true }
+}
+
 export async function validateTemplateContent(
   body: string,
   channel: 'whatsapp' | 'email' | 'sms'
@@ -145,4 +179,33 @@ export async function generateTemplateVariations(templateId: string) {
 
   revalidatePath('/marketing/templates')
   return { ok: true, variations: results }
+}
+
+/**
+ * Gera preview de variacoes sem persistir — usado no editor WYSIWYG.
+ */
+export async function previewAiVariations(input: {
+  body: string
+  count: number
+  temperature: number
+}) {
+  if (!input.body.trim()) return { error: 'Corpo vazio' }
+
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+  const { data: restaurant } = await supabase
+    .from('restaurants')
+    .select('name')
+    .eq('id', restaurant_id)
+    .maybeSingle()
+
+  const variations = await generateVariations({
+    templateBody: input.body,
+    channel: 'whatsapp',
+    count: Math.min(input.count, 10),
+    temperature: input.temperature,
+    restaurantName: (restaurant?.name as string) ?? 'Restaurante',
+  })
+
+  return { ok: true, variations: variations.map((v) => v.body) }
 }
