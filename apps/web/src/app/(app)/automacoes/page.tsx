@@ -11,7 +11,9 @@ export default async function AutomacoesPage() {
   const [{ data: automations }, { data: logs }] = await Promise.all([
     supabase
       .from('automations')
-      .select('id, code, trigger, action, area, enabled, executions_today, last_run_at')
+      .select(
+        'id, code, name, description, trigger, action, area, enabled, executions_today, run_count, last_run_at, trigger_type, trigger_config, action_type, action_config'
+      )
       .eq('restaurant_id', restaurantId)
       .order('area')
       .order('code'),

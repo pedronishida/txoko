@@ -5,6 +5,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { ReviewSentiment } from '@txoko/shared'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
+import { runAutomationsForEvent } from '@/lib/server/automations/runner'
 
 // Fallback heuristico quando ANTHROPIC_API_KEY nao esta configurado
 function heuristicSentiment(rating: number): ReviewSentiment {
@@ -65,7 +66,7 @@ export async function createReview(input: NewReviewInput) {
     sentiment = heuristicSentiment(input.rating)
   }
 
-  const { error } = await supabase.from('reviews').insert({
+  const { data: reviewRow, error } = await supabase.from('reviews').insert({
     restaurant_id,
     rating: input.rating,
     nps: input.nps,
@@ -74,8 +75,18 @@ export async function createReview(input: NewReviewInput) {
     is_anonymous: input.is_anonymous,
     source: input.source,
     sentiment,
-  })
+  }).select('id').single()
   if (error) return { error: error.message }
+
+  // Fire review_added automations (best-effort — non-blocking)
+  if (reviewRow?.id) {
+    void runAutomationsForEvent(supabase, {
+      type: 'review_added',
+      restaurantId: restaurant_id,
+      payload: { reviewId: reviewRow.id, rating: input.rating, sentiment: sentiment ?? undefined },
+    })
+  }
+
   revalidatePath('/avaliacoes')
   return { ok: true, sentiment }
 }

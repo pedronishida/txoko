@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
+import { runAutomationsForEvent } from '@/lib/server/automations/runner'
 
 export type CustomerInput = {
   id?: string
@@ -28,11 +29,25 @@ export async function saveCustomer(input: CustomerInput) {
     notes: input.notes,
   }
 
-  const { error } = input.id
-    ? await supabase.from('customers').update(payload).eq('id', input.id)
-    : await supabase.from('customers').insert(payload)
+  const isNew = !input.id
+
+  const query = isNew
+    ? supabase.from('customers').insert(payload).select('id').single()
+    : supabase.from('customers').update(payload).eq('id', input.id!).select('id').single()
+
+  const { data: customer, error } = await query
 
   if (error) return { error: error.message }
+
+  // Fire customer_created automation for new customers (best-effort)
+  if (isNew && customer?.id) {
+    void runAutomationsForEvent(supabase, {
+      type: 'customer_created',
+      restaurantId: restaurant_id,
+      payload: { customerId: customer.id, name: input.name },
+    })
+  }
+
   revalidatePath('/clientes')
   revalidatePath('/pdv')
   return { ok: true }
