@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
 import { Header } from '@/components/header'
 import { CommandPalette } from '@/components/command-palette'
+import { OfflineBanner } from '@/components/offline-banner'
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt'
 import type { Membership } from '@/lib/server/restaurant'
 
 type Props = {
@@ -32,6 +34,7 @@ export function DashboardShell({
         className="transition-[padding] duration-200 ease-out"
         style={{ paddingLeft: collapsed ? '60px' : '220px' }}
       >
+        <OfflineBanner />
         <Header
           user={user}
           memberships={memberships}
@@ -40,6 +43,7 @@ export function DashboardShell({
         <main className="px-8 py-6 animate-fade-in">{children}</main>
       </div>
       <CommandPalette />
+      <PwaInstallPrompt />
     </div>
   )
 }

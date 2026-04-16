@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Rubik, JetBrains_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
+import { PWARegister } from '@/components/pwa-register'
 import './globals.css'
 
 const rubik = Rubik({
@@ -46,6 +47,12 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'Txoko',
+    statusBarStyle: 'black-translucent',
+  },
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
@@ -84,8 +91,13 @@ export default function RootLayout({
       className={`${rubik.variable} ${jetBrainsMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <meta name="theme-color" content="#EA1D2C" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <PWARegister />
       </body>
     </html>
   )

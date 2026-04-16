@@ -61,11 +61,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(target, 301)
   }
 
-  // Na raiz do app: /home (se auth) ou /login (se nao) — nao servimos a landing aqui
-  if (url.pathname === '/') {
-    const target = request.nextUrl.clone()
-    target.pathname = '/home'
-    return NextResponse.redirect(target)
+  // Raiz: a landing page cuida do redirect no server component (user → /home)
+  // Nao interceptar aqui para nao criar loop.
+
+  // /signup e publica — tambem redirecionar autenticados via page.tsx
+  if (url.pathname.startsWith('/signup')) {
+    return await updateSession(request)
   }
 
   return await updateSession(request)

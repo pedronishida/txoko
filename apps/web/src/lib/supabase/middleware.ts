@@ -6,9 +6,12 @@ type CookieToSet = { name: string; value: string; options: CookieOptions }
 // Rotas publicas — tudo o mais na raiz eh app protegido.
 const PUBLIC_PREFIXES = [
   '/login',
+  '/signup',
   '/menu/',
   '/api/webhooks/',
   '/api/reviews/public',
+  '/termos',
+  '/privacidade',
 ]
 const PUBLIC_EXACT = new Set([
   '/',
