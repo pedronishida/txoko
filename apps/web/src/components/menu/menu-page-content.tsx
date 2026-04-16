@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { MenuHeader } from '@/components/menu/menu-header'
 import { MenuProductCard } from '@/components/menu/menu-product-card'
 import { MenuProductDetail } from '@/components/menu/menu-product-detail'
+import { MenuCartDrawer } from '@/components/menu/menu-cart-drawer'
+import { MenuCheckout } from '@/components/menu/menu-checkout'
+import { useCart } from '@/lib/menu-cart'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
+import { ShoppingBag } from 'lucide-react'
 import type { Category, Product, Review } from '@txoko/shared'
 
 type MenuReview = Pick<
@@ -29,12 +33,19 @@ export function MenuPageContent({
   products,
   reviews = [],
 }: Props) {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const tableNumber = searchParams.get('mesa')
+
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  const cart = useCart(slug)
 
   const activeCategories = categories.filter((c) => c.is_active)
   const activeProducts = products.filter((p) => p.is_active)
@@ -90,8 +101,15 @@ export function MenuPageContent({
       ? reviews.reduce((s, r) => s + Number(r.rating), 0) / reviews.length
       : 0
 
+  function handleOrderSuccess(orderId: string) {
+    cart.clear()
+    setCheckoutOpen(false)
+    setCartOpen(false)
+    router.push(`/menu/${slug}/obrigado?order=${orderId}`)
+  }
+
   return (
-    <div className="max-w-lg mx-auto pb-20">
+    <div className="max-w-lg mx-auto pb-28">
       <MenuHeader restaurantName={restaurantName} tableNumber={tableNumber} />
 
       {/* Search */}
@@ -237,10 +255,61 @@ export function MenuPageContent({
         </p>
       </footer>
 
+      {/* Product detail modal */}
       {selectedProduct && (
         <MenuProductDetail
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          onAddToCart={(item) => {
+            cart.add(item)
+            setSelectedProduct(null)
+          }}
+        />
+      )}
+
+      {/* Floating cart button */}
+      {cart.hydrated && cart.count > 0 && !cartOpen && !checkoutOpen && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-5">
+          <button
+            onClick={() => setCartOpen(true)}
+            className="w-full h-14 bg-foreground text-bg rounded-xl flex items-center justify-between px-5 shadow-lg hover:opacity-95 transition-opacity"
+          >
+            <div className="flex items-center gap-2.5">
+              <ShoppingBag size={16} />
+              <span className="text-[13px] font-medium">
+                {cart.count} {cart.count === 1 ? 'item' : 'itens'}
+              </span>
+            </div>
+            <span className="text-[14px] font-medium font-data">
+              {formatCurrency(cart.total)}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Cart drawer */}
+      {cartOpen && (
+        <MenuCartDrawer
+          items={cart.items}
+          total={cart.total}
+          onUpdateQuantity={cart.updateQuantity}
+          onRemove={cart.remove}
+          onClose={() => setCartOpen(false)}
+          onCheckout={() => {
+            setCartOpen(false)
+            setCheckoutOpen(true)
+          }}
+        />
+      )}
+
+      {/* Checkout modal */}
+      {checkoutOpen && (
+        <MenuCheckout
+          items={cart.items}
+          total={cart.total}
+          slug={slug}
+          onClose={() => setCheckoutOpen(false)}
+          onSuccess={handleOrderSuccess}
         />
       )}
     </div>

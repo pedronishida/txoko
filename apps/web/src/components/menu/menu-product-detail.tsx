@@ -4,13 +4,15 @@ import type { Product } from '@txoko/shared'
 import { formatCurrency, optimizeImage } from '@/lib/utils'
 import { Minus, Plus, X } from 'lucide-react'
 import { useState } from 'react'
+import type { CartItem } from '@/lib/menu-cart'
 
 interface MenuProductDetailProps {
   product: Product
   onClose: () => void
+  onAddToCart?: (item: Omit<CartItem, 'quantity'> & { quantity: number }) => void
 }
 
-export function MenuProductDetail({ product, onClose }: MenuProductDetailProps) {
+export function MenuProductDetail({ product, onClose, onAddToCart }: MenuProductDetailProps) {
   const [quantity, setQuantity] = useState(1)
   const [notes, setNotes] = useState('')
 
@@ -118,8 +120,23 @@ export function MenuProductDetail({ product, onClose }: MenuProductDetailProps) 
                 <Plus size={14} strokeWidth={2} />
               </button>
             </div>
-            <button className="flex-1 h-11 bg-foreground text-bg text-[13px] font-medium rounded-md hover:opacity-90 transition-opacity">
-              Adicionar · {formatCurrency(product.price * quantity)}
+            <button
+              onClick={() => {
+                if (onAddToCart) {
+                  onAddToCart({
+                    productId: product.id,
+                    name: product.name,
+                    price: Number(product.price),
+                    quantity,
+                    notes: notes.trim() || undefined,
+                    imageUrl: product.image_url,
+                  })
+                }
+                onClose()
+              }}
+              className="flex-1 h-11 bg-foreground text-bg text-[13px] font-medium rounded-md hover:opacity-90 transition-opacity"
+            >
+              Adicionar · {formatCurrency(Number(product.price) * quantity)}
             </button>
           </div>
         </div>
