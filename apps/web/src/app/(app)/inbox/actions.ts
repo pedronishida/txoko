@@ -248,6 +248,44 @@ export async function assignConversationToMe(conversationId: string) {
   return { ok: true }
 }
 
+const assignConversationSchema = z.object({
+  conversationId: z.string().uuid(),
+  userId: z.string().uuid().nullable(),
+})
+
+export async function assignConversationToUser(input: {
+  conversationId: string
+  userId: string | null
+}) {
+  const parsed = assignConversationSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Entrada invalida' }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nao autenticado' }
+
+  const { error } = await supabase
+    .from('conversations')
+    .update({ assignee_id: parsed.data.userId })
+    .eq('id', parsed.data.conversationId)
+  if (error) return { error: error.message }
+
+  const eventType = parsed.data.userId ? 'assigned' : 'unassigned'
+  await supabase.from('conversation_events').insert({
+    conversation_id: parsed.data.conversationId,
+    actor_user_id: user.id,
+    type: eventType,
+    data: { assignee_id: parsed.data.userId },
+  })
+
+  revalidatePath('/inbox')
+  return { ok: true }
+}
+
 export async function classifyConversation(conversationId: string) {
   const supabase = await createClient()
   const {
@@ -794,6 +832,180 @@ export async function updateContactTags(input: {
 
   revalidatePath('/inbox')
   return { ok: true }
+}
+
+// =============================================================
+// Exportar conversa como .txt
+// =============================================================
+
+const exportConversationSchema = z.string().uuid()
+
+export async function exportConversation(
+  conversationId: string
+): Promise<{ ok: true; text: string; filename: string } | { ok: false; error: string }> {
+  const parsed = exportConversationSchema.safeParse(conversationId)
+  if (!parsed.success) return { ok: false, error: 'ID de conversa invalido' }
+
+  const supabase = await createClient()
+
+  // Verifica autenticacao
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'Nao autenticado' }
+
+  // Carrega conversa + contato + restaurante
+  const { data: conv, error: convErr } = await supabase
+    .from('conversations')
+    .select(
+      `id, created_at, ai_summary, ai_paused,
+       contact:contacts(id, display_name, notes),
+       channel:channels(type),
+       restaurant:restaurants(name)`
+    )
+    .eq('id', parsed.data)
+    .maybeSingle()
+
+  if (convErr) return { ok: false, error: convErr.message }
+  if (!conv) return { ok: false, error: 'Conversa nao encontrada' }
+
+  const contact = Array.isArray(conv.contact) ? conv.contact[0] : conv.contact
+  const channel = Array.isArray(conv.channel) ? conv.channel[0] : conv.channel
+  const restaurant = Array.isArray(conv.restaurant) ? conv.restaurant[0] : conv.restaurant
+
+  // Busca identity para pegar telefone
+  const { data: identity } = await supabase
+    .from('contact_identities')
+    .select('external_id')
+    .eq('contact_id', (contact as { id: string }).id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  // Carrega todas as mensagens em ordem cronologica
+  const { data: messages, error: msgErr } = await supabase
+    .from('messages')
+    .select('direction, sender_type, body, created_at, metadata')
+    .eq('conversation_id', parsed.data)
+    .order('created_at', { ascending: true })
+
+  if (msgErr) return { ok: false, error: msgErr.message }
+
+  // Carrega notas internas
+  const { data: notes } = await supabase
+    .from('conversation_notes')
+    .select('body, author_id, created_at')
+    .eq('conversation_id', parsed.data)
+    .order('created_at', { ascending: true })
+
+  // Helper: formata data como "dd/mm/aaaa hh:mm"
+  function fmtDatetime(iso: string): string {
+    const d = new Date(iso)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  const channelLabels: Record<string, string> = {
+    whatsapp_zapi: 'WhatsApp',
+    instagram: 'Instagram',
+    facebook_messenger: 'Messenger',
+    ifood_chat: 'iFood',
+    google_reviews: 'Google',
+    internal_qr: 'QR interno',
+  }
+
+  const contactName = (contact as { display_name: string })?.display_name ?? 'Desconhecido'
+  const restaurantName = (restaurant as { name: string })?.name ?? 'Restaurante'
+  const channelLabel = channel
+    ? (channelLabels[(channel as { type: string }).type] ?? (channel as { type: string }).type)
+    : 'Desconhecido'
+  const phone = identity?.external_id ?? ''
+  const totalMessages = (messages ?? []).length
+  const initiatedAt = conv.created_at ? fmtDatetime(conv.created_at) : '—'
+
+  const divider = '==================================='
+
+  const lines: string[] = []
+
+  // Header
+  lines.push(divider)
+  lines.push(`Conversa: ${contactName}`)
+  if (phone) lines.push(`Telefone: ${phone}`)
+  lines.push(`Canal: ${channelLabel}`)
+  lines.push(`Restaurante: ${restaurantName}`)
+  lines.push(`Iniciada em: ${initiatedAt}`)
+  lines.push(`Total de mensagens: ${totalMessages}`)
+  lines.push(divider)
+  lines.push('')
+
+  // Mensagens
+  for (const msg of messages ?? []) {
+    const ts = fmtDatetime(msg.created_at as string)
+    const senderType = msg.sender_type as string
+    const direction = msg.direction as string
+
+    let who: string
+    if (direction === 'inbound') {
+      who = `Cliente (${contactName})`
+    } else if (senderType === 'bot') {
+      who = 'Bot IA'
+    } else {
+      who = 'Atendente'
+    }
+
+    let body = (msg.body as string | null) ?? ''
+
+    // Inclui transcript de audio se disponivel
+    const metadata = (msg.metadata ?? {}) as Record<string, unknown>
+    if (!body || body === '[audio]') {
+      if (typeof metadata.transcript === 'string' && metadata.transcript.length > 0) {
+        body = `[audio transcrito] ${metadata.transcript}`
+      }
+    }
+
+    if (body) {
+      lines.push(`[${ts}] ${who}:`)
+      lines.push(body)
+      lines.push('')
+    }
+  }
+
+  // Notas internas
+  const notesList = notes ?? []
+  if (notesList.length > 0) {
+    lines.push(divider)
+    lines.push('Notas Internas:')
+    for (const note of notesList) {
+      const authorLabel = (note.author_id as string | null)
+        ? `usuario ${(note.author_id as string).slice(0, 8)}`
+        : 'equipe'
+      lines.push(`- [${authorLabel}] ${note.body}`)
+    }
+    lines.push(divider)
+  }
+
+  // Resumo IA
+  if (conv.ai_summary) {
+    lines.push('')
+    lines.push('Resumo IA:')
+    lines.push(conv.ai_summary as string)
+  }
+
+  const text = lines.join('\n')
+
+  // Gera nome de arquivo
+  const slug = contactName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+  const today = new Date()
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const filename = `conversa-${slug}-${dateStr}.txt`
+
+  return { ok: true, text, filename }
 }
 
 // =============================================================

@@ -1,6 +1,6 @@
 'use client'
 
-import {
+import React, {
   useCallback,
   useEffect,
   useMemo,
@@ -34,10 +34,12 @@ import {
   Pause,
   Play,
   Sparkles,
+  Check,
 } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import {
   assignConversationToMe,
+  assignConversationToUser,
   classifyConversation,
   createManualConversation,
   generateSuggestedRepliesAction,
@@ -111,11 +113,19 @@ const STATUS_TABS: Array<{ id: StatusFilter; label: string }> = [
   { id: 'resolved', label: 'Resolvidas' },
 ]
 
+type TeamMember = {
+  id: string
+  email: string
+  name?: string | null
+  avatar_url?: string | null
+}
+
 type Props = {
   conversations: ConversationWithRelations[]
   channels: Channel[]
   templates: MessageTemplate[]
   restaurantId: string
+  users: TeamMember[]
 }
 
 export function InboxView({
@@ -123,6 +133,7 @@ export function InboxView({
   channels,
   templates,
   restaurantId,
+  users,
 }: Props) {
   const [conversations, setConversations] = useState(initialConversations)
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -151,6 +162,12 @@ export function InboxView({
 
   // Header assignee dropdown
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
+  const assigneeDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Thread search
+  const [showThreadSearch, setShowThreadSearch] = useState(false)
+  const [threadSearchQuery, setThreadSearchQuery] = useState('')
+  const threadSearchInputRef = useRef<HTMLInputElement>(null)
 
   const threadEndRef = useRef<HTMLDivElement>(null)
 
@@ -173,6 +190,17 @@ export function InboxView({
     })
   }, [conversations, statusFilter, channelFilter, searchQuery])
 
+  const filteredMessages = useMemo(() => {
+    if (!threadSearchQuery.trim()) return messages
+    const q = threadSearchQuery.toLowerCase()
+    return messages.filter((m) => m.body?.toLowerCase().includes(q))
+  }, [messages, threadSearchQuery])
+
+  const assignee = useMemo(
+    () => (selected?.assignee_id ? users.find((u) => u.id === selected.assignee_id) ?? null : null),
+    [selected, users]
+  )
+
   const loadThread = useCallback(async (conversationId: string) => {
     setLoadingMessages(true)
     const res = await getMessages(conversationId)
@@ -187,10 +215,14 @@ export function InboxView({
       setMessages([])
       setSuggestions([])
       setShowAssigneeDropdown(false)
+      setShowThreadSearch(false)
+      setThreadSearchQuery('')
       return
     }
     setSuggestions([])
     setShowAssigneeDropdown(false)
+    setShowThreadSearch(false)
+    setThreadSearchQuery('')
     loadThread(selectedId)
     const current = conversations.find((c) => c.id === selectedId)
     if (current && current.unread_count > 0) {
@@ -285,6 +317,28 @@ export function InboxView({
     }
   }, [restaurantId, selectedId])
 
+  // Click outside to close assignee dropdown
+  useEffect(() => {
+    if (!showAssigneeDropdown) return
+    function handleClick(e: MouseEvent) {
+      if (
+        assigneeDropdownRef.current &&
+        !assigneeDropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowAssigneeDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showAssigneeDropdown])
+
+  // Auto focus thread search input when opened
+  useEffect(() => {
+    if (showThreadSearch) {
+      threadSearchInputRef.current?.focus()
+    }
+  }, [showThreadSearch])
+
   function handleSend() {
     if (!selectedId || composer.trim().length === 0) return
     const body = composer
@@ -334,7 +388,34 @@ export function InboxView({
     if (!selectedId) return
     startTransition(async () => {
       const res = await assignConversationToMe(selectedId)
-      if ('error' in res && res.error) setError(res.error)
+      if ('error' in res && res.error) {
+        setError(res.error)
+        return
+      }
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === selectedId ? { ...c, assignee_id: user.id } : c))
+        )
+      }
+    })
+  }
+
+  function handleAssignToUser(userId: string | null) {
+    if (!selectedId) return
+    setShowAssigneeDropdown(false)
+    startTransition(async () => {
+      const res = await assignConversationToUser({ conversationId: selectedId, userId })
+      if ('error' in res && res.error) {
+        setError(res.error)
+        return
+      }
+      setConversations((prev) =>
+        prev.map((c) => (c.id === selectedId ? { ...c, assignee_id: userId } : c))
+      )
     })
   }
 
@@ -639,54 +720,132 @@ export function InboxView({
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {/* Search in conversation — disabled for now */}
+                  {/* Search in conversation */}
                   <button
-                    disabled
-                    className="w-8 h-8 flex items-center justify-center rounded-md text-stone/40 cursor-not-allowed"
-                    title="Buscar na conversa (em breve)"
+                    onClick={() => {
+                      setShowThreadSearch((v) => {
+                        if (v) setThreadSearchQuery('')
+                        return !v
+                      })
+                    }}
+                    className={cn(
+                      'w-8 h-8 flex items-center justify-center rounded-md transition-colors',
+                      showThreadSearch
+                        ? 'text-cloud bg-night-light'
+                        : 'text-stone-light hover:text-cloud hover:bg-night-light'
+                    )}
+                    title="Buscar na conversa"
                     aria-label="Buscar na conversa"
                   >
                     <Search size={14} strokeWidth={2} />
                   </button>
 
                   {/* Assignee dropdown */}
-                  <div className="relative">
+                  <div className="relative" ref={assigneeDropdownRef}>
                     <button
                       onClick={() => setShowAssigneeDropdown((v) => !v)}
                       className={cn(
-                        'w-8 h-8 flex items-center justify-center rounded-md transition-colors',
+                        'w-8 h-8 flex items-center justify-center rounded-md transition-colors relative',
                         selected.assignee_id
                           ? 'text-leaf hover:bg-night-light'
                           : 'text-stone-light hover:text-cloud hover:bg-night-light'
                       )}
-                      title={selected.assignee_id ? 'Responsavel atribuido' : 'Atribuir responsavel'}
+                      title={
+                        assignee
+                          ? `Responsavel: ${assignee.name ?? assignee.email}`
+                          : 'Atribuir responsavel'
+                      }
                       aria-label="Responsavel"
                     >
                       <UserCheck size={14} strokeWidth={2} />
+                      {assignee && (
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-night-light border border-night-lighter overflow-hidden flex items-center justify-center"
+                          aria-hidden="true"
+                        >
+                          {assignee.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={assignee.avatar_url}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-[6px] font-medium text-cloud leading-none">
+                              {(assignee.name ?? assignee.email).slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </button>
                     {showAssigneeDropdown && (
-                      <div
-                        className="absolute right-0 top-10 w-48 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-20"
-                        onMouseLeave={() => setShowAssigneeDropdown(false)}
-                      >
+                      <div className="absolute right-0 top-10 w-56 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-20 shadow-lg">
                         <div className="px-3.5 py-2 border-b border-night-lighter">
                           <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
-                            Responsavel
+                            Atribuir conversa a
                           </span>
                         </div>
-                        {selected.assignee_id ? (
-                          <div className="px-3.5 py-2.5 text-[12px] text-stone-light tracking-tight">
-                            Ja atribuido
+
+                        {/* Quick: assign to me */}
+                        <button
+                          onClick={() => {
+                            setShowAssigneeDropdown(false)
+                            handleAssignToMe()
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors border-b border-night-lighter/50 font-medium"
+                        >
+                          Atribuir a mim
+                        </button>
+
+                        {/* Team members list */}
+                        {users.length > 0 && (
+                          <div className="max-h-48 overflow-y-auto">
+                            {users.map((u) => {
+                              const isAssigned = selected.assignee_id === u.id
+                              return (
+                                <button
+                                  key={u.id}
+                                  onClick={() => handleAssignToUser(isAssigned ? null : u.id)}
+                                  className={cn(
+                                    'w-full text-left px-3.5 py-2 flex items-center gap-2.5 transition-colors',
+                                    isAssigned
+                                      ? 'bg-night-lighter/40 text-cloud hover:bg-night-lighter'
+                                      : 'text-stone-light hover:bg-night-lighter hover:text-cloud'
+                                  )}
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-night-lighter flex items-center justify-center shrink-0 overflow-hidden">
+                                    {u.avatar_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img
+                                        src={u.avatar_url}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-[9px] font-medium text-cloud">
+                                        {(u.name ?? u.email).slice(0, 2).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="flex-1 text-[12px] tracking-tight truncate">
+                                    {u.name ?? u.email}
+                                  </span>
+                                  {isAssigned && (
+                                    <Check size={11} strokeWidth={2.5} className="text-leaf shrink-0" />
+                                  )}
+                                </button>
+                              )
+                            })}
                           </div>
-                        ) : (
+                        )}
+
+                        {/* Unassign option */}
+                        {selected.assignee_id && (
                           <button
-                            onClick={() => {
-                              setShowAssigneeDropdown(false)
-                              handleAssignToMe()
-                            }}
-                            className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors"
+                            onClick={() => handleAssignToUser(null)}
+                            className="w-full text-left px-3.5 py-2.5 text-[12px] text-stone hover:text-stone-light hover:bg-night-lighter transition-colors border-t border-night-lighter/50"
                           >
-                            Atribuir a mim
+                            Remover atribuicao
                           </button>
                         )}
                       </div>
@@ -839,6 +998,42 @@ export function InboxView({
                 </div>
               </div>
 
+              {/* Thread search bar */}
+              {showThreadSearch && (
+                <div className="px-8 py-2.5 border-b border-night-lighter bg-night-light/20 flex items-center gap-2">
+                  <Search size={13} strokeWidth={2} className="text-stone shrink-0" />
+                  <input
+                    ref={threadSearchInputRef}
+                    value={threadSearchQuery}
+                    onChange={(e) => setThreadSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setThreadSearchQuery('')
+                        setShowThreadSearch(false)
+                      }
+                    }}
+                    placeholder="Buscar nesta conversa..."
+                    className="flex-1 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
+                    aria-label="Buscar nesta conversa"
+                  />
+                  {threadSearchQuery.trim() && (
+                    <span className="text-[11px] font-data text-stone-dark shrink-0">
+                      {filteredMessages.length} resultado{filteredMessages.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setThreadSearchQuery('')
+                      setShowThreadSearch(false)
+                    }}
+                    className="ml-1 text-stone hover:text-cloud transition-colors shrink-0"
+                    aria-label="Fechar busca"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+
               {/* AI summary banner */}
               {selected.ai_summary && (
                 <div className="px-8 py-3.5 border-b border-night-lighter bg-night-light/30">
@@ -880,20 +1075,33 @@ export function InboxView({
               {/* Thread body */}
               <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4 relative">
                 <PresenceIndicator metadata={selected.metadata} />
+
+                {/* Thread search result banner */}
+                {threadSearchQuery.trim() && (
+                  <div className="text-[12px] text-stone-light tracking-tight py-2 border-b border-night-lighter/50 mb-2">
+                    Mostrando {filteredMessages.length} mensagen{filteredMessages.length !== 1 ? 's' : ''} com &ldquo;{threadSearchQuery}&rdquo;
+                  </div>
+                )}
+
                 {loadingMessages && (
                   <div className="text-center text-[11px] text-stone tracking-tight py-6">
                     Carregando
                   </div>
                 )}
-                {!loadingMessages && messages.length === 0 && (
+                {!loadingMessages && filteredMessages.length === 0 && !threadSearchQuery.trim() && (
                   <div className="text-center text-[11px] text-stone tracking-tight py-6">
                     Conversa sem mensagens
                   </div>
                 )}
-                {messages.map((msg, i) => {
+                {!loadingMessages && filteredMessages.length === 0 && threadSearchQuery.trim() && (
+                  <div className="text-center text-[11px] text-stone tracking-tight py-6">
+                    Nenhuma mensagem encontrada
+                  </div>
+                )}
+                {filteredMessages.map((msg, i) => {
                   const outbound = msg.direction === 'outbound'
                   const system = msg.sender_type === 'system'
-                  const prevMsg = messages[i - 1]
+                  const prevMsg = filteredMessages[i - 1]
                   const showAuthor =
                     !prevMsg ||
                     prevMsg.direction !== msg.direction ||
@@ -947,7 +1155,9 @@ export function InboxView({
                             )}
                           >
                             <p className="text-[13px] whitespace-pre-wrap break-words leading-relaxed tracking-tight">
-                              {msg.body}
+                              {threadSearchQuery.trim()
+                                ? highlightText(msg.body, threadSearchQuery)
+                                : msg.body}
                             </p>
                           </div>
                         )}
@@ -1167,6 +1377,20 @@ export function InboxView({
       </div>
 
     </div>
+  )
+}
+
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text
+  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark key={i} className="bg-amber-400/30 text-cloud rounded px-0.5">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
   )
 }
 
