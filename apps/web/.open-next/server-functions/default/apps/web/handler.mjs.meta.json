@@ -3261,13 +3261,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js": {
-      "bytes": 23803,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js": {
+      "bytes": 23957,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js": {
-      "bytes": 23957,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js": {
+      "bytes": 23803,
       "imports": [],
       "format": "cjs"
     },
@@ -3301,23 +3301,23 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
       "bytes": 23402,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js": {
+      "bytes": 23845,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
       "bytes": 23402,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js": {
       "bytes": 23961,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js": {
-      "bytes": 23845,
       "imports": [],
       "format": "cjs"
     },
@@ -3341,6 +3341,11 @@
       "imports": [],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js": {
+      "bytes": 23833,
+      "imports": [],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/menu/reservation/route_client-reference-manifest.js": {
       "bytes": 23398,
       "imports": [],
@@ -3351,8 +3356,8 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js": {
-      "bytes": 23833,
+    ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
+      "bytes": 23782,
       "imports": [],
       "format": "cjs"
     },
@@ -3366,17 +3371,12 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
-      "bytes": 23782,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
       "bytes": 23396,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js": {
       "bytes": 23396,
       "imports": [],
       "format": "cjs"
@@ -3615,14 +3615,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/financeiro/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page_client-reference-manifest.js",
@@ -3655,24 +3655,24 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/daily-checks/route_client-reference-manifest.js",
@@ -3695,6 +3695,11 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/manifest.webmanifest/route_client-reference-manifest.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/menu/reservation/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/menu/reservation/route_client-reference-manifest.js"
@@ -3705,9 +3710,9 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/cron/automations/route_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page_client-reference-manifest.js",
@@ -3720,19 +3725,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page_client-reference-manifest.js",
@@ -6342,8 +6342,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js": {
-      "bytes": 18021,
+    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page.js": {
+      "bytes": 26798,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -6408,8 +6408,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page.js": {
-      "bytes": 26798,
+    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js": {
+      "bytes": 18021,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -8106,7 +8106,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js": {
-      "bytes": 105077,
+      "bytes": 104379,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -9385,14 +9385,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page.js",
@@ -12168,11 +12168,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/financeiro/page_client-reference-manifest.js": {
           "bytesInOutput": 21420
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js": {
-          "bytesInOutput": 21365
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fornecedores/page_client-reference-manifest.js": {
           "bytesInOutput": 21519
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/canais/page_client-reference-manifest.js": {
+          "bytesInOutput": 21365
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page_client-reference-manifest.js": {
           "bytesInOutput": 21412
@@ -12192,17 +12192,17 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js": {
           "bytesInOutput": 20965
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
           "bytesInOutput": 20962
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js": {
+          "bytesInOutput": 21405
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
           "bytesInOutput": 20962
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js": {
           "bytesInOutput": 21521
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js": {
-          "bytesInOutput": 21405
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/daily-checks/route_client-reference-manifest.js": {
           "bytesInOutput": 20959
@@ -12216,14 +12216,17 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/manifest.webmanifest/route_client-reference-manifest.js": {
           "bytesInOutput": 20956
         },
+        ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js": {
+          "bytesInOutput": 21391
+        },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/menu/reservation/route_client-reference-manifest.js": {
           "bytesInOutput": 20956
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/automations/route_client-reference-manifest.js": {
           "bytesInOutput": 20956
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page_client-reference-manifest.js": {
-          "bytesInOutput": 21391
+        ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
+          "bytesInOutput": 21339
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page_client-reference-manifest.js": {
           "bytesInOutput": 21528
@@ -12231,13 +12234,10 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js": {
           "bytesInOutput": 21348
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
-          "bytesInOutput": 21339
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
           "bytesInOutput": 20954
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js": {
           "bytesInOutput": 20954
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page_client-reference-manifest.js": {
@@ -12567,11 +12567,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page.js": {
           "bytesInOutput": 29754
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js": {
-          "bytesInOutput": 18349
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page.js": {
           "bytesInOutput": 27353
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page.js": {
+          "bytesInOutput": 18349
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page.js": {
           "bytesInOutput": 43924
@@ -12652,7 +12652,7 @@
           "bytesInOutput": 8832
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/inbox/page.js": {
-          "bytesInOutput": 107974
+          "bytesInOutput": 107245
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/mesas/page.js": {
           "bytesInOutput": 34032
@@ -12844,7 +12844,7 @@
           "bytesInOutput": 70356
         }
       },
-      "bytes": 8168561
+      "bytes": 8167832
     }
   }
 }

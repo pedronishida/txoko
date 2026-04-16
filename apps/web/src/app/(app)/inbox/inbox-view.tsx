@@ -36,7 +36,6 @@ import {
   Sparkles,
   Check,
 } from 'lucide-react'
-import { PageHeader } from '@/components/page-header'
 import {
   assignConversationToMe,
   assignConversationToUser,
@@ -520,12 +519,7 @@ export function InboxView({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] -mx-8 -mt-6">
-      {/* Page header */}
-      <div className="px-8 pt-6">
-        <PageHeader title="Inbox" border={false} />
-      </div>
-
+    <div className="flex flex-col h-[calc(100vh-56px)] -mx-8 -mt-6 -mb-6">
       <div
         className={cn(
           'flex-1 grid min-h-0',
