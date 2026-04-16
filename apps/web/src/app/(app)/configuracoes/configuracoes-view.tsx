@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { cn } from '@/lib/utils'
-import { ChevronRight } from 'lucide-react'
-import { updateRestaurant } from './actions'
+import { ChevronRight, X } from 'lucide-react'
+import { updateRestaurant, updateAiAgentSettings, type AiAgentConfig } from './actions'
 import { PageHeader } from '@/components/page-header'
 
 export type RestaurantFormData = {
@@ -21,6 +21,14 @@ export type RestaurantFormData = {
   loyalty_points_per: number
   timezone: string
   currency: string
+}
+
+export type AiAgentFormData = {
+  enabled: boolean
+  persona: string
+  escalate_keywords: string[]
+  min_confidence: number
+  business_hours_only: boolean
 }
 
 const INTEGRATIONS = [
@@ -54,17 +62,75 @@ const PLAN_FEATURES = [
   'NFC-e automatica',
 ]
 
-export function ConfiguracoesView({ initial }: { initial: RestaurantFormData }) {
+export function ConfiguracoesView({
+  initial,
+  initialAiAgent,
+}: {
+  initial: RestaurantFormData
+  initialAiAgent: AiAgentFormData
+}) {
   const [form, setForm] = useState<RestaurantFormData>(initial)
   const [feedback, setFeedback] = useState<'saved' | 'error' | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // AI Agent state
+  const [aiAgent, setAiAgent] = useState<AiAgentFormData>(initialAiAgent)
+  const [aiAgentFeedback, setAiAgentFeedback] = useState<'saved' | 'error' | null>(null)
+  const [aiAgentError, setAiAgentError] = useState<string | null>(null)
+  const [aiAgentPending, startAiAgentTransition] = useTransition()
+  const [newEscalateKw, setNewEscalateKw] = useState('')
 
   function update<K extends keyof RestaurantFormData>(
     key: K,
     value: RestaurantFormData[K]
   ) {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function handleSaveAiAgent() {
+    setAiAgentFeedback(null)
+    setAiAgentError(null)
+    startAiAgentTransition(async () => {
+      const config: AiAgentConfig = {
+        persona: aiAgent.persona,
+        escalate_keywords: aiAgent.escalate_keywords,
+        min_confidence: aiAgent.min_confidence,
+        business_hours_only: aiAgent.business_hours_only,
+      }
+      const res = await updateAiAgentSettings({
+        restaurantId: form.id,
+        enabled: aiAgent.enabled,
+        config,
+      })
+      if (!res.ok) {
+        setAiAgentFeedback('error')
+        setAiAgentError(res.error)
+        return
+      }
+      setAiAgentFeedback('saved')
+      setTimeout(() => setAiAgentFeedback(null), 2500)
+    })
+  }
+
+  function addEscalateKw() {
+    const kw = newEscalateKw.trim().toLowerCase()
+    if (!kw || aiAgent.escalate_keywords.includes(kw)) {
+      setNewEscalateKw('')
+      return
+    }
+    setAiAgent((prev) => ({
+      ...prev,
+      escalate_keywords: [...prev.escalate_keywords, kw],
+    }))
+    setNewEscalateKw('')
+  }
+
+  function removeEscalateKw(kw: string) {
+    setAiAgent((prev) => ({
+      ...prev,
+      escalate_keywords: prev.escalate_keywords.filter((k) => k !== kw),
+    }))
   }
 
   function handleSave() {
@@ -244,6 +310,157 @@ export function ConfiguracoesView({ initial }: { initial: RestaurantFormData }) 
           />
         </div>
       </Link>
+
+      {/* Agente IA */}
+      <Section
+        title="Agente IA"
+        description="Configure o assistente automatico que responde mensagens no Inbox"
+      >
+        <div className="space-y-5">
+          {/* Toggle habilitado */}
+          <div className="flex items-start gap-3">
+            <button
+              role="switch"
+              aria-checked={aiAgent.enabled}
+              onClick={() => setAiAgent((prev) => ({ ...prev, enabled: !prev.enabled }))}
+              className={cn(
+                'relative w-9 h-5 rounded-full transition-colors shrink-0 mt-0.5',
+                aiAgent.enabled ? 'bg-leaf' : 'bg-night-lighter'
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 w-4 h-4 rounded-full bg-cloud transition-transform',
+                  aiAgent.enabled ? 'left-[18px]' : 'left-0.5'
+                )}
+              />
+            </button>
+            <div>
+              <p className={cn('text-[13px] font-medium tracking-tight', aiAgent.enabled ? 'text-leaf' : 'text-stone-light')}>
+                {aiAgent.enabled ? 'Agente IA ativado' : 'Agente IA desativado'}
+              </p>
+              <p className="text-[11px] text-stone tracking-tight mt-0.5 leading-relaxed">
+                Quando ativo, o agente responde automaticamente mensagens simples no Inbox.
+              </p>
+            </div>
+          </div>
+
+          {/* Persona */}
+          <Field label="Persona do agente">
+            <textarea
+              value={aiAgent.persona}
+              onChange={(e) => setAiAgent((prev) => ({ ...prev, persona: e.target.value }))}
+              placeholder="Ex: Assistente virtual amigavel do Restaurante X"
+              maxLength={500}
+              rows={3}
+              className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors resize-none"
+            />
+          </Field>
+
+          {/* Confianca minima */}
+          <Field
+            label="Confianca minima"
+            hint="Abaixo desse valor a conversa e escalada para um humano (0 = sem minimo, 1 = apenas respostas certas)"
+          >
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={aiAgent.min_confidence}
+                onChange={(e) =>
+                  setAiAgent((prev) => ({ ...prev, min_confidence: parseFloat(e.target.value) }))
+                }
+                className="flex-1 accent-leaf"
+              />
+              <span className="text-[13px] font-data text-cloud w-10 text-right">
+                {Math.round(aiAgent.min_confidence * 100)}%
+              </span>
+            </div>
+          </Field>
+
+          {/* Palavras de escalacao */}
+          <Field label="Palavras que escalonam para humano">
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={newEscalateKw}
+                onChange={(e) => setNewEscalateKw(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addEscalateKw()
+                  }
+                }}
+                placeholder="Ex: reclamacao"
+                className="flex-1 h-8 px-3 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              />
+              <button
+                type="button"
+                onClick={addEscalateKw}
+                disabled={!newEscalateKw.trim()}
+                className="h-8 px-3 bg-night-lighter text-cloud rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                Adicionar
+              </button>
+            </div>
+            {aiAgent.escalate_keywords.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {aiAgent.escalate_keywords.map((kw) => (
+                  <span
+                    key={kw}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-night-lighter text-[11px] text-cloud-dark group"
+                  >
+                    {kw}
+                    <button
+                      type="button"
+                      onClick={() => removeEscalateKw(kw)}
+                      aria-label={`Remover ${kw}`}
+                      className="text-stone hover:text-coral transition-colors"
+                    >
+                      <X size={9} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </Field>
+
+          {/* Link para base de conhecimento */}
+          <Link
+            href="/configuracoes/conhecimento"
+            className="flex items-center justify-between gap-2 py-2.5 px-3.5 border border-night-lighter rounded-md hover:border-stone-dark transition-colors group"
+          >
+            <span className="text-[13px] text-stone-light group-hover:text-cloud transition-colors tracking-tight">
+              Gerenciar base de conhecimento
+            </span>
+            <ChevronRight size={13} className="text-stone-dark group-hover:text-cloud shrink-0 transition-colors" />
+          </Link>
+
+          {/* Feedback + salvar */}
+          <div className="flex items-center justify-between gap-4 pt-2">
+            <div className="min-w-0 flex-1">
+              {aiAgentFeedback === 'error' && aiAgentError && (
+                <p className="text-[12px] text-primary tracking-tight">{aiAgentError}</p>
+              )}
+              {aiAgentFeedback === 'saved' && (
+                <p className="text-[12px] text-leaf tracking-tight">Configuracoes do agente salvas</p>
+              )}
+            </div>
+            <button
+              onClick={handleSaveAiAgent}
+              disabled={aiAgentPending}
+              className={cn(
+                'h-9 px-4 text-[13px] font-medium rounded-md transition-colors disabled:opacity-40',
+                'bg-cloud text-night hover:bg-cloud-dark'
+              )}
+            >
+              {aiAgentPending ? 'Salvando' : 'Salvar agente'}
+            </button>
+          </div>
+        </div>
+      </Section>
 
       {/* Integracoes */}
       <Section

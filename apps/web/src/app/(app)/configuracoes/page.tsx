@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
-import { ConfiguracoesView, type RestaurantFormData } from './configuracoes-view'
+import { ConfiguracoesView, type RestaurantFormData, type AiAgentFormData } from './configuracoes-view'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +10,7 @@ export default async function ConfiguracoesPage() {
 
   const { data: restaurant } = await supabase
     .from('restaurants')
-    .select('id, name, legal_name, cnpj, phone, email, address, settings')
+    .select('id, name, legal_name, cnpj, phone, email, address, settings, ai_agent_enabled, ai_agent_config')
     .eq('id', restaurantId)
     .maybeSingle()
 
@@ -45,5 +45,25 @@ export default async function ConfiguracoesPage() {
     currency: (settings.currency as string) ?? 'BRL',
   }
 
-  return <ConfiguracoesView initial={initial} />
+  const agentConfig = (restaurant.ai_agent_config ?? {}) as Record<string, unknown>
+  const restaurantName = (restaurant.name as string) ?? 'Restaurante'
+
+  const initialAiAgent: AiAgentFormData = {
+    enabled: (restaurant.ai_agent_enabled as boolean) ?? false,
+    persona:
+      typeof agentConfig.persona === 'string'
+        ? agentConfig.persona
+        : `Assistente virtual amigavel do ${restaurantName}`,
+    escalate_keywords: Array.isArray(agentConfig.escalate_keywords)
+      ? (agentConfig.escalate_keywords as string[])
+      : ['reclamacao', 'cancelar', 'gerente', 'reembolso'],
+    min_confidence: typeof agentConfig.min_confidence === 'number'
+      ? agentConfig.min_confidence
+      : 0.7,
+    business_hours_only: typeof agentConfig.business_hours_only === 'boolean'
+      ? agentConfig.business_hours_only
+      : false,
+  }
+
+  return <ConfiguracoesView initial={initial} initialAiAgent={initialAiAgent} />
 }

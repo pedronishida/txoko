@@ -12,6 +12,7 @@ import {
   generateConversationSummary,
   updateContactTags,
 } from '@/app/(app)/inbox/contact-actions'
+import { exportConversation } from '@/app/(app)/inbox/actions'
 
 // =============================================================
 // ContactPanel — painel lateral direito do inbox
@@ -293,14 +294,26 @@ export function ContactPanel({
     })
   }
 
+  const [exportPending, startExportTransition] = useTransition()
+
   function handleExportConversation() {
-    // Fire-and-forget export via window.open or text download
-    // For now opens a blank trigger — backend can add a proper endpoint later
-    const url = `/api/conversations/${conversationId}/export`
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `conversa-${conversationId.slice(0, 8)}.txt`
-    a.click()
+    setInlineError(null)
+    startExportTransition(async () => {
+      const res = await exportConversation(conversationId)
+      if (!res.ok) {
+        setInlineError(res.error)
+        return
+      }
+      const blob = new Blob([res.text], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = res.filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
   }
 
   const channelLabel: Record<string, string> = {
@@ -744,9 +757,10 @@ export function ContactPanel({
 
           <button
             onClick={handleExportConversation}
-            className="w-full h-9 border border-night-lighter rounded-md text-[12px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors tracking-tight"
+            disabled={exportPending}
+            className="w-full h-9 border border-night-lighter rounded-md text-[12px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors tracking-tight disabled:opacity-40"
           >
-            Exportar conversa (.txt)
+            {exportPending ? 'Exportando...' : 'Exportar conversa (.txt)'}
           </button>
 
           <button

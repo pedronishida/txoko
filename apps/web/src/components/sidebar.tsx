@@ -23,6 +23,7 @@ import {
   Star,
   Inbox,
   Megaphone,
+  BookOpen,
 } from 'lucide-react'
 
 type NavItem = {
@@ -51,6 +52,7 @@ const navigation: NavItem[] = [
   { name: 'Assistente', href: '/assistente', icon: Sparkles, group: 'config' },
   { name: 'Automacoes', href: '/automacoes', icon: Zap, group: 'config' },
   { name: 'Configuracoes', href: '/configuracoes', icon: Settings, group: 'config' },
+  { name: 'Base IA', href: '/configuracoes/conhecimento', icon: BookOpen, group: 'config' },
 ]
 
 const GROUP_LABEL: Record<NavItem['group'], string> = {

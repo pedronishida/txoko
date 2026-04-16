@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { ingestInboundMessage } from '@/lib/server/inbox-ingest'
@@ -9,6 +9,9 @@ import {
 } from '@/lib/server/inbox-media'
 import { runClassifyConversation } from '@/lib/server/ai/run-classify'
 import { shouldClassify } from '@/lib/server/ai/classify-conversation'
+import { generateAutoReply } from '@/lib/server/ai/auto-agent'
+import { ZapiClient, ZapiError } from '@/lib/server/zapi/client'
+import type { ZapiChannelConfig } from '@/lib/server/zapi/types'
 import type {
   ZapiConnectedPayload,
   ZapiDeliveryPayload,
@@ -129,7 +132,7 @@ function extractBodyAndAttachments(p: ZapiReceivedPayload): {
 
 async function handleReceived(
   supabase: SupabaseClient,
-  channel: { id: string; restaurant_id: string },
+  channel: { id: string; restaurant_id: string; config: unknown },
   payload: ZapiReceivedPayload
 ) {
   // MVP: ignorar grupos e newsletters (Z-API)
@@ -250,7 +253,172 @@ async function handleReceived(
     await maybeAutoClassify(supabase, result.conversationId)
   }
 
+  // Auto-agente IA: responde mensagens inbound automaticamente se habilitado
+  if (result.created && !payload.fromMe) {
+    // Carrega dados necessarios para verificar se auto-agente esta ativo
+    const { data: convData } = await supabase
+      .from('conversations')
+      .select('id, ai_paused, restaurant_id')
+      .eq('id', result.conversationId)
+      .maybeSingle()
+
+    if (convData && !convData.ai_paused) {
+      const { data: restaurant } = await supabase
+        .from('restaurants')
+        .select('ai_agent_enabled, ai_agent_config, name')
+        .eq('id', convData.restaurant_id as string)
+        .maybeSingle()
+
+      if (restaurant?.ai_agent_enabled) {
+        after(async () => {
+          await runAutoAgent(supabase, {
+            conversationId: result.conversationId,
+            restaurantId: convData.restaurant_id as string,
+            channel,
+            contactExternalId: payload.phone,
+            restaurant: restaurant as {
+              ai_agent_config: Record<string, unknown>
+              name: string
+            },
+          })
+        })
+      }
+    }
+  }
+
   return { ok: true, conversationId: result.conversationId, messageId: result.messageId }
+}
+
+async function runAutoAgent(
+  supabase: SupabaseClient,
+  opts: {
+    conversationId: string
+    restaurantId: string
+    channel: { id: string; restaurant_id: string; config: unknown }
+    contactExternalId: string
+    restaurant: { ai_agent_config: Record<string, unknown>; name: string }
+  }
+) {
+  try {
+    const agentConfig = opts.restaurant.ai_agent_config ?? {}
+    const persona =
+      typeof agentConfig.persona === 'string'
+        ? agentConfig.persona
+        : `Assistente virtual amigavel do ${opts.restaurant.name}`
+    const escalateKeywords = Array.isArray(agentConfig.escalate_keywords)
+      ? (agentConfig.escalate_keywords as string[])
+      : ['reclamacao', 'cancelar', 'gerente', 'reembolso', 'reclamação']
+    const minConfidence =
+      typeof agentConfig.min_confidence === 'number'
+        ? agentConfig.min_confidence
+        : 0.7
+
+    // Carrega mensagens recentes da conversa
+    const { data: messages, error: msgErr } = await supabase
+      .from('messages')
+      .select('direction, body, created_at')
+      .eq('conversation_id', opts.conversationId)
+      .order('created_at', { ascending: true })
+      .limit(20)
+
+    if (msgErr || !messages) return
+
+    // Carrega entradas da base de conhecimento habilitadas
+    const { data: knowledgeEntries } = await supabase
+      .from('ai_knowledge_entries')
+      .select('title, content, category')
+      .eq('restaurant_id', opts.restaurantId)
+      .eq('enabled', true)
+      .order('created_at', { ascending: true })
+
+    const typedMessages = (messages as Array<{
+      direction: string
+      body: string | null
+      created_at: string
+    }>).map((m) => ({
+      direction: m.direction as 'inbound' | 'outbound',
+      body: m.body,
+      created_at: m.created_at,
+    }))
+
+    const result = await generateAutoReply({
+      messages: typedMessages,
+      knowledgeEntries: (knowledgeEntries ?? []) as Array<{
+        title: string
+        content: string
+        category: string | null
+      }>,
+      restaurantName: opts.restaurant.name,
+      persona,
+      escalateKeywords,
+      minConfidence,
+    })
+
+    if (result.action === 'reply') {
+      // Envia resposta via Z-API
+      const cfg = (opts.channel.config ?? {}) as Partial<ZapiChannelConfig>
+      let externalMessageId: string | null = null
+
+      if (cfg.instance_id && cfg.token) {
+        try {
+          const zapiClient = new ZapiClient(cfg as ZapiChannelConfig)
+          const sendRes = await zapiClient.sendText({
+            phone: opts.contactExternalId,
+            message: result.text,
+          })
+          externalMessageId = sendRes.messageId
+        } catch (e) {
+          // Se falhar o envio, nao registra a mensagem
+          const msg = e instanceof ZapiError ? e.message : (e as Error).message
+          console.error('[auto-agent] zapi send error:', msg)
+          return
+        }
+      }
+
+      // Insere mensagem do bot no banco
+      await supabase.from('messages').insert({
+        conversation_id: opts.conversationId,
+        direction: 'outbound',
+        sender_type: 'bot',
+        body: result.text,
+        external_message_id: externalMessageId,
+        status: externalMessageId ? 'pending' : 'sent',
+      })
+
+      // Atualiza unread_count = 0 e registra evento
+      await supabase
+        .from('conversations')
+        .update({ unread_count: 0 })
+        .eq('id', opts.conversationId)
+
+      await supabase.from('conversation_events').insert({
+        conversation_id: opts.conversationId,
+        type: 'bot_replied',
+        data: {
+          confidence: result.confidence,
+          model: 'claude-haiku-4-5',
+          via_zapi: externalMessageId !== null,
+        },
+      })
+    } else if (result.action === 'escalate') {
+      // Eleva prioridade para 'high'
+      await supabase
+        .from('conversations')
+        .update({ priority: 'high' })
+        .eq('id', opts.conversationId)
+
+      await supabase.from('conversation_events').insert({
+        conversation_id: opts.conversationId,
+        type: 'bot_escalated',
+        data: { reason: result.reason },
+      })
+    }
+    // action === 'skip': nao faz nada
+  } catch (e) {
+    // Nao bloqueia nada — auto-agente e best-effort
+    const msg = e instanceof Error ? e.message : 'Erro desconhecido'
+    console.error('[auto-agent] error:', msg)
+  }
 }
 
 async function maybeAutoClassify(supabase: SupabaseClient, conversationId: string) {
