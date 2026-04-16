@@ -94,3 +94,9 @@ export type CampaignStepType = (typeof CAMPAIGN_STEP_TYPES)[number]
 
 export const RECIPIENT_STATUSES = ['pending', 'queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'opted_out', 'skipped'] as const
 export type RecipientStatus = (typeof RECIPIENT_STATUSES)[number]
+
+export const RESERVATION_STATUSES = ['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'] as const
+export type ReservationStatus = (typeof RESERVATION_STATUSES)[number]
+
+export const RESERVATION_SOURCES = ['manual', 'public_menu', 'whatsapp', 'ifood'] as const
+export type ReservationSource = (typeof RESERVATION_SOURCES)[number]

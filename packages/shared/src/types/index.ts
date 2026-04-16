@@ -24,6 +24,8 @@ import type {
   CampaignChannel,
   CampaignStepType,
   RecipientStatus,
+  ReservationStatus,
+  ReservationSource,
 } from '../constants'
 
 export interface Restaurant {
@@ -463,6 +465,33 @@ export interface CampaignRecipient {
   next_retry_at: string | null
   metadata: Record<string, unknown>
   created_at: string
+}
+
+export interface Reservation {
+  id: string
+  restaurant_id: string
+  customer_id: string | null
+  table_id: string | null
+  guest_name: string
+  guest_phone: string
+  guest_email: string | null
+  guest_count: number
+  scheduled_for: string
+  duration_minutes: number
+  status: ReservationStatus
+  source: ReservationSource
+  notes: string | null
+  special_requests: string | null
+  confirmed_at: string | null
+  confirmation_sent_at: string | null
+  reminder_sent_at: string | null
+  seated_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
+  cancellation_reason: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface CampaignStep {
