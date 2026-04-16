@@ -24,6 +24,7 @@ type Props = {
   categories: Category[]
   products: Product[]
   reviews?: MenuReview[]
+  tableId?: string | null
 }
 
 export function MenuPageContent({
@@ -32,6 +33,7 @@ export function MenuPageContent({
   categories,
   products,
   reviews = [],
+  tableId = null,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -308,6 +310,8 @@ export function MenuPageContent({
           items={cart.items}
           total={cart.total}
           slug={slug}
+          tableId={tableId}
+          tableNumber={tableNumber}
           onClose={() => setCheckoutOpen(false)}
           onSuccess={handleOrderSuccess}
         />

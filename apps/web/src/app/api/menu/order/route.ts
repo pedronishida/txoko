@@ -29,6 +29,7 @@ const OrderInputSchema = z.object({
     )
     .min(1),
   orderType: z.enum(['pickup', 'delivery']),
+  tableId: z.string().uuid().optional(),
   paymentMethod: z.enum(['pix', 'card_on_delivery', 'cash']),
   changeFor: z.number().positive().optional(),
   scheduledTime: z.string().optional(),
@@ -154,7 +155,23 @@ export async function POST(req: Request) {
     subtotal += Number(p.price) * item.quantity
   }
 
-  const orderDbType = data.orderType === 'pickup' ? 'takeaway' : 'delivery'
+  // If tableId provided, validate it belongs to this restaurant
+  let resolvedTableId: string | null = data.tableId ?? null
+  if (resolvedTableId) {
+    const { data: tableRow } = await supabase
+      .from('tables')
+      .select('id')
+      .eq('id', resolvedTableId)
+      .eq('restaurant_id', restaurant.id)
+      .maybeSingle()
+    if (!tableRow) resolvedTableId = null
+  }
+
+  const orderDbType = resolvedTableId
+    ? 'dine_in'
+    : data.orderType === 'pickup'
+      ? 'takeaway'
+      : 'delivery'
 
   // 4. Create the order
   const { data: order, error: orderError } = await supabase
@@ -162,6 +179,7 @@ export async function POST(req: Request) {
     .insert({
       restaurant_id: restaurant.id,
       customer_id: customerId,
+      table_id: resolvedTableId,
       type: orderDbType,
       status: 'open',
       subtotal,

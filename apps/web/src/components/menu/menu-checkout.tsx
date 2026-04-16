@@ -5,13 +5,15 @@ import { X, ChevronDown } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import type { CartItem } from '@/lib/menu-cart'
 
-type OrderType = 'pickup' | 'delivery'
+type OrderType = 'local' | 'pickup' | 'delivery'
 type PaymentMethod = 'pix' | 'card_on_delivery' | 'cash'
 
 interface MenuCheckoutProps {
   items: CartItem[]
   total: number
   slug: string
+  tableId?: string | null
+  tableNumber?: string | null
   onClose: () => void
   onSuccess: (orderId: string) => void
 }
@@ -32,12 +34,15 @@ export function MenuCheckout({
   items,
   total,
   slug,
+  tableId,
+  tableNumber,
   onClose,
   onSuccess,
 }: MenuCheckoutProps) {
+  const isTableOrder = Boolean(tableId)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [orderType, setOrderType] = useState<OrderType>('pickup')
+  const [orderType, setOrderType] = useState<OrderType>(isTableOrder ? 'local' : 'pickup')
   const [street, setStreet] = useState('')
   const [addressNumber, setAddressNumber] = useState('')
   const [complement, setComplement] = useState('')
@@ -90,7 +95,8 @@ export function MenuCheckout({
         quantity: i.quantity,
         notes: i.notes || undefined,
       })),
-      orderType,
+      orderType: orderType === 'local' ? 'pickup' : orderType,
+      tableId: tableId ?? undefined,
       paymentMethod,
       changeFor:
         paymentMethod === 'cash' && changeFor
@@ -167,17 +173,25 @@ export function MenuCheckout({
                 />
               </section>
 
+              {/* Table banner */}
+              {isTableOrder && tableNumber && (
+                <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 text-[12px] text-foreground tracking-tight">
+                  Voce esta na <strong>Mesa {tableNumber}</strong>. Seu pedido sera entregue na mesa.
+                </div>
+              )}
+
               {/* Order type */}
               <section className="space-y-3">
                 <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                   Tipo de pedido
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className={cn('grid gap-2', isTableOrder ? 'grid-cols-3' : 'grid-cols-2')}>
                   {(
                     [
-                      { value: 'pickup', label: 'Retirada' },
-                      { value: 'delivery', label: 'Entrega' },
-                    ] as const
+                      ...(isTableOrder ? [{ value: 'local' as const, label: 'Consumo local' }] : []),
+                      { value: 'pickup' as const, label: 'Retirada' },
+                      { value: 'delivery' as const, label: 'Entrega' },
+                    ]
                   ).map((opt) => (
                     <button
                       key={opt.value}
@@ -237,7 +251,7 @@ export function MenuCheckout({
               )}
 
               {/* Pickup time */}
-              {orderType === 'pickup' && (
+              {orderType === 'pickup' && !isTableOrder && (
                 <section className="space-y-3">
                   <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                     Horario preferido

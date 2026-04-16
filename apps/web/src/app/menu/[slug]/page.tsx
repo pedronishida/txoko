@@ -17,10 +17,14 @@ export async function generateStaticParams() {
 
 export default async function MenuPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { slug } = await params
+  const resolvedSearchParams = await searchParams
+  const mesaParam = typeof resolvedSearchParams.mesa === 'string' ? resolvedSearchParams.mesa : null
   const supabase = await createClient()
 
   const { data: restaurant } = await supabase
@@ -56,12 +60,28 @@ export default async function MenuPage({
         .limit(10),
     ])
 
+  // Resolve tableId from mesa (number) query param
+  let tableId: string | null = null
+  if (mesaParam) {
+    const mesaNumber = parseInt(mesaParam, 10)
+    if (!isNaN(mesaNumber)) {
+      const { data: tableRow } = await supabase
+        .from('tables')
+        .select('id')
+        .eq('restaurant_id', restaurant.id)
+        .eq('number', mesaNumber)
+        .maybeSingle()
+      tableId = tableRow?.id ?? null
+    }
+  }
+
   return (
     <MenuPageContent
       restaurantName={restaurant.name as string}
       slug={restaurant.slug as string}
       categories={(categories ?? []) as unknown as Category[]}
       products={(products ?? []) as unknown as Product[]}
+      tableId={tableId}
       reviews={
         (reviews ?? []) as unknown as Pick<
           Review,

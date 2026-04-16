@@ -27,7 +27,7 @@ export default async function MesasPage() {
         .eq('restaurant_id', restaurantId),
       supabase
         .from('restaurants')
-        .select('slug')
+        .select('slug, name')
         .eq('id', restaurantId)
         .maybeSingle(),
     ])
@@ -46,6 +46,7 @@ export default async function MesasPage() {
       ordersByTable={ordersByTable}
       products={(products ?? []) as unknown as Pick<Product, 'id' | 'name'>[]}
       restaurantSlug={(restaurant?.slug as string) ?? ''}
+      restaurantName={(restaurant?.name as string) ?? ''}
       restaurantId={restaurantId}
     />
   )
