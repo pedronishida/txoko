@@ -10,6 +10,7 @@ import {
   generateSuggestedReplies,
   buildContextHash,
 } from '@/lib/server/ai/suggest-replies'
+import { transcribeAudio } from '@/lib/server/ai/transcribe-audio'
 import { ZapiClient, ZapiError } from '@/lib/server/zapi/client'
 import type { ZapiChannelConfig } from '@/lib/server/zapi/types'
 import type {
@@ -793,4 +794,103 @@ export async function updateContactTags(input: {
 
   revalidatePath('/inbox')
   return { ok: true }
+}
+
+// =============================================================
+// Transcricao de audio via Groq Whisper
+// =============================================================
+
+const transcribeMessageSchema = z.object({
+  messageId: z.string().uuid(),
+})
+
+type MessageAttachmentRaw = {
+  type?: string
+  url?: string
+  [key: string]: unknown
+}
+
+export async function transcribeMessageAudio(
+  messageId: string
+): Promise<{ ok: true; transcript: string } | { ok: false; error: string }> {
+  const parsed = transcribeMessageSchema.safeParse({ messageId })
+  if (!parsed.success) return { ok: false, error: 'ID de mensagem invalido' }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'Nao autenticado' }
+
+  // Carrega a mensagem
+  const { data: message, error: msgErr } = await supabase
+    .from('messages')
+    .select('id, conversation_id, attachments, metadata')
+    .eq('id', parsed.data.messageId)
+    .maybeSingle()
+
+  if (msgErr) return { ok: false, error: msgErr.message }
+  if (!message) return { ok: false, error: 'Mensagem nao encontrada' }
+
+  // Verifica que o usuario tem acesso a essa conversa (via restaurante ativo)
+  const restaurantId = await getActiveRestaurantId()
+  const { data: conv, error: convErr } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('id', message.conversation_id)
+    .eq('restaurant_id', restaurantId)
+    .maybeSingle()
+
+  if (convErr) return { ok: false, error: convErr.message }
+  if (!conv) return { ok: false, error: 'Acesso negado' }
+
+  // Verifica cache: se ja foi transcrito, retorna do metadata
+  const metadata = (message.metadata ?? {}) as Record<string, unknown>
+  if (typeof metadata.transcript === 'string' && metadata.transcript.length > 0) {
+    return { ok: true, transcript: metadata.transcript }
+  }
+
+  // Verifica se GROQ_API_KEY esta configurada
+  if (!process.env.GROQ_API_KEY) {
+    return { ok: false, error: 'transcription_unavailable' }
+  }
+
+  // Encontra o primeiro attachment de audio com URL
+  const attachments = (
+    Array.isArray(message.attachments) ? message.attachments : []
+  ) as MessageAttachmentRaw[]
+  const audioAtt = attachments.find(
+    (a) => a.type === 'audio' && typeof a.url === 'string' && a.url.length > 0
+  )
+
+  if (!audioAtt || typeof audioAtt.url !== 'string') {
+    return { ok: false, error: 'Nenhum audio encontrado na mensagem' }
+  }
+
+  let transcript: string | null = null
+  try {
+    transcript = await transcribeAudio(audioAtt.url)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erro desconhecido'
+    return { ok: false, error: `Falha na transcricao: ${msg}` }
+  }
+
+  if (!transcript) {
+    return { ok: false, error: 'transcription_unavailable' }
+  }
+
+  // Persiste o transcript no metadata da mensagem
+  const updatedMetadata = {
+    ...metadata,
+    transcript,
+    transcribed_at: new Date().toISOString(),
+    transcription_model: 'whisper-large-v3',
+  }
+
+  await supabase
+    .from('messages')
+    .update({ metadata: updatedMetadata })
+    .eq('id', parsed.data.messageId)
+
+  return { ok: true, transcript }
 }

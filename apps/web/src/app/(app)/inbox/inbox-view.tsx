@@ -22,20 +22,36 @@ import type {
   MessageTemplate,
   ReviewSentiment,
 } from '@txoko/shared'
-import { MoreHorizontal, Send, X, SidebarClose, SidebarOpen } from 'lucide-react'
+import {
+  MoreHorizontal,
+  Send,
+  X,
+  SidebarClose,
+  SidebarOpen,
+  Search,
+  UserCheck,
+  Tag,
+  Pause,
+  Play,
+  Sparkles,
+} from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import {
   assignConversationToMe,
   classifyConversation,
   createManualConversation,
+  generateSuggestedRepliesAction,
   getMessages,
   markConversationRead,
   sendMessage,
+  toggleConversationAiPause,
+  transcribeMessageAudio,
   updateConversationPriority,
   updateConversationStatus,
 } from './actions'
 import { getContactDetails } from './contact-actions'
 import type { ContactDetails } from './contact-actions'
+import type { AiSuggestedReply } from '@txoko/shared'
 import { ContactPanel } from '@/components/inbox/contact-panel'
 
 // =============================================================
@@ -129,6 +145,13 @@ export function InboxView({
   const [contactDetails, setContactDetails] = useState<ContactDetails | null>(null)
   const [loadingContact, setLoadingContact] = useState(false)
 
+  // AI suggestions
+  const [suggestions, setSuggestions] = useState<AiSuggestedReply[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+
+  // Header assignee dropdown
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
+
   const threadEndRef = useRef<HTMLDivElement>(null)
 
   const selected = useMemo(
@@ -162,8 +185,12 @@ export function InboxView({
   useEffect(() => {
     if (!selectedId) {
       setMessages([])
+      setSuggestions([])
+      setShowAssigneeDropdown(false)
       return
     }
+    setSuggestions([])
+    setShowAssigneeDropdown(false)
     loadThread(selectedId)
     const current = conversations.find((c) => c.id === selectedId)
     if (current && current.unread_count > 0) {
@@ -332,6 +359,48 @@ export function InboxView({
                 }
               : c
           )
+        )
+      }
+    })
+  }
+
+  async function handleSuggestReplies() {
+    if (!selectedId) return
+    setSuggestions([])
+    setLoadingSuggestions(true)
+    const res = await generateSuggestedRepliesAction(selectedId)
+    setLoadingSuggestions(false)
+    if ('error' in res) {
+      console.error('AI suggestions error:', res.error)
+      setError(res.error ?? 'Erro ao gerar sugestoes')
+      return
+    }
+    if ('suggestions' in res && Array.isArray(res.suggestions)) {
+      setSuggestions(res.suggestions as AiSuggestedReply[])
+    }
+  }
+
+  function handlePickSuggestion(text: string) {
+    setComposer(text)
+    setSuggestions([])
+  }
+
+  function handleToggleAiPauseHeader() {
+    if (!selectedId || !selected) return
+    const next = !selected.ai_paused
+    setConversations((prev) =>
+      prev.map((c) => (c.id === selectedId ? { ...c, ai_paused: next } : c))
+    )
+    startTransition(async () => {
+      const res = await toggleConversationAiPause({
+        conversationId: selectedId,
+        paused: next,
+      })
+      if ('error' in res && res.error) {
+        setError(res.error)
+        // revert optimistic
+        setConversations((prev) =>
+          prev.map((c) => (c.id === selectedId ? { ...c, ai_paused: !next } : c))
         )
       }
     })
@@ -570,6 +639,104 @@ export function InboxView({
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {/* Search in conversation — disabled for now */}
+                  <button
+                    disabled
+                    className="w-8 h-8 flex items-center justify-center rounded-md text-stone/40 cursor-not-allowed"
+                    title="Buscar na conversa (em breve)"
+                    aria-label="Buscar na conversa"
+                  >
+                    <Search size={14} strokeWidth={2} />
+                  </button>
+
+                  {/* Assignee dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowAssigneeDropdown((v) => !v)}
+                      className={cn(
+                        'w-8 h-8 flex items-center justify-center rounded-md transition-colors',
+                        selected.assignee_id
+                          ? 'text-leaf hover:bg-night-light'
+                          : 'text-stone-light hover:text-cloud hover:bg-night-light'
+                      )}
+                      title={selected.assignee_id ? 'Responsavel atribuido' : 'Atribuir responsavel'}
+                      aria-label="Responsavel"
+                    >
+                      <UserCheck size={14} strokeWidth={2} />
+                    </button>
+                    {showAssigneeDropdown && (
+                      <div
+                        className="absolute right-0 top-10 w-48 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-20"
+                        onMouseLeave={() => setShowAssigneeDropdown(false)}
+                      >
+                        <div className="px-3.5 py-2 border-b border-night-lighter">
+                          <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
+                            Responsavel
+                          </span>
+                        </div>
+                        {selected.assignee_id ? (
+                          <div className="px-3.5 py-2.5 text-[12px] text-stone-light tracking-tight">
+                            Ja atribuido
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setShowAssigneeDropdown(false)
+                              handleAssignToMe()
+                            }}
+                            className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors"
+                          >
+                            Atribuir a mim
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tags — opens lateral panel or shows alert */}
+                  <button
+                    onClick={() => {
+                      if (!showContactPanel) setShowContactPanel(true)
+                      else alert('Use o painel lateral para gerenciar tags.')
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-md text-stone-light hover:text-cloud hover:bg-night-light transition-colors"
+                    title="Tags do contato"
+                    aria-label="Tags"
+                  >
+                    <Tag size={14} strokeWidth={2} />
+                  </button>
+
+                  {/* AI pause/resume toggle */}
+                  <button
+                    onClick={handleToggleAiPauseHeader}
+                    className={cn(
+                      'w-8 h-8 flex items-center justify-center rounded-md transition-colors',
+                      selected.ai_paused
+                        ? 'text-leaf hover:bg-night-light'
+                        : 'text-stone-light hover:text-cloud hover:bg-night-light'
+                    )}
+                    title={selected.ai_paused ? 'Retomar IA' : 'Pausar IA'}
+                    aria-label={selected.ai_paused ? 'Retomar IA' : 'Pausar IA'}
+                  >
+                    {selected.ai_paused ? (
+                      <Play size={14} strokeWidth={2} />
+                    ) : (
+                      <Pause size={14} strokeWidth={2} />
+                    )}
+                  </button>
+
+                  {/* Classify with AI */}
+                  <button
+                    onClick={handleClassify}
+                    disabled={pending}
+                    className="w-8 h-8 flex items-center justify-center rounded-md text-stone-light hover:text-leaf hover:bg-night-light transition-colors disabled:opacity-40"
+                    title="Classificar com IA"
+                    aria-label="Classificar com IA"
+                  >
+                    <Sparkles size={14} strokeWidth={2} />
+                  </button>
+
+                  {/* Sidebar toggle */}
                   <button
                     onClick={() => setShowContactPanel((v) => !v)}
                     className="w-8 h-8 flex items-center justify-center rounded-md text-stone-light hover:text-cloud hover:bg-night-light transition-colors hidden xl:flex"
@@ -582,91 +749,93 @@ export function InboxView({
                       <SidebarOpen size={16} strokeWidth={2} />
                     )}
                   </button>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowActionsMenu((v) => !v)}
-                    className="w-8 h-8 flex items-center justify-center rounded-md text-stone-light hover:text-cloud hover:bg-night-light transition-colors"
-                    aria-label="Acoes"
-                  >
-                    <MoreHorizontal size={16} strokeWidth={2} />
-                  </button>
-                  {showActionsMenu && (
-                    <div
-                      className="absolute right-0 top-10 w-56 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-20"
-                      onMouseLeave={() => setShowActionsMenu(false)}
+
+                  {/* More menu */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowActionsMenu((v) => !v)}
+                      className="w-8 h-8 flex items-center justify-center rounded-md text-stone-light hover:text-cloud hover:bg-night-light transition-colors"
+                      aria-label="Mais acoes"
                     >
-                      <button
-                        onClick={handleClassify}
-                        className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors"
+                      <MoreHorizontal size={16} strokeWidth={2} />
+                    </button>
+                    {showActionsMenu && (
+                      <div
+                        className="absolute right-0 top-10 w-56 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-20"
+                        onMouseLeave={() => setShowActionsMenu(false)}
                       >
-                        Classificar com IA
-                      </button>
-                      {!selected.assignee_id && (
                         <button
-                          onClick={() => {
-                            setShowActionsMenu(false)
-                            handleAssignToMe()
-                          }}
-                          className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors border-t border-night-lighter"
+                          onClick={handleClassify}
+                          className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors"
                         >
-                          Atribuir a mim
+                          Classificar com IA
                         </button>
-                      )}
-                      <div className="border-t border-night-lighter px-3.5 pt-2.5 pb-1.5">
-                        <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
-                          Prioridade
-                        </span>
-                      </div>
-                      {(Object.keys(PRIORITY_LABEL) as ConversationPriority[]).map(
-                        (p) => (
+                        {!selected.assignee_id && (
                           <button
-                            key={p}
                             onClick={() => {
                               setShowActionsMenu(false)
-                              handleChangePriority(p)
+                              handleAssignToMe()
+                            }}
+                            className="w-full text-left px-3.5 py-2.5 text-[12px] text-cloud hover:bg-night-lighter transition-colors border-t border-night-lighter"
+                          >
+                            Atribuir a mim
+                          </button>
+                        )}
+                        <div className="border-t border-night-lighter px-3.5 pt-2.5 pb-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
+                            Prioridade
+                          </span>
+                        </div>
+                        {(Object.keys(PRIORITY_LABEL) as ConversationPriority[]).map(
+                          (p) => (
+                            <button
+                              key={p}
+                              onClick={() => {
+                                setShowActionsMenu(false)
+                                handleChangePriority(p)
+                              }}
+                              className={cn(
+                                'w-full text-left px-3.5 py-2 text-[12px] transition-colors flex items-center justify-between',
+                                selected.priority === p
+                                  ? 'text-cloud bg-night-lighter/50'
+                                  : 'text-stone-light hover:bg-night-lighter hover:text-cloud'
+                              )}
+                            >
+                              {PRIORITY_LABEL[p]}
+                              {selected.priority === p && (
+                                <span className="text-[10px] text-stone-dark">atual</span>
+                              )}
+                            </button>
+                          )
+                        )}
+                        <div className="border-t border-night-lighter px-3.5 pt-2.5 pb-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
+                            Status
+                          </span>
+                        </div>
+                        {(Object.keys(STATUS_LABEL) as ConversationStatus[]).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => {
+                              setShowActionsMenu(false)
+                              handleChangeStatus(s)
                             }}
                             className={cn(
                               'w-full text-left px-3.5 py-2 text-[12px] transition-colors flex items-center justify-between',
-                              selected.priority === p
+                              selected.status === s
                                 ? 'text-cloud bg-night-lighter/50'
                                 : 'text-stone-light hover:bg-night-lighter hover:text-cloud'
                             )}
                           >
-                            {PRIORITY_LABEL[p]}
-                            {selected.priority === p && (
+                            {STATUS_LABEL[s]}
+                            {selected.status === s && (
                               <span className="text-[10px] text-stone-dark">atual</span>
                             )}
                           </button>
-                        )
-                      )}
-                      <div className="border-t border-night-lighter px-3.5 pt-2.5 pb-1.5">
-                        <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
-                          Status
-                        </span>
+                        ))}
                       </div>
-                      {(Object.keys(STATUS_LABEL) as ConversationStatus[]).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => {
-                            setShowActionsMenu(false)
-                            handleChangeStatus(s)
-                          }}
-                          className={cn(
-                            'w-full text-left px-3.5 py-2 text-[12px] transition-colors flex items-center justify-between',
-                            selected.status === s
-                              ? 'text-cloud bg-night-lighter/50'
-                              : 'text-stone-light hover:bg-night-lighter hover:text-cloud'
-                          )}
-                        >
-                          {STATUS_LABEL[s]}
-                          {selected.status === s && (
-                            <span className="text-[10px] text-stone-dark">atual</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -760,6 +929,12 @@ export function InboxView({
                             <MessageAttachments
                               attachments={msg.attachments as MessageAttachment[]}
                               outbound={outbound}
+                              messageId={msg.id}
+                              cachedTranscript={
+                                typeof msg.metadata?.transcript === 'string'
+                                  ? msg.metadata.transcript
+                                  : null
+                              }
                             />
                           )}
                         {msg.body && !isOnlyPlaceholderBody(msg.body) && (
@@ -817,6 +992,54 @@ export function InboxView({
 
               {/* Composer */}
               <div className="border-t border-night-lighter px-8 py-4 relative">
+                {/* AI Suggestions */}
+                {(loadingSuggestions || suggestions.length > 0) && (
+                  <div className="mb-3">
+                    {loadingSuggestions && (
+                      <div className="flex items-center gap-2 py-2 text-[12px] text-stone tracking-tight">
+                        <span className="inline-flex gap-0.5">
+                          <span className="w-1 h-1 rounded-full bg-stone animate-pulse" />
+                          <span className="w-1 h-1 rounded-full bg-stone animate-pulse" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1 h-1 rounded-full bg-stone animate-pulse" style={{ animationDelay: '300ms' }} />
+                        </span>
+                        <span>Gerando sugestoes</span>
+                      </div>
+                    )}
+                    {suggestions.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] uppercase tracking-wider text-stone-dark font-medium">
+                            Sugestoes da IA
+                          </span>
+                          <button
+                            onClick={() => setSuggestions([])}
+                            className="text-stone hover:text-cloud transition-colors"
+                            aria-label="Fechar sugestoes"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        {suggestions.map((s, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handlePickSuggestion(s.text)}
+                            className="w-full text-left px-3.5 py-2.5 bg-night-light border border-night-lighter rounded-lg hover:border-stone-dark hover:bg-night-lighter/40 transition-colors group"
+                          >
+                            <p className="text-[12px] text-stone-light group-hover:text-cloud leading-relaxed tracking-tight">
+                              {s.text}
+                            </p>
+                            {s.tone && (
+                              <span className="mt-1.5 inline-block text-[10px] text-stone-dark bg-night-lighter px-1.5 py-0.5 rounded tracking-tight">
+                                {s.tone}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {showTemplatesPanel && templates.length > 0 && (
                   <div className="absolute bottom-full left-8 right-8 mb-2 bg-night-light border border-night-lighter rounded-lg overflow-hidden max-h-72 overflow-y-auto z-10">
                     <div className="px-3.5 py-2 border-b border-night-lighter flex items-center justify-between">
@@ -869,6 +1092,15 @@ export function InboxView({
                     className="flex-1 resize-none bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none leading-relaxed tracking-tight min-h-[36px] max-h-32 py-2"
                   />
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={handleSuggestReplies}
+                      disabled={loadingSuggestions}
+                      className="h-8 px-2.5 flex items-center gap-1.5 text-[12px] text-stone hover:text-leaf transition-colors rounded-md hover:bg-night-light tracking-tight disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Sugerir respostas com IA"
+                    >
+                      <Sparkles size={12} strokeWidth={2} />
+                      Sugerir respostas
+                    </button>
                     {templates.length > 0 && (
                       <button
                         onClick={() => setShowTemplatesPanel((v) => !v)}
@@ -915,6 +1147,13 @@ export function InboxView({
                 aiPaused={selected.ai_paused}
                 channelType={selected.channel?.type ?? null}
                 onClose={() => setShowContactPanel(false)}
+                onAiPauseChange={(paused) => {
+                  setConversations((prev) =>
+                    prev.map((c) =>
+                      c.id === selected.id ? { ...c, ai_paused: paused } : c
+                    )
+                  )
+                }}
               />
             ) : (
               <div className="flex items-center justify-center h-full border-l border-night-lighter">
@@ -974,14 +1213,24 @@ function isOnlyPlaceholderBody(body: string) {
 function MessageAttachments({
   attachments,
   outbound,
+  messageId,
+  cachedTranscript,
 }: {
   attachments: MessageAttachment[]
   outbound: boolean
+  messageId: string
+  cachedTranscript: string | null
 }) {
   return (
     <div className="space-y-1.5 mb-1">
       {attachments.map((att, i) => (
-        <AttachmentItem key={i} att={att} outbound={outbound} />
+        <AttachmentItem
+          key={i}
+          att={att}
+          outbound={outbound}
+          messageId={messageId}
+          cachedTranscript={att.type === 'audio' ? cachedTranscript : null}
+        />
       ))}
     </div>
   )
@@ -990,10 +1239,32 @@ function MessageAttachments({
 function AttachmentItem({
   att,
   outbound,
+  messageId,
+  cachedTranscript,
 }: {
   att: MessageAttachment
   outbound: boolean
+  messageId: string
+  cachedTranscript: string | null
 }) {
+  const [transcript, setTranscript] = useState<string | null>(cachedTranscript)
+  const [transcribing, setTranscribing] = useState(false)
+  const [transcriptError, setTranscriptError] = useState<string | null>(null)
+
+  async function handleTranscribe() {
+    setTranscribing(true)
+    setTranscriptError(null)
+    const res = await transcribeMessageAudio(messageId)
+    if (res.ok) {
+      setTranscript(res.transcript)
+    } else if (res.error === 'transcription_unavailable') {
+      setTranscriptError('Configure a API de transcricao nas configuracoes')
+    } else {
+      setTranscriptError(res.error)
+    }
+    setTranscribing(false)
+  }
+
   if (att.mirror_error) {
     return (
       <div className="rounded-md border border-night-lighter px-3 py-2 text-[11px] text-stone tracking-tight">
@@ -1027,6 +1298,33 @@ function AttachmentItem({
         )}
       >
         <audio controls src={att.url} className="w-full h-8" />
+        {transcript ? (
+          <div className="mt-2 p-2 bg-night rounded-md border-l-2 border-stone">
+            <p className="text-[12px] text-stone italic leading-relaxed tracking-tight">
+              {transcript}
+            </p>
+          </div>
+        ) : transcriptError ? (
+          <div className="mt-2 flex items-center gap-2">
+            <p className="text-[11px] text-stone tracking-tight flex-1">
+              {transcriptError}
+            </p>
+            <button
+              onClick={handleTranscribe}
+              className="text-[11px] text-stone hover:text-leaf underline tracking-tight shrink-0"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleTranscribe}
+            disabled={transcribing}
+            className="mt-1.5 text-[11px] text-stone hover:text-leaf underline tracking-tight disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {transcribing ? 'Transcrevendo...' : 'Ver transcricao'}
+          </button>
+        )}
       </div>
     )
   }
