@@ -1,0 +1,48 @@
+{
+  "examples": [
+    {
+      "description": "Single section delivery options",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "message": "Escolha como deseja receber seu pedido",
+        "buttonLabel": "Ver opções",
+        "title": "Txoko Delivery",
+        "sections": [
+          {
+            "title": "Métodos de entrega",
+            "rows": [
+              { "title": "Retirar no local", "description": "Pronto em 20 minutos", "rowId": "pickup" },
+              { "title": "Entrega rápida", "description": "30 minutos — R$5,00", "rowId": "fast" },
+              { "title": "Entrega padrão", "description": "60 minutos — grátis", "rowId": "standard" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "description": "Multi section full menu",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "message": "Escolha um item para pedir",
+        "buttonLabel": "Abrir cardápio",
+        "sections": [
+          {
+            "title": "Pratos principais",
+            "rows": [
+              { "title": "Pizza Margherita", "description": "R$42,90", "rowId": "pizza-margherita" },
+              { "title": "Hambúrguer Artesanal", "description": "R$38,90", "rowId": "hamburger" },
+              { "title": "Filé ao molho", "description": "R$62,90", "rowId": "file" }
+            ]
+          },
+          {
+            "title": "Bebidas",
+            "rows": [
+              { "title": "Suco natural", "description": "R$12,00", "rowId": "suco" },
+              { "title": "Refrigerante", "description": "R$8,00", "rowId": "refri" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
