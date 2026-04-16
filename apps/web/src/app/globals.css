@@ -324,4 +324,29 @@
       animation: none;
     }
   }
+
+  /* ========== Print styles for reports ========== */
+  @media print {
+    @page {
+      size: landscape;
+      margin: 1.5cm;
+    }
+
+    body {
+      background: #fff !important;
+      color: #000 !important;
+      font-size: 11pt;
+    }
+
+    /* Hide sidebar, nav, and UI chrome */
+    aside,
+    nav {
+      display: none !important;
+    }
+
+    /* Avoid page breaks inside cards */
+    section {
+      break-inside: avoid;
+    }
+  }
 }

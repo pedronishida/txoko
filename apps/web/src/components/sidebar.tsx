@@ -24,6 +24,8 @@ import {
   Inbox,
   Megaphone,
   BookOpen,
+  CalendarDays,
+  BarChart3,
 } from 'lucide-react'
 
 type NavItem = {
@@ -39,6 +41,7 @@ const navigation: NavItem[] = [
   { name: 'Pedidos', href: '/pedidos', icon: ClipboardList, group: 'work' },
   { name: 'KDS', href: '/kds', icon: ChefHat, group: 'work' },
   { name: 'Mesas', href: '/mesas', icon: Armchair, group: 'work' },
+  { name: 'Reservas', href: '/reservas', icon: CalendarDays, group: 'work' },
   { name: 'Inbox', href: '/inbox', icon: Inbox, group: 'work' },
 
   { name: 'Cardapio', href: '/cardapio', icon: UtensilsCrossed, group: 'manage' },
@@ -48,6 +51,7 @@ const navigation: NavItem[] = [
   { name: 'Avaliacoes', href: '/avaliacoes', icon: Star, group: 'manage' },
 
   { name: 'Marketing', href: '/marketing', icon: Megaphone, group: 'manage' },
+  { name: 'Relatorios', href: '/relatorios', icon: BarChart3, group: 'manage' },
 
   { name: 'Assistente', href: '/assistente', icon: Sparkles, group: 'config' },
   { name: 'Automacoes', href: '/automacoes', icon: Zap, group: 'config' },
