@@ -2,7 +2,7 @@
 
 import type { Product } from '@txoko/shared'
 import { formatCurrency, optimizeImage } from '@/lib/utils'
-import { X, Clock, UtensilsCrossed, Plus, Minus } from 'lucide-react'
+import { Minus, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 
 interface MenuProductDetailProps {
@@ -15,89 +15,111 @@ export function MenuProductDetail({ product, onClose }: MenuProductDetailProps) 
   const [notes, setNotes] = useState('')
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70">
-      <div className="bg-night-light border border-night-lighter rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
-        <div className="relative h-56 bg-night-lighter flex items-center justify-center overflow-hidden">
-          {product.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg border-t sm:border rounded-t-xl sm:rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {product.image_url ? (
+          <div className="relative aspect-[16/9] bg-[var(--surface)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={optimizeImage(product.image_url, 800, 85) ?? product.image_url}
               alt={product.name}
               className="w-full h-full object-cover"
             />
-          ) : (
-            <UtensilsCrossed size={48} className="text-stone/20" />
-          )}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 p-2 rounded-full bg-night/80 text-cloud hover:bg-night transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-foreground/10 backdrop-blur-sm text-foreground hover:bg-foreground/20 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-end p-4">
+            <button
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
-        <div className="p-5 space-y-4">
+        <div className="px-6 py-6 space-y-6">
           <div>
-            <h2 className="text-xl font-bold text-cloud">{product.name}</h2>
+            <h2 className="text-[20px] font-medium text-foreground tracking-[-0.02em] leading-tight">
+              {product.name}
+            </h2>
             {product.description && (
-              <p className="text-sm text-stone-light mt-1">{product.description}</p>
+              <p className="text-[13px] text-muted mt-2 tracking-tight leading-relaxed">
+                {product.description}
+              </p>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold text-leaf font-data">{formatCurrency(product.price)}</span>
+          <div className="flex items-baseline gap-3">
+            <span className="text-[22px] font-medium text-foreground font-data tracking-[-0.02em]">
+              {formatCurrency(product.price)}
+            </span>
             {product.prep_time_minutes && (
-              <span className="flex items-center gap-1 text-xs text-stone px-2 py-1 rounded-lg bg-night">
-                <Clock size={12} />
-                {product.prep_time_minutes} min
+              <span className="text-[11px] text-muted font-data tracking-tight">
+                {product.prep_time_minutes}min
               </span>
             )}
           </div>
 
           {(product.tags.length > 0 || product.allergens.length > 0) && (
-            <div className="flex flex-wrap gap-1.5">
-              {product.tags.map(tag => (
-                <span key={tag} className="px-2 py-0.5 rounded-full text-xs font-medium bg-leaf/10 text-leaf">{tag}</span>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] tracking-tight">
+              {product.tags.map((tag) => (
+                <span key={tag} className="text-muted">
+                  {tag}
+                </span>
               ))}
               {product.allergens.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-warm/10 text-warm">
+                <span className="text-[var(--warning)]">
                   Alergenos: {product.allergens.join(', ')}
                 </span>
               )}
             </div>
           )}
 
-          {/* Notes */}
           <div>
-            <label className="block text-sm text-stone-light mb-1">Observacoes</label>
+            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2">
+              Observacoes
+            </label>
             <textarea
               value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Ex: sem cebola, ponto mal passado..."
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Ex: sem cebola, ponto mal passado"
               rows={2}
-              className="w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+              className="w-full px-3.5 py-2.5 bg-[var(--surface)] border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-[var(--border-strong)] resize-none transition-colors"
             />
           </div>
 
-          {/* Quantity + Add */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 bg-night rounded-lg p-1">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-md flex items-center justify-center text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-[var(--surface)] transition-colors"
               >
-                <Minus size={16} />
+                <Minus size={14} strokeWidth={2} />
               </button>
-              <span className="text-lg font-bold font-data text-cloud w-6 text-center">{quantity}</span>
+              <span className="text-[16px] font-medium font-data text-foreground w-6 text-center">
+                {quantity}
+              </span>
               <button
                 onClick={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 rounded-md flex items-center justify-center text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-[var(--surface)] transition-colors"
               >
-                <Plus size={16} />
+                <Plus size={14} strokeWidth={2} />
               </button>
             </div>
-            <button className="flex-1 py-3 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-hover transition-colors">
-              Adicionar {formatCurrency(product.price * quantity)}
+            <button className="flex-1 h-11 bg-foreground text-bg text-[13px] font-medium rounded-md hover:opacity-90 transition-opacity">
+              Adicionar · {formatCurrency(product.price * quantity)}
             </button>
           </div>
         </div>

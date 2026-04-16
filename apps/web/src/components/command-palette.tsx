@@ -34,17 +34,17 @@ type Item =
   | (SearchResult & { icon: typeof Monitor })
 
 const NAV_ITEMS: NavItem[] = [
-  { type: 'nav', title: 'PDV', subtitle: 'Abrir ponto de venda', href: '/dashboard/pdv', icon: Monitor },
-  { type: 'nav', title: 'KDS', subtitle: 'Tela da cozinha', href: '/dashboard/kds', icon: ChefHat },
-  { type: 'nav', title: 'Pedidos', subtitle: 'Ver todos os pedidos', href: '/dashboard/pedidos', icon: ClipboardList },
-  { type: 'nav', title: 'Cardapio', subtitle: 'Gerenciar produtos', href: '/dashboard/cardapio', icon: UtensilsCrossed },
-  { type: 'nav', title: 'Mesas', subtitle: 'Status do salao', href: '/dashboard/mesas', icon: ShoppingBag },
-  { type: 'nav', title: 'Financeiro', subtitle: 'Visao geral + caixa', href: '/dashboard/financeiro', icon: BarChart3 },
-  { type: 'nav', title: 'Estoque', subtitle: 'Insumos + fornecedores', href: '/dashboard/estoque', icon: Package },
-  { type: 'nav', title: 'Clientes', subtitle: 'CRM + fidelidade', href: '/dashboard/clientes', icon: Users },
-  { type: 'nav', title: 'Avaliacoes', subtitle: 'NPS + reviews', href: '/dashboard/avaliacoes', icon: Star },
-  { type: 'nav', title: 'Assistente IA', subtitle: 'Chat com Claude', href: '/dashboard/assistente', icon: Sparkles },
-  { type: 'nav', title: 'Automacoes', subtitle: 'Triggers e logs', href: '/dashboard/automacoes', icon: Zap },
+  { type: 'nav', title: 'PDV', subtitle: 'Abrir ponto de venda', href: '/pdv', icon: Monitor },
+  { type: 'nav', title: 'KDS', subtitle: 'Tela da cozinha', href: '/kds', icon: ChefHat },
+  { type: 'nav', title: 'Pedidos', subtitle: 'Ver todos os pedidos', href: '/pedidos', icon: ClipboardList },
+  { type: 'nav', title: 'Cardapio', subtitle: 'Gerenciar produtos', href: '/cardapio', icon: UtensilsCrossed },
+  { type: 'nav', title: 'Mesas', subtitle: 'Status do salao', href: '/mesas', icon: ShoppingBag },
+  { type: 'nav', title: 'Financeiro', subtitle: 'Visao geral + caixa', href: '/financeiro', icon: BarChart3 },
+  { type: 'nav', title: 'Estoque', subtitle: 'Insumos + fornecedores', href: '/estoque', icon: Package },
+  { type: 'nav', title: 'Clientes', subtitle: 'CRM + fidelidade', href: '/clientes', icon: Users },
+  { type: 'nav', title: 'Avaliacoes', subtitle: 'NPS + reviews', href: '/avaliacoes', icon: Star },
+  { type: 'nav', title: 'Assistente IA', subtitle: 'Chat com Claude', href: '/assistente', icon: Sparkles },
+  { type: 'nav', title: 'Automacoes', subtitle: 'Triggers e logs', href: '/automacoes', icon: Zap },
 ]
 
 const TYPE_ICONS: Record<SearchResult['type'], typeof Monitor> = {

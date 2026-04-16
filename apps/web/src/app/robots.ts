@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: ['/', '/login', '/menu/'],
-        disallow: ['/dashboard/', '/api/'],
+        disallow: ['/home', '/inbox', '/pdv', '/pedidos', '/kds', '/mesas', '/cardapio', '/clientes', '/estoque', '/financeiro', '/avaliacoes', '/assistente', '/automacoes', '/configuracoes', '/api/'],
       },
     ],
     sitemap: 'https://txoko.com.br/sitemap.xml',

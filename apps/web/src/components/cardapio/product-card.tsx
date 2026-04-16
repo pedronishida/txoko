@@ -2,7 +2,6 @@
 
 import type { Product } from '@txoko/shared'
 import { cn, formatCurrency, optimizeImage } from '@/lib/utils'
-import { Clock, Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
 
 interface ProductCardProps {
   product: Product
@@ -11,80 +10,101 @@ interface ProductCardProps {
   onToggle: (id: string) => void
 }
 
-export function ProductCard({ product, categoryName, onEdit, onToggle }: ProductCardProps) {
+export function ProductCard({
+  product,
+  categoryName,
+  onEdit,
+  onToggle,
+}: ProductCardProps) {
   return (
     <div
       className={cn(
-        'bg-night-light border border-night-lighter rounded-xl p-4 transition-opacity',
+        'group relative transition-opacity',
         !product.is_active && 'opacity-50'
       )}
     >
-      <div className="flex items-start gap-3 mb-2">
-        {product.image_url && (
+      <button
+        onClick={() => onEdit(product)}
+        className="block w-full text-left"
+      >
+        {product.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={optimizeImage(product.image_url, 140) ?? product.image_url}
+            src={optimizeImage(product.image_url, 400) ?? product.image_url}
             alt={product.name}
             loading="lazy"
-            className="w-14 h-14 rounded-lg object-cover shrink-0"
+            className="w-full aspect-[4/3] rounded-lg object-cover bg-night-lighter"
           />
+        ) : (
+          <div className="w-full aspect-[4/3] rounded-lg bg-night-lighter" />
         )}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-cloud truncate">{product.name}</h3>
-          <p className="text-xs text-stone mt-0.5">{categoryName}</p>
-        </div>
-        <div className="flex items-center gap-1 ml-2">
-          <button
-            onClick={() => onEdit(product)}
-            className="p-1.5 rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
-          >
-            <Pencil size={14} />
-          </button>
-          <button
-            onClick={() => onToggle(product.id)}
-            className={cn(
-              'p-1.5 rounded-md transition-colors',
-              product.is_active ? 'text-leaf hover:bg-leaf/10' : 'text-stone hover:bg-night-lighter'
+        <div className="pt-3 pb-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="text-[13px] font-medium text-cloud tracking-tight truncate">
+              {product.name}
+            </h3>
+            <span className="text-[13px] font-medium text-cloud font-data shrink-0">
+              {formatCurrency(product.price)}
+            </span>
+          </div>
+          <p className="text-[11px] text-stone tracking-tight mt-0.5 truncate">
+            {categoryName}
+            {product.description && (
+              <>
+                <span className="text-stone-dark mx-1.5">·</span>
+                {product.description}
+              </>
             )}
-          >
-            {product.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-          </button>
-        </div>
-      </div>
-
-      {product.description && (
-        <p className="text-xs text-stone-light line-clamp-2 mb-3">{product.description}</p>
-      )}
-
-      <div className="flex items-center justify-between">
-        <span className="text-lg font-bold text-cloud font-data">{formatCurrency(product.price)}</span>
-        <div className="flex items-center gap-3 text-xs text-stone">
-          {product.cost && (
-            <span>Custo: <span className="font-data">{formatCurrency(product.cost)}</span></span>
+          </p>
+          {(product.cost ||
+            product.prep_time_minutes ||
+            product.tags.length > 0 ||
+            product.allergens.length > 0) && (
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2">
+              {product.cost && (
+                <span className="text-[10px] text-stone-dark font-data tracking-tight">
+                  custo {formatCurrency(product.cost)}
+                </span>
+              )}
+              {product.prep_time_minutes && (
+                <span className="text-[10px] text-stone-dark font-data tracking-tight">
+                  {product.prep_time_minutes}min
+                </span>
+              )}
+              {product.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] text-stone-light tracking-tight"
+                >
+                  {tag}
+                </span>
+              ))}
+              {product.allergens.map((a) => (
+                <span
+                  key={a}
+                  className="text-[10px] text-warm tracking-tight"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
           )}
-          {product.prep_time_minutes && (
-            <span className="flex items-center gap-1">
-              <Clock size={12} />
-              <span className="font-data">{product.prep_time_minutes}min</span>
-            </span>
-          )}
         </div>
-      </div>
-
-      {(product.allergens.length > 0 || product.tags.length > 0) && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {product.tags.map(tag => (
-            <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-leaf/10 text-leaf">
-              {tag}
-            </span>
-          ))}
-          {product.allergens.map(a => (
-            <span key={a} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm/10 text-warm">
-              {a}
-            </span>
-          ))}
-        </div>
-      )}
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggle(product.id)
+        }}
+        className={cn(
+          'absolute top-3 right-3 h-6 px-2 text-[10px] font-medium rounded-md tracking-tight transition-all opacity-0 group-hover:opacity-100',
+          product.is_active
+            ? 'bg-night/80 backdrop-blur-sm text-cloud border border-night-lighter hover:bg-night'
+            : 'bg-cloud text-night hover:bg-cloud-dark'
+        )}
+      >
+        {product.is_active ? 'Desativar' : 'Ativar'}
+      </button>
     </div>
   )
 }

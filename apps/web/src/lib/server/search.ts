@@ -48,7 +48,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       id: p.id as string,
       title: p.name as string,
       subtitle: `Produto · R$ ${Number(p.price).toFixed(2).replace('.', ',')}`,
-      href: '/dashboard/cardapio',
+      href: '/cardapio',
     })
   }
 
@@ -59,7 +59,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       id: c.id as string,
       title: c.name as string,
       subtitle: `Cliente${parts ? ' · ' + parts : ''}`,
-      href: '/dashboard/clientes',
+      href: '/clientes',
     })
   }
 
@@ -69,7 +69,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       id: o.id as string,
       title: `Pedido #${(o.id as string).slice(0, 6)}`,
       subtitle: `R$ ${Number(o.total).toFixed(2).replace('.', ',')} · ${o.status}`,
-      href: '/dashboard/pedidos',
+      href: '/pedidos',
     })
   }
 

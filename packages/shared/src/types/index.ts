@@ -19,6 +19,11 @@ import type {
   MessageDirection,
   MessageSenderType,
   MessageStatus,
+  CampaignType,
+  CampaignStatus,
+  CampaignChannel,
+  CampaignStepType,
+  RecipientStatus,
 } from '../constants'
 
 export interface Restaurant {
@@ -336,5 +341,123 @@ export interface MessageTemplate {
   channels: string[]
   usage_count: number
   created_by: string | null
+  created_at: string
+}
+
+export interface Campaign {
+  id: string
+  restaurant_id: string
+  name: string
+  description: string | null
+  type: CampaignType
+  status: CampaignStatus
+  channel: CampaignChannel
+  audience_id: string | null
+  audience_count: number
+  scheduled_at: string | null
+  timezone: string
+  recurring_cron: string | null
+  next_run_at: string | null
+  trigger_event: string | null
+  trigger_config: Record<string, unknown>
+  stats_total: number
+  stats_sent: number
+  stats_delivered: number
+  stats_read: number
+  stats_failed: number
+  stats_opted_out: number
+  started_at: string | null
+  completed_at: string | null
+  error_message: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CampaignTemplate {
+  id: string
+  restaurant_id: string
+  name: string
+  category: string | null
+  wa_body: string | null
+  wa_image_url: string | null
+  wa_document_url: string | null
+  wa_document_ext: string | null
+  wa_link_url: string | null
+  wa_link_title: string | null
+  wa_link_description: string | null
+  wa_buttons: unknown[] | null
+  email_subject: string | null
+  email_html: string | null
+  email_plain: string | null
+  email_from_name: string | null
+  sms_body: string | null
+  variables: string[]
+  ai_variation_enabled: boolean
+  ai_variation_count: number
+  ai_variation_temp: number
+  usage_count: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CampaignAudience {
+  id: string
+  restaurant_id: string
+  name: string
+  description: string | null
+  filters: unknown[]
+  cached_count: number
+  cached_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CampaignRecipient {
+  id: string
+  campaign_id: string
+  customer_id: string
+  contact_id: string | null
+  current_step_id: string | null
+  step_entered_at: string | null
+  status: RecipientStatus
+  channel: CampaignChannel
+  external_message_id: string | null
+  variant_index: number | null
+  ab_variant: string | null
+  queued_at: string | null
+  sent_at: string | null
+  delivered_at: string | null
+  read_at: string | null
+  failed_at: string | null
+  failure_reason: string | null
+  retry_count: number
+  next_retry_at: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface CampaignStep {
+  id: string
+  campaign_id: string
+  step_order: number
+  step_type: CampaignStepType
+  template_id: string | null
+  channel_override: CampaignChannel | null
+  wait_duration: string | null
+  wait_until_time: string | null
+  condition_field: string | null
+  condition_op: string | null
+  condition_value: string | null
+  condition_true_step: string | null
+  condition_false_step: string | null
+  ab_variant_a_step: string | null
+  ab_variant_b_step: string | null
+  ab_split_pct: number
+  update_field: string | null
+  update_value: string | null
+  metadata: Record<string, unknown>
   created_at: string
 }

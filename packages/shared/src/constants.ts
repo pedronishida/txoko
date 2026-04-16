@@ -79,3 +79,18 @@ export type MessageSenderType = (typeof MESSAGE_SENDER_TYPES)[number]
 
 export const MESSAGE_STATUSES = ['pending', 'sent', 'delivered', 'read', 'failed'] as const
 export type MessageStatus = (typeof MESSAGE_STATUSES)[number]
+
+export const CAMPAIGN_TYPES = ['one_shot', 'recurring', 'triggered'] as const
+export type CampaignType = (typeof CAMPAIGN_TYPES)[number]
+
+export const CAMPAIGN_STATUSES = ['draft', 'scheduled', 'running', 'paused', 'completed', 'cancelled', 'error'] as const
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number]
+
+export const CAMPAIGN_CHANNELS = ['whatsapp', 'email', 'sms'] as const
+export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number]
+
+export const CAMPAIGN_STEP_TYPES = ['send_message', 'wait', 'condition', 'ab_split', 'update_contact', 'end'] as const
+export type CampaignStepType = (typeof CAMPAIGN_STEP_TYPES)[number]
+
+export const RECIPIENT_STATUSES = ['pending', 'queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'opted_out', 'skipped'] as const
+export type RecipientStatus = (typeof RECIPIENT_STATUSES)[number]

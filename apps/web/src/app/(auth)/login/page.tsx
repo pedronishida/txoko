@@ -1,8 +1,6 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { Mail, Lock } from 'lucide-react'
-import { Logo } from '@/components/logo'
 import { loginAction, signupAction, type AuthState } from '../actions'
 
 export default function LoginPage() {
@@ -13,72 +11,56 @@ export default function LoginPage() {
   )
 
   return (
-    <div className="space-y-8">
-      <div className="lg:hidden mb-8">
-        <Logo size={36} showWordmark />
-      </div>
-
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+    <div>
+      <header className="mb-10">
+        <h1 className="text-[28px] font-medium tracking-[-0.03em] text-cloud leading-none">
           {mode === 'login' ? 'Entrar' : 'Criar conta'}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[13px] text-stone mt-3 tracking-tight">
           {mode === 'login'
-            ? 'Acesse seu painel com email e senha'
-            : 'Crie sua conta e comece a gerenciar seu restaurante'}
+            ? 'Acesse seu painel com e-mail e senha'
+            : 'Crie sua conta e comece a gerenciar o restaurante'}
         </p>
-      </div>
+      </header>
 
-      <form action={action} className="space-y-4">
-        <div className="space-y-1.5">
+      <form action={action} className="space-y-5">
+        <div>
           <label
             htmlFor="email"
-            className="block text-xs font-medium text-foreground"
+            className="block text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2"
           >
             E-mail
           </label>
-          <div className="relative">
-            <Mail
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="seu@email.com"
-              className="w-full pl-10 pr-3 py-3 bg-surface border border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-            />
-          </div>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="voce@restaurante.com"
+            className="w-full h-11 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark transition-colors"
+          />
         </div>
 
-        <div className="space-y-1.5">
+        <div>
           <label
             htmlFor="password"
-            className="block text-xs font-medium text-foreground"
+            className="block text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2"
           >
             Senha
           </label>
-          <div className="relative">
-            <Lock
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={6}
-              placeholder="••••••••"
-              className="w-full pl-10 pr-3 py-3 bg-surface border border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-            />
-          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={6}
+            placeholder="Minimo 6 caracteres"
+            className="w-full h-11 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark transition-colors"
+          />
         </div>
 
         {state?.error && (
-          <div className="px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+          <div className="px-3.5 py-2.5 bg-primary/5 border border-primary/20 rounded-md text-[12px] text-primary tracking-tight">
             {state.error}
           </div>
         )}
@@ -86,37 +68,30 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary-hover shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full h-11 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors disabled:opacity-40"
         >
           {pending
             ? mode === 'login'
-              ? 'Entrando...'
-              : 'Criando...'
+              ? 'Entrando'
+              : 'Criando'
             : mode === 'login'
-            ? 'Entrar'
-            : 'Criar conta'}
+              ? 'Entrar'
+              : 'Criar conta'}
         </button>
+      </form>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-bg px-3 text-muted-foreground">ou</span>
-          </div>
-        </div>
-
-        <p className="text-center text-sm text-muted-foreground">
+      <div className="mt-8 pt-6 border-t border-night-lighter text-center">
+        <p className="text-[12px] text-stone tracking-tight">
           {mode === 'login' ? 'Nao tem conta?' : 'Ja tem conta?'}{' '}
           <button
             type="button"
             onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="text-primary font-semibold hover:underline"
+            className="text-cloud hover:text-cloud-dark transition-colors"
           >
             {mode === 'login' ? 'Criar conta' : 'Entrar'}
           </button>
         </p>
-      </form>
+      </div>
     </div>
   )
 }

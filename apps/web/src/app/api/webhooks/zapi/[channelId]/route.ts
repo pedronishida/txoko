@@ -315,14 +315,24 @@ async function handleMessageStatus(
   if (!status) return { ok: true, ignored: 'unknown_status' }
 
   // Z-API so emite MessageStatusCallback para mensagens OUTBOUND que nos enviamos.
-  // Filtramos defensivamente por direction para evitar sobrescrever inbound em
-  // colisoes de external_message_id (cenario artificial mas possivel).
   const { error } = await supabase
     .from('messages')
     .update({ status })
     .in('external_message_id', payload.ids)
     .eq('direction', 'outbound')
   if (error) return { error: error.message }
+
+  // Also update campaign_recipients if these messages belong to a campaign
+  const now = new Date().toISOString()
+  const recipientPatch: Record<string, unknown> = { status }
+  if (status === 'delivered') recipientPatch.delivered_at = now
+  if (status === 'read') recipientPatch.read_at = now
+
+  await supabase
+    .from('campaign_recipients')
+    .update(recipientPatch)
+    .in('external_message_id', payload.ids)
+
   return { ok: true, status, count: payload.ids.length }
 }
 
@@ -492,9 +502,14 @@ export async function POST(
       }
     }
 
+    // Debug trail: grava tipo + resultado resumido no last_error pra diagnostico
+    const debugInfo = `[${new Date().toISOString()}] type=${payload.type} result=${JSON.stringify(result).slice(0, 200)}`
     await supabase
       .from('channels')
-      .update({ last_synced_at: new Date().toISOString() })
+      .update({
+        last_synced_at: new Date().toISOString(),
+        last_error: debugInfo,
+      })
       .eq('id', channel.id)
 
     return NextResponse.json({ value: true, result })

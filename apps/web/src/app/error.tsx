@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
 import { Logo } from '@/components/logo'
 
 export default function Error({
@@ -18,49 +17,35 @@ export default function Error({
 
   return (
     <div className="theme-light min-h-screen bg-bg flex flex-col">
-      <nav className="border-b">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center">
-          <Link href="/">
-            <Logo size={36} showWordmark />
-          </Link>
-        </div>
-      </nav>
-
+      <header className="px-8 py-6">
+        <Link href="/">
+          <Logo size={22} />
+        </Link>
+      </header>
       <main className="flex-1 flex items-center justify-center px-6">
-        <div className="max-w-md text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-destructive/10 text-destructive">
-            <AlertTriangle size={40} />
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Algo deu errado
-            </h1>
-            <p className="text-muted-foreground leading-relaxed">
-              Encontramos um erro inesperado. Ja registramos pra investigar. Voce
-              pode tentar recarregar ou voltar pra home.
+        <div className="max-w-sm text-center">
+          <h1 className="text-[22px] font-medium text-foreground tracking-[-0.02em]">
+            Algo deu errado
+          </h1>
+          <p className="text-[13px] text-muted mt-3 tracking-tight leading-relaxed">
+            Encontramos um erro inesperado. Ja registramos pra investigar.
+          </p>
+          {error.digest && (
+            <p className="text-[10px] text-muted font-data mt-3 tracking-tight">
+              {error.digest}
             </p>
-            {error.digest && (
-              <p className="text-xs text-muted-foreground font-data pt-2">
-                ID do erro: {error.digest}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          )}
+          <div className="flex items-center justify-center gap-4 mt-8">
             <button
               onClick={reset}
-              className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary-hover transition-colors shadow-sm"
+              className="h-9 px-4 inline-flex items-center text-[13px] font-medium bg-foreground text-bg rounded-md hover:opacity-90 transition-opacity"
             >
-              <RefreshCw size={16} />
               Tentar novamente
             </button>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-5 py-3 border-2 font-semibold rounded-xl hover:bg-surface transition-colors"
-              style={{ borderColor: 'var(--border-strong)' }}
+              className="text-[12px] text-muted hover:text-foreground transition-colors tracking-tight"
             >
-              <Home size={16} />
               Voltar pra home
             </Link>
           </div>

@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Txoko',
     description:
       'Sistema de gestao completo para restaurantes: PDV, KDS, Cardapio, Financeiro, Estoque e IA Claude em um so lugar.',
-    start_url: '/dashboard',
+    start_url: '/home',
     display: 'standalone',
     orientation: 'portrait-primary',
     background_color: '#FFFFFF',

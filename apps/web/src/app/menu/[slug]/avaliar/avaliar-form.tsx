@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ArrowLeft, CheckCircle2, Send, Sparkles, Star } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type Props = {
   slug: string
@@ -47,21 +47,20 @@ export function AvaliarForm({ slug, restaurantName, tableNumber }: Props) {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-night flex items-center justify-center px-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-leaf/10 flex items-center justify-center mx-auto">
-            <CheckCircle2 size={32} className="text-leaf" />
-          </div>
-          <h1 className="text-2xl font-bold text-cloud">Obrigado!</h1>
-          <p className="text-sm text-stone-light">
-            Sua avaliacao foi enviada. Ela ajuda o {restaurantName} a melhorar cada dia.
+      <div className="min-h-screen bg-bg flex items-center justify-center px-5">
+        <div className="max-w-sm w-full text-center">
+          <h1 className="text-[28px] font-medium text-foreground tracking-[-0.03em] leading-none">
+            Obrigado
+          </h1>
+          <p className="text-[13px] text-muted mt-3 tracking-tight">
+            Sua avaliacao foi enviada. Ela ajuda o {restaurantName} a melhorar
+            cada dia.
           </p>
           <Link
             href={`/menu/${slug}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-night-light border border-night-lighter rounded-lg text-sm text-stone-light hover:text-cloud transition-colors"
+            className="inline-flex items-center mt-8 text-[12px] text-muted hover:text-foreground transition-colors tracking-tight"
           >
-            <ArrowLeft size={14} />
-            Voltar ao cardapio
+            ← Voltar ao cardapio
           </Link>
         </div>
       </div>
@@ -69,30 +68,34 @@ export function AvaliarForm({ slug, restaurantName, tableNumber }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-night pb-12">
-      <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="min-h-screen bg-bg pb-16">
+      <div className="max-w-md mx-auto px-5 pt-6">
         <Link
           href={`/menu/${slug}${tableNumber ? `?mesa=${tableNumber}` : ''}`}
-          className="inline-flex items-center gap-1 text-xs text-stone hover:text-cloud transition-colors mb-6"
+          className="inline-flex items-center text-[11px] text-muted hover:text-foreground transition-colors tracking-tight mb-10"
         >
-          <ArrowLeft size={12} />
-          Voltar
+          ← Voltar
         </Link>
 
-        <div className="text-center space-y-1 mb-8">
-          <h1 className="text-2xl font-bold text-cloud">Como foi sua experiencia?</h1>
-          <p className="text-sm text-stone">{restaurantName}</p>
-          {tableNumber && (
-            <p className="text-xs text-leaf font-data">Mesa {tableNumber}</p>
-          )}
-        </div>
+        <header className="mb-12 text-center">
+          <h1 className="text-[26px] font-medium text-foreground tracking-[-0.03em] leading-none">
+            Como foi sua experiencia?
+          </h1>
+          <p className="text-[13px] text-muted mt-3 tracking-tight">
+            {restaurantName}
+            {tableNumber && (
+              <span className="font-data ml-1.5">· Mesa {tableNumber}</span>
+            )}
+          </p>
+        </header>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-night-light border border-night-lighter rounded-2xl p-5">
-            <label className="block text-sm text-stone-light mb-3 text-center">
+        <form onSubmit={handleSubmit} className="space-y-10">
+          {/* Rating */}
+          <section>
+            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-4 text-center">
               Sua nota
             </label>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-3">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
@@ -100,74 +103,73 @@ export function AvaliarForm({ slug, restaurantName, tableNumber }: Props) {
                   onClick={() => setRating(n)}
                   onMouseEnter={() => setHover(n)}
                   onMouseLeave={() => setHover(0)}
-                  className="p-1 transition-transform hover:scale-110"
+                  className={cn(
+                    'w-12 h-12 text-[22px] transition-colors',
+                    n <= (hover || rating)
+                      ? 'text-foreground'
+                      : 'text-muted/30 hover:text-muted'
+                  )}
                 >
-                  <Star
-                    size={36}
-                    className={
-                      n <= (hover || rating)
-                        ? 'text-warm fill-warm'
-                        : 'text-stone/30'
-                    }
-                  />
+                  {n <= (hover || rating) ? '★' : '·'}
                 </button>
               ))}
             </div>
-            <p className="text-center text-xs text-stone mt-2">
+            <p className="text-center text-[11px] text-muted mt-3 tracking-tight">
               {['', 'Muito ruim', 'Ruim', 'Ok', 'Bom', 'Excelente'][rating]}
             </p>
-          </div>
+          </section>
 
-          <div className="bg-night-light border border-night-lighter rounded-2xl p-5">
-            <label className="block text-sm text-stone-light mb-3 text-center">
+          {/* NPS */}
+          <section>
+            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-4 text-center">
               Voce recomendaria para um amigo?
             </label>
             <div className="grid grid-cols-11 gap-1">
-              {Array.from({ length: 11 }, (_, i) => i).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setNps(n === nps ? null : n)}
-                  className={`h-10 rounded-lg text-xs font-data font-bold transition-colors ${
-                    nps === n
-                      ? n >= 9
-                        ? 'bg-primary text-white'
-                        : n >= 7
-                        ? 'bg-accent text-black'
-                        : 'bg-coral text-white'
-                      : 'bg-night border border-night-lighter text-stone-light hover:text-cloud'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
+              {Array.from({ length: 11 }, (_, i) => i).map((n) => {
+                const active = nps === n
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setNps(n === nps ? null : n)}
+                    className={cn(
+                      'h-10 rounded-md text-[11px] font-data font-medium transition-colors',
+                      active
+                        ? 'bg-foreground text-bg'
+                        : 'text-muted hover:text-foreground hover:bg-[var(--surface)]'
+                    )}
+                  >
+                    {n}
+                  </button>
+                )
+              })}
             </div>
-            <div className="flex items-center justify-between mt-2 text-[10px] text-stone">
+            <div className="flex items-center justify-between mt-2 text-[10px] text-muted tracking-tight">
               <span>Nao recomendaria</span>
               <span>Com certeza</span>
             </div>
-          </div>
+          </section>
 
-          <div className="bg-night-light border border-night-lighter rounded-2xl p-5">
-            <label className="block text-sm text-stone-light mb-2">
-              Quer contar mais? (opcional)
+          {/* Comment */}
+          <section>
+            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-3">
+              Quer contar mais?
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={4}
               placeholder="O que voce mais gostou? Algo pode melhorar?"
-              className="w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+              className="w-full px-3.5 py-3 bg-[var(--surface)] border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-[var(--border-strong)] resize-none transition-colors tracking-tight"
             />
-            <p className="text-[10px] text-stone mt-2 flex items-center gap-1">
-              <Sparkles size={10} className="text-leaf" />
-              Seu comentario sera analisado por IA para alertar o gestor em caso de
-              problema.
+            <p className="text-[10px] text-muted mt-2 tracking-tight">
+              Seu comentario sera analisado por IA para alertar o gestor em
+              caso de problema.
             </p>
-          </div>
+          </section>
 
           {error && (
-            <div className="px-4 py-3 bg-coral/10 border border-coral/30 rounded-xl text-sm text-coral">
+            <div className="px-3.5 py-2.5 bg-[var(--destructive-soft)] border border-[var(--destructive)]/20 rounded-md text-[12px] text-[var(--destructive)] tracking-tight">
               {error}
             </div>
           )}
@@ -175,19 +177,12 @@ export function AvaliarForm({ slug, restaurantName, tableNumber }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50"
+            className="w-full h-12 bg-foreground text-bg text-[13px] font-medium rounded-md hover:opacity-90 transition-opacity disabled:opacity-40"
           >
-            {submitting ? (
-              'Enviando...'
-            ) : (
-              <>
-                <Send size={16} />
-                Enviar Avaliacao
-              </>
-            )}
+            {submitting ? 'Enviando' : 'Enviar avaliacao'}
           </button>
 
-          <p className="text-center text-[10px] text-stone">
+          <p className="text-center text-[10px] text-muted tracking-tight">
             Sua avaliacao e anonima. Nao coletamos dados pessoais.
           </p>
         </form>

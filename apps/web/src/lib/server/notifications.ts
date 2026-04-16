@@ -38,7 +38,7 @@ export async function markNotificationRead(id: string) {
     .eq('id', id)
     .is('read_at', null)
   if (error) return { error: error.message }
-  revalidatePath('/dashboard')
+  revalidatePath('/home')
   return { ok: true }
 }
 
@@ -51,6 +51,6 @@ export async function markAllNotificationsRead() {
     .eq('restaurant_id', restaurantId)
     .is('read_at', null)
   if (error) return { error: error.message }
-  revalidatePath('/dashboard')
+  revalidatePath('/home')
   return { ok: true }
 }

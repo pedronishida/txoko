@@ -45,10 +45,10 @@ export async function closeOrderWithPayment(input: ClosePaymentInput) {
       .eq('id', order.table_id)
   }
 
-  revalidatePath('/dashboard/pdv')
-  revalidatePath('/dashboard/pedidos')
-  revalidatePath('/dashboard/mesas')
-  revalidatePath('/dashboard/kds')
-  revalidatePath('/dashboard/financeiro')
+  revalidatePath('/pdv')
+  revalidatePath('/pedidos')
+  revalidatePath('/mesas')
+  revalidatePath('/kds')
+  revalidatePath('/financeiro')
   return { ok: true }
 }

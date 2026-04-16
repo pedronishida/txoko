@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
 import { Header } from '@/components/header'
-import { Breadcrumbs } from '@/components/breadcrumbs'
 import { CommandPalette } from '@/components/command-palette'
 import type { Membership } from '@/lib/server/restaurant'
 
@@ -38,10 +37,7 @@ export function DashboardShell({
           memberships={memberships}
           activeRestaurantId={activeRestaurantId}
         />
-        <div className="px-6 pt-4">
-          <Breadcrumbs />
-        </div>
-        <main className="p-6 pt-4 animate-fade-in">{children}</main>
+        <main className="px-8 py-6 animate-fade-in">{children}</main>
       </div>
       <CommandPalette />
     </div>

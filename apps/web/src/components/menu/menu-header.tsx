@@ -1,7 +1,5 @@
 'use client'
 
-import { Bell, Receipt } from 'lucide-react'
-
 interface MenuHeaderProps {
   restaurantName: string
   tableNumber: string | null
@@ -9,21 +7,23 @@ interface MenuHeaderProps {
 
 export function MenuHeader({ restaurantName, tableNumber }: MenuHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 bg-night/95 backdrop-blur-md border-b border-night-lighter">
-      <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur-md border-b">
+      <div className="max-w-lg mx-auto px-5 py-4 flex items-baseline justify-between">
         <div>
-          <h1 className="text-lg font-bold text-cloud tracking-tight">{restaurantName}</h1>
+          <h1 className="text-[16px] font-medium text-foreground tracking-[-0.02em]">
+            {restaurantName}
+          </h1>
           {tableNumber && (
-            <p className="text-xs text-leaf font-data">Mesa {tableNumber}</p>
+            <p className="text-[11px] font-data text-muted mt-0.5">
+              Mesa {tableNumber}
+            </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warm/10 text-warm text-xs font-medium hover:bg-warm/20 transition-colors">
-            <Bell size={14} />
+        <div className="flex items-center gap-4">
+          <button className="text-[11px] font-medium text-muted hover:text-foreground transition-colors tracking-tight">
             Garcom
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-leaf/20 transition-colors">
-            <Receipt size={14} />
+          <button className="text-[11px] font-medium text-foreground tracking-tight">
             Conta
           </button>
         </div>

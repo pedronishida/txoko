@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import type { Product, Category } from '@txoko/shared'
 import { ImagePlus, X } from 'lucide-react'
-import { uploadProductImage } from '@/app/dashboard/cardapio/actions'
+import { uploadProductImage } from '@/app/(app)/cardapio/actions'
 
 interface ProductFormProps {
   product: Product | null

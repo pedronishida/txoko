@@ -1,60 +1,43 @@
 import Link from 'next/link'
-import { ArrowLeft, Home } from 'lucide-react'
 import { Logo } from '@/components/logo'
 
 export default function NotFound() {
   return (
     <div className="theme-light min-h-screen bg-bg flex flex-col">
-      <nav className="border-b">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center">
-          <Link href="/">
-            <Logo size={36} showWordmark />
-          </Link>
-        </div>
-      </nav>
-
+      <header className="px-8 py-6">
+        <Link href="/">
+          <Logo size={22} />
+        </Link>
+      </header>
       <main className="flex-1 flex items-center justify-center px-6">
-        <div className="max-w-md text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 text-primary">
-            <span className="text-5xl font-bold font-data tracking-tight">
-              404
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Pagina nao encontrada
-            </h1>
-            <p className="text-muted-foreground leading-relaxed">
-              Essa pagina nao existe ou foi movida. Talvez voce tenha digitado o
-              endereco errado, ou clicou num link antigo.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        <div className="max-w-sm text-center">
+          <p className="text-[64px] font-light text-foreground/10 font-data tracking-[-0.04em] leading-none">
+            404
+          </p>
+          <h1 className="text-[22px] font-medium text-foreground tracking-[-0.02em] mt-6">
+            Pagina nao encontrada
+          </h1>
+          <p className="text-[13px] text-muted mt-3 tracking-tight leading-relaxed">
+            Essa pagina nao existe ou foi movida.
+          </p>
+          <div className="flex items-center justify-center gap-4 mt-8">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary-hover transition-colors shadow-sm"
+              className="h-9 px-4 inline-flex items-center text-[13px] font-medium bg-foreground text-bg rounded-md hover:opacity-90 transition-opacity"
             >
-              <Home size={16} />
-              Voltar pra home
+              Voltar
             </Link>
             <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 px-5 py-3 border-2 font-semibold rounded-xl hover:bg-surface transition-colors"
-              style={{ borderColor: 'var(--border-strong)' }}
+              href="/home"
+              className="text-[12px] text-muted hover:text-foreground transition-colors tracking-tight"
             >
-              <ArrowLeft size={16} />
-              Ir pro dashboard
+              Ir pro dashboard →
             </Link>
           </div>
         </div>
       </main>
-
-      <footer className="border-t">
-        <div className="max-w-4xl mx-auto px-6 py-6 text-center text-xs text-muted-foreground">
-          &copy; 2026 Txoko
-        </div>
+      <footer className="px-8 py-6 text-center">
+        <p className="text-[11px] text-muted tracking-tight">© 2026 Txoko</p>
       </footer>
     </div>
   )

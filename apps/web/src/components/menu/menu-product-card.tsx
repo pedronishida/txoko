@@ -2,7 +2,6 @@
 
 import type { Product } from '@txoko/shared'
 import { formatCurrency, optimizeImage } from '@/lib/utils'
-import { Clock, UtensilsCrossed } from 'lucide-react'
 
 interface MenuProductCardProps {
   product: Product
@@ -13,45 +12,47 @@ export function MenuProductCard({ product, onClick }: MenuProductCardProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full bg-night-light border border-night-lighter rounded-xl p-4 text-left hover:border-primary/20 transition-colors"
+      className="w-full text-left py-5 border-b border-[var(--border)] last:border-0 transition-colors hover:bg-[var(--bg-elevated)]/50 -mx-1 px-1"
     >
-      <div className="flex gap-3">
-        <div className="w-20 h-20 rounded-lg bg-night-lighter flex items-center justify-center shrink-0 overflow-hidden">
-          {product.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={optimizeImage(product.image_url, 200) ?? product.image_url}
-              alt={product.name}
-              loading="lazy"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <UtensilsCrossed size={24} className="text-stone/30" />
-          )}
-        </div>
-
+      <div className="flex gap-4">
+        {product.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={optimizeImage(product.image_url, 200) ?? product.image_url}
+            alt={product.name}
+            loading="lazy"
+            className="w-20 h-20 rounded-md object-cover shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-cloud">{product.name}</h3>
-          {product.description && (
-            <p className="text-xs text-stone-light line-clamp-2 mt-0.5">{product.description}</p>
-          )}
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-base font-bold text-leaf font-data">{formatCurrency(product.price)}</span>
-            {product.prep_time_minutes && (
-              <span className="flex items-center gap-1 text-[10px] text-stone">
-                <Clock size={10} />
-                {product.prep_time_minutes}min
-              </span>
-            )}
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="text-[14px] font-medium text-foreground tracking-tight">
+              {product.name}
+            </h3>
+            <span className="text-[14px] font-medium text-foreground font-data shrink-0">
+              {formatCurrency(product.price)}
+            </span>
           </div>
-          {(product.tags.length > 0 || product.allergens.length > 0) && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {product.tags.map(tag => (
-                <span key={tag} className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-leaf/10 text-leaf">{tag}</span>
+          {product.description && (
+            <p className="text-[12px] text-muted line-clamp-2 mt-1 tracking-tight leading-relaxed">
+              {product.description}
+            </p>
+          )}
+          {(product.prep_time_minutes ||
+            product.tags.length > 0 ||
+            product.allergens.length > 0) && (
+            <div className="flex items-center gap-2 mt-2 text-[10px] text-muted tracking-tight">
+              {product.prep_time_minutes && (
+                <span className="font-data">{product.prep_time_minutes}min</span>
+              )}
+              {product.tags.map((tag) => (
+                <span key={tag}>{tag}</span>
               ))}
-              {product.allergens.map(a => (
-                <span key={a} className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-warm/10 text-warm">{a}</span>
-              ))}
+              {product.allergens.length > 0 && (
+                <span className="text-[var(--warning)]">
+                  {product.allergens.join(', ')}
+                </span>
+              )}
             </div>
           )}
         </div>

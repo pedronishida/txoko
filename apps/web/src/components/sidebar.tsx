@@ -22,6 +22,7 @@ import {
   Zap,
   Star,
   Inbox,
+  Megaphone,
 } from 'lucide-react'
 
 type NavItem = {
@@ -32,22 +33,24 @@ type NavItem = {
 }
 
 const navigation: NavItem[] = [
-  { name: 'Visao geral', href: '/dashboard', icon: LayoutDashboard, group: 'work' },
-  { name: 'PDV', href: '/dashboard/pdv', icon: Monitor, group: 'work' },
-  { name: 'Pedidos', href: '/dashboard/pedidos', icon: ClipboardList, group: 'work' },
-  { name: 'KDS', href: '/dashboard/kds', icon: ChefHat, group: 'work' },
-  { name: 'Mesas', href: '/dashboard/mesas', icon: Armchair, group: 'work' },
-  { name: 'Inbox', href: '/dashboard/inbox', icon: Inbox, group: 'work' },
+  { name: 'Visao geral', href: '/home', icon: LayoutDashboard, group: 'work' },
+  { name: 'PDV', href: '/pdv', icon: Monitor, group: 'work' },
+  { name: 'Pedidos', href: '/pedidos', icon: ClipboardList, group: 'work' },
+  { name: 'KDS', href: '/kds', icon: ChefHat, group: 'work' },
+  { name: 'Mesas', href: '/mesas', icon: Armchair, group: 'work' },
+  { name: 'Inbox', href: '/inbox', icon: Inbox, group: 'work' },
 
-  { name: 'Cardapio', href: '/dashboard/cardapio', icon: UtensilsCrossed, group: 'manage' },
-  { name: 'Clientes', href: '/dashboard/clientes', icon: Users, group: 'manage' },
-  { name: 'Estoque', href: '/dashboard/estoque', icon: Package, group: 'manage' },
-  { name: 'Financeiro', href: '/dashboard/financeiro', icon: DollarSign, group: 'manage' },
-  { name: 'Avaliacoes', href: '/dashboard/avaliacoes', icon: Star, group: 'manage' },
+  { name: 'Cardapio', href: '/cardapio', icon: UtensilsCrossed, group: 'manage' },
+  { name: 'Clientes', href: '/clientes', icon: Users, group: 'manage' },
+  { name: 'Estoque', href: '/estoque', icon: Package, group: 'manage' },
+  { name: 'Financeiro', href: '/financeiro', icon: DollarSign, group: 'manage' },
+  { name: 'Avaliacoes', href: '/avaliacoes', icon: Star, group: 'manage' },
 
-  { name: 'Assistente', href: '/dashboard/assistente', icon: Sparkles, group: 'config' },
-  { name: 'Automacoes', href: '/dashboard/automacoes', icon: Zap, group: 'config' },
-  { name: 'Configuracoes', href: '/dashboard/configuracoes', icon: Settings, group: 'config' },
+  { name: 'Marketing', href: '/marketing', icon: Megaphone, group: 'manage' },
+
+  { name: 'Assistente', href: '/assistente', icon: Sparkles, group: 'config' },
+  { name: 'Automacoes', href: '/automacoes', icon: Zap, group: 'config' },
+  { name: 'Configuracoes', href: '/configuracoes', icon: Settings, group: 'config' },
 ]
 
 const GROUP_LABEL: Record<NavItem['group'], string> = {
@@ -137,7 +140,7 @@ export function Sidebar({ collapsed, onToggle, restaurantId }: SidebarProps) {
           collapsed && 'justify-center px-0'
         )}
       >
-        <Link href="/dashboard" className="flex items-center gap-2.5">
+        <Link href="/home" className="flex items-center gap-2.5">
           <Logo size={22} />
           {!collapsed && (
             <span className="text-[14px] font-semibold tracking-[-0.02em] text-cloud">
@@ -162,8 +165,8 @@ export function Sidebar({ collapsed, onToggle, restaurantId }: SidebarProps) {
               {groups[group]!.map((item) => {
                 const isActive =
                   pathname === item.href ||
-                  (item.href !== '/dashboard' && pathname.startsWith(item.href))
-                const isInbox = item.href === '/dashboard/inbox'
+                  (item.href !== '/home' && pathname.startsWith(item.href))
+                const isInbox = item.href === '/inbox'
                 const badge = isInbox && inboxUnread > 0 ? inboxUnread : 0
 
                 return (

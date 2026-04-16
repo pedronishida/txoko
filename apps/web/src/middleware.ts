@@ -51,11 +51,21 @@ export async function middleware(request: NextRequest) {
   // app.txoko.com.br (ou qualquer outro host em dev/preview)
   // ==========================================================
 
-  // Na raiz do app: redireciona pra login (nao mostra a landing de novo)
+  // Backwards-compat: /dashboard e /dashboard/* → / e /*
+  if (url.pathname === '/dashboard' || url.pathname.startsWith('/dashboard/')) {
+    const target = request.nextUrl.clone()
+    target.pathname =
+      url.pathname === '/dashboard'
+        ? '/home'
+        : url.pathname.replace(/^\/dashboard/, '')
+    return NextResponse.redirect(target, 301)
+  }
+
+  // Na raiz do app: /home (se auth) ou /login (se nao) — nao servimos a landing aqui
   if (url.pathname === '/') {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    return NextResponse.redirect(loginUrl)
+    const target = request.nextUrl.clone()
+    target.pathname = '/home'
+    return NextResponse.redirect(target)
   }
 
   return await updateSession(request)
