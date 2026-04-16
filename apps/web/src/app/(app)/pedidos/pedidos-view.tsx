@@ -5,6 +5,8 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { PageHeader } from '@/components/page-header'
 import { TabBar } from '@/components/tab-bar'
+import { EditOrderModal } from '@/components/pedidos/edit-order-modal'
+import { SplitBillModal } from '@/components/pedidos/split-bill-modal'
 import type {
   Address,
   Order,
@@ -14,7 +16,7 @@ import type {
   Product,
   Table,
 } from '@txoko/shared'
-import { X } from 'lucide-react'
+import { Pencil, SplitSquareVertical, Printer, X } from 'lucide-react'
 import { setOrderStatus } from './actions'
 import { closeOrderWithPayment } from '@/lib/server/payments'
 import type { PaymentMethod } from '@txoko/shared'
@@ -60,10 +62,14 @@ function getMinutesAgo(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
 }
 
+// Statuses that cannot be edited or further acted upon
+const TERMINAL_STATUSES: OrderStatus[] = ['closed', 'cancelled']
+const BLOCKED_EDIT_STATUSES: OrderStatus[] = ['closed', 'cancelled', 'delivered']
+
 type Props = {
   orders: Order[]
   items: OrderItem[]
-  products: Pick<Product, 'id' | 'name'>[]
+  products: Pick<Product, 'id' | 'name' | 'price'>[]
   tables: Pick<Table, 'id' | 'number'>[]
   customers: Pick<import('@txoko/shared').Customer, 'id' | 'name' | 'phone'>[]
   restaurantId: string
@@ -86,6 +92,8 @@ export function PedidosView({
   const [checkoutMethod, setCheckoutMethod] = useState<PaymentMethod>('pix')
   const [, setTick] = useState(0)
   const [pending, startTransition] = useTransition()
+  const [editOrderId, setEditOrderId] = useState<string | null>(null)
+  const [splitOrderId, setSplitOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -194,6 +202,12 @@ export function PedidosView({
     ? customers.find((c) => c.id === selectedOrder.customer_id)
     : null
 
+  const editOrder = editOrderId ? orders.find((o) => o.id === editOrderId) : null
+  const editItems = editOrderId ? (itemsByOrder[editOrderId] ?? []) : []
+
+  const splitOrder = splitOrderId ? orders.find((o) => o.id === splitOrderId) : null
+  const splitItems = splitOrderId ? (itemsByOrder[splitOrderId] ?? []) : []
+
   function doSetStatus(id: string, status: OrderStatus) {
     startTransition(() => {
       void setOrderStatus(id, status)
@@ -213,6 +227,22 @@ export function PedidosView({
       setShowCheckout(false)
       setSelectedOrderId(null)
     })
+  }
+
+  function openEdit(orderId: string) {
+    setEditOrderId(orderId)
+  }
+
+  function openSplit(orderId: string) {
+    setSplitOrderId(orderId)
+  }
+
+  function openPrint(orderId: string) {
+    window.open(`/pedidos/${orderId}/imprimir`, '_blank')
+  }
+
+  function openComanda(orderId: string) {
+    window.open(`/pedidos/${orderId}/comanda`, '_blank')
   }
 
   const STATUS_FILTERS: { key: StatusFilter; label: string; count: number }[] = [
@@ -285,62 +315,99 @@ export function PedidosView({
                     : order.type === 'takeaway'
                       ? 'Retirada'
                       : 'Balcao'
+                const isTerminal = TERMINAL_STATUSES.includes(order.status)
 
                 return (
-                  <button
+                  <div
                     key={order.id}
-                    onClick={() => setSelectedOrderId(order.id)}
                     className={cn(
-                      'w-full px-8 py-4 flex items-center gap-4 text-left transition-colors',
-                      active
-                        ? 'bg-night-light/60'
-                        : 'hover:bg-night-light/30'
+                      'relative group flex items-center gap-4 px-8 py-4 transition-colors',
+                      active ? 'bg-night-light/60' : 'hover:bg-night-light/30'
                     )}
                   >
                     {active && (
                       <span className="absolute left-0 top-0 bottom-0 w-px bg-cloud" />
                     )}
-                    <span className="text-[11px] font-data text-stone-dark w-14 shrink-0">
-                      #{order.id.slice(0, 6)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[13px] font-medium text-cloud tracking-tight">
-                          {locationLabel}
+
+                    {/* Clickable main area */}
+                    <button
+                      onClick={() => setSelectedOrderId(order.id)}
+                      className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                    >
+                      <span className="text-[11px] font-data text-stone-dark w-14 shrink-0">
+                        #{order.id.slice(0, 6)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[13px] font-medium text-cloud tracking-tight">
+                            {locationLabel}
+                          </span>
+                          <span className="text-[11px] text-stone-dark tracking-tight">·</span>
+                          <span className="text-[11px] text-stone tracking-tight">
+                            {STATUS_LABEL[order.status] ?? order.status}
+                          </span>
+                          <span className="text-[11px] text-stone-dark tracking-tight">·</span>
+                          <span className="text-[11px] text-stone-dark tracking-tight">
+                            {SOURCE_LABEL[order.source] ?? order.source}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-stone tracking-tight mt-0.5 truncate">
+                          {orderItems.length}{' '}
+                          {orderItems.length === 1 ? 'item' : 'itens'} —{' '}
+                          {orderItems
+                            .map((i) => {
+                              const p = products.find((pr) => pr.id === i.product_id)
+                              return `${i.quantity}× ${p?.name || '?'}`
+                            })
+                            .join(', ')}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[13px] font-medium text-cloud font-data tracking-tight">
+                          {formatCurrency(order.total)}
                         </span>
-                        <span className="text-[11px] text-stone-dark tracking-tight">
-                          ·
-                        </span>
-                        <span className="text-[11px] text-stone tracking-tight">
-                          {STATUS_LABEL[order.status] ?? order.status}
-                        </span>
-                        <span className="text-[11px] text-stone-dark tracking-tight">
-                          ·
-                        </span>
-                        <span className="text-[11px] text-stone-dark tracking-tight">
-                          {SOURCE_LABEL[order.source] ?? order.source}
+                        <span className="text-[10px] font-data text-stone-dark">
+                          {minutes}m
                         </span>
                       </div>
-                      <p className="text-[11px] text-stone tracking-tight mt-0.5 truncate">
-                        {orderItems.length}{' '}
-                        {orderItems.length === 1 ? 'item' : 'itens'} —{' '}
-                        {orderItems
-                          .map((i) => {
-                            const p = products.find((pr) => pr.id === i.product_id)
-                            return `${i.quantity}× ${p?.name || '?'}`
-                          })
-                          .join(', ')}
-                      </p>
+                    </button>
+
+                    {/* Row action buttons */}
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => openEdit(order.id)}
+                        disabled={BLOCKED_EDIT_STATUSES.includes(order.status)}
+                        title="Editar pedido"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                      <button
+                        onClick={() => openSplit(order.id)}
+                        disabled={isTerminal}
+                        title="Dividir conta"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <SplitSquareVertical size={12} />
+                      </button>
+                      <button
+                        onClick={() => openPrint(order.id)}
+                        title="Imprimir recibo"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                      >
+                        <Printer size={12} />
+                      </button>
+                      {!isTerminal && (
+                        <button
+                          onClick={() => doSetStatus(order.id, 'cancelled')}
+                          title="Cancelar pedido"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-[13px] font-medium text-cloud font-data tracking-tight">
-                        {formatCurrency(order.total)}
-                      </span>
-                      <span className="text-[10px] font-data text-stone-dark">
-                        {minutes}m
-                      </span>
-                    </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -391,13 +458,23 @@ export function PedidosView({
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => setSelectedOrderId(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
-                aria-label="Fechar"
-              >
-                <X size={14} />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Quick action buttons in panel header */}
+                <button
+                  onClick={() => openComanda(selectedOrder.id)}
+                  title="Imprimir comanda"
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                >
+                  <Printer size={13} />
+                </button>
+                <button
+                  onClick={() => setSelectedOrderId(null)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                  aria-label="Fechar"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
 
             {selectedOrder.delivery_address && (
@@ -495,6 +572,25 @@ export function PedidosView({
                 <div className="px-6 py-5 border-t border-night-lighter">
                   {!showCheckout ? (
                     <div className="space-y-2">
+                      {/* Edit + Split quick buttons */}
+                      <div className="flex gap-2 mb-1">
+                        <button
+                          onClick={() => openEdit(selectedOrder.id)}
+                          disabled={BLOCKED_EDIT_STATUSES.includes(selectedOrder.status)}
+                          className="flex-1 h-8 border border-night-lighter text-[11px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Pencil size={11} />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => openSplit(selectedOrder.id)}
+                          className="flex-1 h-8 border border-night-lighter text-[11px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <SplitSquareVertical size={11} />
+                          Dividir
+                        </button>
+                      </div>
+
                       {selectedOrder.status === 'open' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'preparing')}
@@ -583,6 +679,31 @@ export function PedidosView({
           </aside>
         )}
       </div>
+
+      {/* Edit Order Modal */}
+      {editOrder && (
+        <EditOrderModal
+          order={editOrder}
+          items={editItems}
+          products={products}
+          onClose={() => setEditOrderId(null)}
+          onSaved={() => setEditOrderId(null)}
+        />
+      )}
+
+      {/* Split Bill Modal */}
+      {splitOrder && (
+        <SplitBillModal
+          order={splitOrder}
+          items={splitItems}
+          products={products}
+          onClose={() => setSplitOrderId(null)}
+          onDone={() => {
+            setSplitOrderId(null)
+            setSelectedOrderId(null)
+          }}
+        />
+      )}
     </div>
   )
 }

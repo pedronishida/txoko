@@ -10,7 +10,7 @@ import type {
   Product,
   Table,
 } from '@txoko/shared'
-import { Minus, Plus, X } from 'lucide-react'
+import { Minus, Plus, Printer, X } from 'lucide-react'
 import { createOrder } from './actions'
 import { TabBar } from '@/components/tab-bar'
 
@@ -48,6 +48,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null)
   const [customerQuery, setCustomerQuery] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState<MinimalCustomer | null>(
     null
@@ -151,7 +152,9 @@ export function PdvView({ products, categories, tables, customers }: Props) {
         setError(res.error)
         return
       }
+      const newOrderId = 'orderId' in res ? (res.orderId as string) : null
       clearCart()
+      if (newOrderId) setSuccessOrderId(newOrderId)
     })
   }
 
@@ -170,6 +173,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
   ]
 
   return (
+    <>
     <div className="flex h-[calc(100vh-8rem)] -mx-8 -mt-6 border-t border-night-lighter">
       {/* Catalog */}
       <section className="flex-1 flex flex-col min-w-0 border-r border-night-lighter">
@@ -502,6 +506,52 @@ export function PdvView({ products, categories, tables, customers }: Props) {
         )}
       </aside>
     </div>
+
+    {/* Order success modal */}
+    {successOrderId && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="w-full max-w-sm bg-night border border-night-lighter rounded-xl p-6 shadow-2xl text-center">
+          <div className="w-10 h-10 rounded-full bg-leaf/20 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-5 h-5 text-leaf" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-[15px] font-medium text-cloud tracking-tight">Pedido criado!</h3>
+          <p className="text-[12px] text-stone mt-1 tracking-tight">
+            #{successOrderId.slice(0, 8)}
+          </p>
+          <div className="flex flex-col gap-2 mt-6">
+            <button
+              onClick={() => {
+                window.open(`/pedidos/${successOrderId}/comanda`, '_blank')
+                setSuccessOrderId(null)
+              }}
+              className="w-full h-9 border border-night-lighter text-[12px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              <Printer size={13} />
+              Imprimir comanda
+            </button>
+            <button
+              onClick={() => {
+                window.open(`/pedidos/${successOrderId}/imprimir`, '_blank')
+                setSuccessOrderId(null)
+              }}
+              className="w-full h-9 border border-night-lighter text-[12px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              <Printer size={13} />
+              Imprimir recibo
+            </button>
+            <button
+              onClick={() => setSuccessOrderId(null)}
+              className="w-full h-9 bg-cloud text-night text-[12px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   )
 }
 

@@ -22,7 +22,7 @@ export default async function PedidosPage() {
         .from('order_items')
         .select('*, order:orders!inner(restaurant_id)')
         .eq('order.restaurant_id', restaurantId),
-      supabase.from('products').select('id, name').eq('restaurant_id', restaurantId),
+      supabase.from('products').select('id, name, price').eq('restaurant_id', restaurantId),
       supabase.from('tables').select('id, number').eq('restaurant_id', restaurantId),
       supabase.from('customers').select('id, name, phone').eq('restaurant_id', restaurantId),
     ])
@@ -31,7 +31,7 @@ export default async function PedidosPage() {
     <PedidosView
       orders={(orders ?? []) as unknown as Order[]}
       items={(items ?? []) as unknown as OrderItem[]}
-      products={(products ?? []) as unknown as Pick<Product, 'id' | 'name'>[]}
+      products={(products ?? []) as unknown as Pick<Product, 'id' | 'name' | 'price'>[]}
       tables={(tables ?? []) as unknown as Pick<Table, 'id' | 'number'>[]}
       customers={(customers ?? []) as unknown as Pick<Customer, 'id' | 'name' | 'phone'>[]}
       restaurantId={restaurantId}
