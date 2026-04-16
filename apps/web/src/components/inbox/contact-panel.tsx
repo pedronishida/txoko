@@ -46,6 +46,7 @@ type ContactPanelProps = {
   aiPaused: boolean
   channelType?: string | null
   onClose?: () => void
+  onAiPauseChange?: (paused: boolean) => void
 }
 
 // ----- util helpers -----
@@ -120,6 +121,7 @@ export function ContactPanel({
   aiPaused: initialAiPaused,
   channelType,
   onClose,
+  onAiPauseChange,
 }: ContactPanelProps) {
   // ---- state ----
   const [contact, setContact] = useState(initialContact)
@@ -277,6 +279,7 @@ export function ContactPanel({
   function handleToggleAiPause() {
     const next = !aiPaused
     setAiPaused(next)
+    onAiPauseChange?.(next)
     startAiPauseTransition(async () => {
       const res = await toggleConversationAiPause({
         conversationId,
@@ -285,6 +288,7 @@ export function ContactPanel({
       if ('error' in res) {
         setInlineError(res.error)
         setAiPaused(!next)
+        onAiPauseChange?.(!next)
       }
     })
   }
