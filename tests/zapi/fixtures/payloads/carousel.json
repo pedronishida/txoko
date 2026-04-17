@@ -1,0 +1,78 @@
+{
+  "examples": [
+    {
+      "description": "2-card carousel with REPLY buttons",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "message": "Confira nossos pratos em destaque:",
+        "cards": [
+          {
+            "image": "https://picsum.photos/400/300?random=1",
+            "title": "Pizza Margherita",
+            "description": "Molho de tomate, mussarela, manjericão. R$42,90",
+            "buttons": [
+              { "label": "Pedir agora", "type": "REPLY", "id": "order-pizza" }
+            ]
+          },
+          {
+            "image": "https://picsum.photos/400/300?random=2",
+            "title": "Hambúrguer Artesanal",
+            "description": "Blend 180g, queijo, bacon. R$38,90",
+            "buttons": [
+              { "label": "Pedir agora", "type": "REPLY", "id": "order-burger" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "description": "5-card carousel with URL buttons",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "message": "Nosso cardápio completo:",
+        "cards": [
+          {
+            "image": "https://picsum.photos/400/300?random=10",
+            "title": "Entradas",
+            "description": "Bruschetta, Caldo Verde, Ceviche",
+            "buttons": [
+              { "label": "Ver mais", "type": "URL", "url": "https://txoko.com.br/cardapio#entradas" }
+            ]
+          },
+          {
+            "image": "https://picsum.photos/400/300?random=11",
+            "title": "Pratos Principais",
+            "description": "Filé, Frango, Massas, Vegetariano",
+            "buttons": [
+              { "label": "Ver mais", "type": "URL", "url": "https://txoko.com.br/cardapio#pratos" }
+            ]
+          },
+          {
+            "image": "https://picsum.photos/400/300?random=12",
+            "title": "Pizzas",
+            "description": "20 sabores tradicionais e especiais",
+            "buttons": [
+              { "label": "Ver mais", "type": "URL", "url": "https://txoko.com.br/cardapio#pizzas" }
+            ]
+          },
+          {
+            "image": "https://picsum.photos/400/300?random=13",
+            "title": "Sobremesas",
+            "description": "Pudim, Petit Gâteau, Tiramisu",
+            "buttons": [
+              { "label": "Ver mais", "type": "URL", "url": "https://txoko.com.br/cardapio#sobremesas" }
+            ]
+          },
+          {
+            "image": "https://picsum.photos/400/300?random=14",
+            "title": "Bebidas",
+            "description": "Vinhos, Cervejas, Drinks, Sucos",
+            "buttons": [
+              { "label": "Ver mais", "type": "URL", "url": "https://txoko.com.br/cardapio#bebidas" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

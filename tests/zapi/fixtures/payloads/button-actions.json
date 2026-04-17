@@ -1,0 +1,41 @@
+{
+  "examples": [
+    {
+      "description": "Simple confirm/cancel",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "message": "Sua reserva está pronta! Deseja confirmar?",
+        "buttons": [
+          { "label": "Confirmar", "id": "confirm" },
+          { "label": "Cancelar", "id": "cancel" }
+        ]
+      }
+    },
+    {
+      "description": "With title and footer",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "title": "Txoko Restaurante",
+        "message": "Como podemos ajudar?",
+        "footer": "Horário: 12h-23h",
+        "buttons": [
+          { "label": "Ver cardápio", "id": "menu" },
+          { "label": "Fazer reserva", "id": "reserva" },
+          { "label": "Falar com atendente", "id": "atendente" }
+        ]
+      }
+    },
+    {
+      "description": "Emoji buttons",
+      "payload": {
+        "phone": "{{TEST_TARGET_PHONE}}",
+        "message": "Avalie nossa comida",
+        "buttons": [
+          { "label": "👍 Adorei", "id": "loved" },
+          { "label": "😐 Regular", "id": "ok" },
+          { "label": "👎 Ruim", "id": "bad" }
+        ]
+      }
+    }
+  ]
+}

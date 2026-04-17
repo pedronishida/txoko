@@ -3246,6 +3246,11 @@
       "imports": [],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route_client-reference-manifest.js": {
+      "bytes": 23523,
+      "imports": [],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route_client-reference-manifest.js": {
       "bytes": 23416,
       "imports": [],
@@ -3281,6 +3286,11 @@
       "imports": [],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js": {
+      "bytes": 23959,
+      "imports": [],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page_client-reference-manifest.js": {
       "bytes": 24011,
       "imports": [],
@@ -3291,17 +3301,17 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js": {
-      "bytes": 23959,
-      "imports": [],
-      "format": "cjs"
-    },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js": {
       "bytes": 23404,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route_client-reference-manifest.js": {
+      "bytes": 23402,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
       "bytes": 23402,
       "imports": [],
       "format": "cjs"
@@ -3311,7 +3321,7 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
       "bytes": 23402,
       "imports": [],
       "format": "cjs"
@@ -3356,8 +3366,8 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
-      "bytes": 23782,
+    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js": {
+      "bytes": 23791,
       "imports": [],
       "format": "cjs"
     },
@@ -3366,17 +3376,17 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js": {
-      "bytes": 23791,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
-      "bytes": 23396,
+    ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
+      "bytes": 23782,
       "imports": [],
       "format": "cjs"
     },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js": {
+      "bytes": 23396,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
       "bytes": 23396,
       "imports": [],
       "format": "cjs"
@@ -3531,13 +3541,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js": {
-      "bytes": 23583,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js": {
+      "bytes": 23483,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js": {
-      "bytes": 23483,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js": {
+      "bytes": 23583,
       "imports": [],
       "format": "cjs"
     },
@@ -3562,7 +3572,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.external.js": {
-      "bytes": 175304,
+      "bytes": 177241,
       "imports": [
         {
           "path": "path",
@@ -3600,6 +3610,11 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/conhecimento/page_client-reference-manifest.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route_client-reference-manifest.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route_client-reference-manifest.js"
@@ -3635,6 +3650,11 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page_client-reference-manifest.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page_client-reference-manifest.js"
@@ -3645,19 +3665,19 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/audiences/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js",
@@ -3665,9 +3685,9 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js",
@@ -3710,9 +3730,9 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/cron/automations/route_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page_client-reference-manifest.js",
@@ -3720,19 +3740,19 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js",
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js",
           "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js"
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page_client-reference-manifest.js",
@@ -3885,14 +3905,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/home/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/offline/page_client-reference-manifest.js",
@@ -4827,6 +4847,57 @@
       ],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route.js": {
+      "bytes": 7916,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
+          "kind": "require-call",
+          "original": "next/dist/shared/lib/router/utils/app-paths"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/after-task-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/after-task-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/action-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/action-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/work-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/work-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/work-unit-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/work-unit-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/no-fallback-error.external.js",
+          "kind": "require-call",
+          "original": "next/dist/shared/lib/no-fallback-error.external"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/webpack-runtime.js",
+          "kind": "require-call",
+          "original": "../../../../../webpack-runtime.js"
+        }
+      ],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route.js": {
       "bytes": 31824,
       "imports": [
@@ -5350,8 +5421,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js": {
-      "bytes": 34772,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page.js": {
+      "bytes": 34560,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5416,8 +5487,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page.js": {
-      "bytes": 34560,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js": {
+      "bytes": 34772,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -5621,6 +5692,57 @@
           "path": "crypto",
           "kind": "require-call",
           "external": true
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/work-unit-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/work-unit-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/no-fallback-error.external.js",
+          "kind": "require-call",
+          "original": "next/dist/shared/lib/no-fallback-error.external"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/webpack-runtime.js",
+          "kind": "require-call",
+          "original": "../../../../webpack-runtime.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route.js": {
+      "bytes": 8883,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
+          "kind": "require-call",
+          "original": "next/dist/shared/lib/router/utils/app-paths"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/after-task-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/after-task-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/action-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/action-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/work-async-storage.external.js",
+          "kind": "require-call",
+          "original": "next/dist/server/app-render/work-async-storage.external.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
         },
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/server/app-render/work-unit-async-storage.external.js",
@@ -6957,8 +7079,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js": {
-      "bytes": 49439,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js": {
+      "bytes": 33667,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -7023,8 +7145,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js": {
-      "bytes": 33667,
+    ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js": {
+      "bytes": 49439,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/shared/lib/router/utils/app-paths.js",
@@ -9197,7 +9319,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/node_modules/next/dist/server/require.js": {
-      "bytes": 43423,
+      "bytes": 43997,
       "imports": [
         {
           "path": "path",
@@ -9260,6 +9382,11 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/conhecimento/page.js"
         },
         {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route.js"
+        },
+        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route.js"
@@ -9300,14 +9427,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route.js",
@@ -9323,6 +9450,11 @@
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page.js",
@@ -9430,14 +9562,14 @@
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page.js"
         },
         {
-          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js",
-          "kind": "require-call",
-          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js"
-        },
-        {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js",
           "kind": "require-call",
           "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js",
+          "kind": "require-call",
+          "original": "/Users/pedronishida/Documents/Projetos/txoko/txoko-main/apps/web/.open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js"
         },
         {
           "path": ".open-next/server-functions/default/apps/web/.next/server/app/(app)/onboarding/page.js",
@@ -10499,7 +10631,7 @@
       "format": "esm"
     },
     ".open-next/server-functions/default/apps/web/index.mjs": {
-      "bytes": 98209,
+      "bytes": 98412,
       "imports": [
         {
           "path": "node:module",
@@ -12159,6 +12291,9 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/conhecimento/page_client-reference-manifest.js": {
           "bytesInOutput": 21438
         },
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route_client-reference-manifest.js": {
+          "bytesInOutput": 21090
+        },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route_client-reference-manifest.js": {
           "bytesInOutput": 20983
         },
@@ -12180,25 +12315,28 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page_client-reference-manifest.js": {
           "bytesInOutput": 21412
         },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js": {
+          "bytesInOutput": 21520
+        },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page_client-reference-manifest.js": {
-          "bytesInOutput": 21572
+          "bytesInOutput": 21573
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/audiences/page_client-reference-manifest.js": {
           "bytesInOutput": 21525
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/clientes/fidelidade/page_client-reference-manifest.js": {
-          "bytesInOutput": 21521
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route_client-reference-manifest.js": {
           "bytesInOutput": 20965
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route_client-reference-manifest.js": {
+          "bytesInOutput": 20962
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
           "bytesInOutput": 20962
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/vendas/page_client-reference-manifest.js": {
           "bytesInOutput": 21405
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/dev/ifood-simulate/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route_client-reference-manifest.js": {
           "bytesInOutput": 20962
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page_client-reference-manifest.js": {
@@ -12220,24 +12358,24 @@
           "bytesInOutput": 21391
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/menu/reservation/route_client-reference-manifest.js": {
-          "bytesInOutput": 20956
+          "bytesInOutput": 20957
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/automations/route_client-reference-manifest.js": {
-          "bytesInOutput": 20956
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
-          "bytesInOutput": 21339
-        },
-        ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page_client-reference-manifest.js": {
-          "bytesInOutput": 21528
+          "bytesInOutput": 20957
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/obrigado/page_client-reference-manifest.js": {
           "bytesInOutput": 21348
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
-          "bytesInOutput": 20954
+        ".open-next/server-functions/default/apps/web/.next/server/app/menu/[slug]/reservar/page_client-reference-manifest.js": {
+          "bytesInOutput": 21528
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/comanda/page_client-reference-manifest.js": {
+          "bytesInOutput": 21339
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/ifood-poll/route_client-reference-manifest.js": {
+          "bytesInOutput": 20954
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/score/route_client-reference-manifest.js": {
           "bytesInOutput": 20954
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/estoque/fichas/page_client-reference-manifest.js": {
@@ -12330,11 +12468,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/home/page_client-reference-manifest.js": {
           "bytesInOutput": 20935
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js": {
-          "bytesInOutput": 21129
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/pdv/page_client-reference-manifest.js": {
           "bytesInOutput": 21029
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/kds/page_client-reference-manifest.js": {
+          "bytesInOutput": 21129
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/offline/page_client-reference-manifest.js": {
           "bytesInOutput": 21027
@@ -12349,7 +12487,7 @@
           "bytesInOutput": 20807
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.external.js": {
-          "bytesInOutput": 143121
+          "bytesInOutput": 144559
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/app-render/action-async-storage-instance.js": {
           "bytesInOutput": 504
@@ -12492,6 +12630,9 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/configuracoes/conhecimento/page.js": {
           "bytesInOutput": 36437
         },
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/status/route.js": {
+          "bytesInOutput": 8127
+        },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi/[channelId]/route.js": {
           "bytesInOutput": 32914
         },
@@ -12516,11 +12657,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/marketing/templates/page.js": {
           "bytesInOutput": 57283
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js": {
-          "bytesInOutput": 35682
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/produtos/page.js": {
           "bytesInOutput": 35556
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/relatorios/clientes/page.js": {
+          "bytesInOutput": 35682
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/scheduler/route.js": {
           "bytesInOutput": 10136
@@ -12530,6 +12671,9 @@
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/marketing/dispatch/route.js": {
           "bytesInOutput": 29562
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/api/webhooks/zapi-test/route.js": {
+          "bytesInOutput": 9132
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/financeiro/contas/page.js": {
           "bytesInOutput": 33977
@@ -12550,10 +12694,10 @@
           "bytesInOutput": 12207
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/cron/automations/route.js": {
-          "bytesInOutput": 11957
+          "bytesInOutput": 11958
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/api/menu/reservation/route.js": {
-          "bytesInOutput": 8997
+          "bytesInOutput": 8998
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/pedidos/[id]/imprimir/page.js": {
           "bytesInOutput": 31543
@@ -12597,11 +12741,11 @@
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/assistente/page.js": {
           "bytesInOutput": 23949
         },
-        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js": {
-          "bytesInOutput": 50748
-        },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/avaliacoes/page.js": {
           "bytesInOutput": 34495
+        },
+        ".open-next/server-functions/default/apps/web/.next/server/app/(app)/automacoes/page.js": {
+          "bytesInOutput": 50748
         },
         ".open-next/server-functions/default/apps/web/.next/server/app/(app)/onboarding/page.js": {
           "bytesInOutput": 34856
@@ -12733,7 +12877,7 @@
           "bytesInOutput": 45706
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/require.js": {
-          "bytesInOutput": 28793
+          "bytesInOutput": 29010
         },
         ".open-next/server-functions/default/node_modules/next/dist/lib/wait.js": {
           "bytesInOutput": 346
@@ -12841,10 +12985,10 @@
           "bytesInOutput": 5083
         },
         ".open-next/server-functions/default/apps/web/index.mjs": {
-          "bytesInOutput": 70356
+          "bytesInOutput": 70551
         }
       },
-      "bytes": 8167832
+      "bytes": 8228997
     }
   }
 }

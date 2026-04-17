@@ -1,0 +1,25 @@
+{
+  "name": "@txoko/zapi-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:smoke": "tsx scripts/smoke-test.ts",
+    "test:matrix": "tsx scripts/generate-matrix.ts",
+    "test:run": "tsx scripts/run-suite.ts",
+    "test:report": "tsx scripts/report-html.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2",
+    "@playwright/test": "^1.48",
+    "zod": "^3",
+    "tsx": "^4",
+    "dotenv": "^16",
+    "p-limit": "^6"
+  },
+  "devDependencies": {
+    "vitest": "^2",
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}
