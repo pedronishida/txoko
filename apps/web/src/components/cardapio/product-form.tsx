@@ -22,6 +22,9 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
   const [allergens, setAllergens] = useState('')
   const [tags, setTags] = useState('')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [soldByWeight, setSoldByWeight] = useState(false)
+  const [pricePerKg, setPricePerKg] = useState('')
+  const [barcode, setBarcode] = useState('')
   const [uploading, startUpload] = useTransition()
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -36,8 +39,14 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
       setAllergens(product.allergens.join(', '))
       setTags(product.tags.join(', '))
       setImageUrl(product.image_url || null)
+      setSoldByWeight(product.sold_by_weight)
+      setPricePerKg(product.price_per_kg?.toString() || '')
+      setBarcode(product.barcode || '')
     } else {
       setImageUrl(null)
+      setSoldByWeight(false)
+      setPricePerKg('')
+      setBarcode('')
     }
   }, [product])
 
@@ -62,7 +71,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
     onSave({
       name,
       description: description || null,
-      price: parseFloat(price),
+      price: parseFloat(price) || 0,
       cost: cost ? parseFloat(cost) : null,
       category_id: categoryId || categories[0]?.id || '',
       image_url: imageUrl,
@@ -71,6 +80,9 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
       allergens: allergens ? allergens.split(',').map(s => s.trim()).filter(Boolean) : [],
       tags: tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [],
       sort_order: product?.sort_order ?? 0,
+      sold_by_weight: soldByWeight,
+      price_per_kg: soldByWeight && pricePerKg ? parseFloat(pricePerKg) : null,
+      barcode: barcode.trim() || null,
     })
     onClose()
   }
@@ -155,7 +167,9 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>Preco (R$) *</label>
+              <label className={labelClass}>
+                {soldByWeight ? 'Preco unitario (R$)' : 'Preco (R$) *'}
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -163,7 +177,8 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
                 onChange={e => setPrice(e.target.value)}
                 placeholder="0,00"
                 className={`${inputClass} font-data`}
-                required
+                required={!soldByWeight}
+                disabled={soldByWeight}
               />
             </div>
             <div>
@@ -177,6 +192,50 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
                 className={`${inputClass} font-data`}
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 py-1">
+            <input
+              id="sold_by_weight"
+              type="checkbox"
+              checked={soldByWeight}
+              onChange={e => setSoldByWeight(e.target.checked)}
+              className="w-4 h-4 rounded border-night-lighter bg-night text-primary focus:ring-1 focus:ring-primary/30"
+            />
+            <label htmlFor="sold_by_weight" className="text-sm text-stone-light cursor-pointer">
+              Vendido por kg (self-service)
+            </label>
+          </div>
+
+          {soldByWeight && (
+            <div>
+              <label className={labelClass}>Preco por kg (R$) *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={pricePerKg}
+                onChange={e => setPricePerKg(e.target.value)}
+                placeholder="99,90"
+                className={`${inputClass} font-data`}
+                required
+              />
+              <p className="mt-1 text-xs text-stone">
+                Usado pela estacao de pesagem. Preco por unidade fica desativado.
+              </p>
+            </div>
+          )}
+
+          <div>
+            <label className={labelClass}>Codigo de barras</label>
+            <input
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              placeholder="Escaneie ou digite o EAN"
+              className={`${inputClass} font-data`}
+            />
+            <p className="mt-1 text-xs text-stone">
+              Usado pela estacao pra identificar itens unitarios (refri, agua, sobremesa).
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

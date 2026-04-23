@@ -53,6 +53,9 @@ export type ProductInput = {
   is_active: boolean
   sort_order: number
   image_url: string | null
+  sold_by_weight: boolean
+  price_per_kg: number | null
+  barcode: string | null
 }
 
 export async function saveProduct(input: ProductInput) {
@@ -72,6 +75,9 @@ export async function saveProduct(input: ProductInput) {
     is_active: input.is_active,
     sort_order: input.sort_order,
     image_url: input.image_url,
+    sold_by_weight: input.sold_by_weight,
+    price_per_kg: input.sold_by_weight ? input.price_per_kg : null,
+    barcode: input.barcode,
   }
 
   const { error } = input.id

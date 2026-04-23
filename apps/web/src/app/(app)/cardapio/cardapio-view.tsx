@@ -52,6 +52,9 @@ export function CardapioView({ products, categories }: Props) {
         is_active: data.is_active,
         sort_order: data.sort_order,
         image_url: data.image_url,
+        sold_by_weight: data.sold_by_weight,
+        price_per_kg: data.price_per_kg,
+        barcode: data.barcode,
       })
       if ('error' in res && res.error) setError(res.error)
     })

@@ -87,8 +87,24 @@ export interface Product {
   allergens: string[]
   tags: string[]
   sort_order: number
+  sold_by_weight: boolean
+  price_per_kg: number | null
+  barcode: string | null
   created_at: string
   updated_at: string
+}
+
+export type ServiceMode = 'avontade' | 'por_kg'
+
+export interface ComandaCard {
+  id: string
+  restaurant_id: string
+  card_number: number
+  qr_token: string
+  service_mode: ServiceMode
+  is_active: boolean
+  created_at: string
+  deactivated_at: string | null
 }
 
 export interface ProductAddon {

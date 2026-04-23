@@ -26,6 +26,7 @@ import {
   BookOpen,
   CalendarDays,
   BarChart3,
+  CreditCard,
 } from 'lucide-react'
 
 type NavItem = {
@@ -45,6 +46,7 @@ const navigation: NavItem[] = [
   { name: 'Inbox', href: '/inbox', icon: Inbox, group: 'work' },
 
   { name: 'Cardapio', href: '/cardapio', icon: UtensilsCrossed, group: 'manage' },
+  { name: 'Estacao', href: '/estacao/cartoes', icon: CreditCard, group: 'manage' },
   { name: 'Clientes', href: '/clientes', icon: Users, group: 'manage' },
   { name: 'Estoque', href: '/estoque', icon: Package, group: 'manage' },
   { name: 'Financeiro', href: '/financeiro', icon: DollarSign, group: 'manage' },
