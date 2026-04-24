@@ -27,6 +27,7 @@ import {
   CalendarDays,
   BarChart3,
   CreditCard,
+  Banknote,
 } from 'lucide-react'
 
 type NavItem = {
@@ -39,6 +40,7 @@ type NavItem = {
 const navigation: NavItem[] = [
   { name: 'Visao geral', href: '/home', icon: LayoutDashboard, group: 'work' },
   { name: 'PDV', href: '/pdv', icon: Monitor, group: 'work' },
+  { name: 'Caixa', href: '/caixa', icon: Banknote, group: 'work' },
   { name: 'Pedidos', href: '/pedidos', icon: ClipboardList, group: 'work' },
   { name: 'KDS', href: '/kds', icon: ChefHat, group: 'work' },
   { name: 'Mesas', href: '/mesas', icon: Armchair, group: 'work' },

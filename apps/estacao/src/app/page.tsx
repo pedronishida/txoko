@@ -27,6 +27,7 @@ export default function StationPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const lastActivityRef = useRef<number>(Date.now())
   const lastScanRef = useRef<{ value: string; ts: number } | null>(null)
+  const cancelInFlightRef = useRef<boolean>(false)
 
   // Auto-focus no input sempre que clicar em qualquer lugar
   useEffect(() => {
@@ -40,14 +41,14 @@ export default function StationPage() {
     }
   }, [])
 
-  // Auto-encerra sessao apos 3 minutos de inatividade (pro tablet nao deixar comanda aberta)
+  // Auto-encerra no tablet apos 5 minutos de inatividade (comanda segue aberta no DB)
   useEffect(() => {
     if (!session) return
     const t = setInterval(() => {
-      if (Date.now() - lastActivityRef.current > 3 * 60 * 1000) {
+      if (Date.now() - lastActivityRef.current > 5 * 60 * 1000) {
         finishSession()
       }
-    }, 5000)
+    }, 10000)
     return () => clearInterval(t)
   }, [session])
 
@@ -189,6 +190,9 @@ export default function StationPage() {
           onCloseCancelMode={() => setCancelToken(null)}
           onCancelItem={async (itemId) => {
             if (!cancelToken) return
+            // Guard contra double-fire de touch (mobile dispara touchend + click)
+            if (cancelInFlightRef.current) return
+            cancelInFlightRef.current = true
             try {
               setBusy(true)
               const snap = await cancelItem(cancelToken, session.order_id, itemId)
@@ -199,6 +203,10 @@ export default function StationPage() {
               pushToast('error', msg)
             } finally {
               setBusy(false)
+              // Libera apos 300ms — evita tap acidental em seguida
+              setTimeout(() => {
+                cancelInFlightRef.current = false
+              }, 300)
             }
           }}
         />
@@ -307,10 +315,10 @@ function ActiveView({
 
         <button
           onClick={onFinish}
-          className="flex items-center gap-2 px-4 h-11 rounded-xl border border-border text-fg-muted hover:text-fg hover:bg-bg-card text-sm font-medium"
+          className="flex items-center gap-2 px-4 h-11 rounded-xl border-2 border-primary text-primary hover:bg-primary-soft text-sm font-semibold"
         >
-          <X size={16} />
-          Encerrar no tablet
+          <CheckCircle2 size={16} />
+          Finalizar
         </button>
       </header>
 
