@@ -39,6 +39,66 @@ export async function createCardBatch(
     card_number: startNumber + i,
     qr_token: randomBytes(16).toString('hex'),
     service_mode,
+    card_kind: 'customer' as const,
+    is_active: true,
+  }))
+
+  const { error } = await supabase.from('comanda_cards').insert(rows)
+  if (error) return { error: error.message }
+
+  revalidatePath('/estacao/cartoes')
+  return {
+    ok: true,
+    created: quantity,
+    first_number: startNumber,
+    last_number: startNumber + quantity - 1,
+  }
+}
+
+const MAX_CANCEL_CARDS = 2
+
+export async function createCancelCards(quantity: number): Promise<CardBatchResult> {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_CANCEL_CARDS) {
+    return { error: `Quantidade deve ser entre 1 e ${MAX_CANCEL_CARDS}` }
+  }
+
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+
+  // Conta quantos cartoes de cancelamento ativos ja existem
+  const { count } = await supabase
+    .from('comanda_cards')
+    .select('*', { count: 'exact', head: true })
+    .eq('restaurant_id', restaurant_id)
+    .eq('card_kind', 'cancel')
+    .eq('is_active', true)
+
+  const currentActive = count ?? 0
+  if (currentActive + quantity > MAX_CANCEL_CARDS) {
+    const remaining = MAX_CANCEL_CARDS - currentActive
+    return {
+      error:
+        remaining <= 0
+          ? `Ja existem ${currentActive} cartoes de cancelamento ativos (maximo ${MAX_CANCEL_CARDS}). Desative um antes.`
+          : `Restam ${remaining} cartao${remaining === 1 ? '' : 's'} de cancelamento possivel. Reduza a quantidade.`,
+    }
+  }
+
+  const { data: maxRow } = await supabase
+    .from('comanda_cards')
+    .select('card_number')
+    .eq('restaurant_id', restaurant_id)
+    .order('card_number', { ascending: false })
+    .limit(1)
+
+  const startNumber = (maxRow?.[0]?.card_number ?? 0) + 1
+
+  const rows = Array.from({ length: quantity }, (_, i) => ({
+    restaurant_id,
+    card_number: startNumber + i,
+    qr_token: randomBytes(16).toString('hex'),
+    service_mode: null,
+    card_kind: 'cancel' as const,
     is_active: true,
   }))
 

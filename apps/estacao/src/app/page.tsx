@@ -1,9 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat } from 'lucide-react'
+import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat, Ban, Trash2 } from 'lucide-react'
 import { parseScan } from '@/lib/parse-scan'
-import { openSession, addWeightItem, addBarcodeItem, type StationSnapshot } from '@/lib/supabase'
+import {
+  resolveScan,
+  addWeightItem,
+  addBarcodeItem,
+  cancelItem,
+  type StationSnapshot,
+  type StationItem,
+} from '@/lib/supabase'
 import { formatCurrency, formatWeight } from '@/lib/format'
 import { BackgroundCameraScanner } from '@/components/camera-scanner'
 
@@ -12,6 +19,7 @@ type Toast = { id: number; kind: 'ok' | 'error'; text: string }
 export default function StationPage() {
   const [session, setSession] = useState<StationSnapshot | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [cancelToken, setCancelToken] = useState<string | null>(null)
   const [buffer, setBuffer] = useState('')
   const [busy, setBusy] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -52,6 +60,7 @@ export default function StationPage() {
   function finishSession() {
     setSession(null)
     setToken(null)
+    setCancelToken(null)
     setBuffer('')
   }
 
@@ -71,7 +80,7 @@ export default function StationPage() {
         return
       }
 
-      // Sem sessao ativa — so aceita QR do cartao
+      // Sem sessao ativa — so aceita QR do cartao (customer). Cancel card sem sessao = erro.
       if (!session) {
         if (scan.kind !== 'qr_token') {
           pushToast('error', 'Escaneie o QR do cartao primeiro')
@@ -79,10 +88,14 @@ export default function StationPage() {
         }
         try {
           setBusy(true)
-          const snap = await openSession(scan.token)
-          setSession(snap)
+          const res = await resolveScan(scan.token)
+          if (res.kind === 'cancel') {
+            pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
+            return
+          }
+          setSession(res.session)
           setToken(scan.token)
-          pushToast('ok', `Comanda ${snap.comanda_card.card_number} aberta`)
+          pushToast('ok', `Comanda ${res.session.comanda_card.card_number} aberta`)
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Erro ao abrir comanda'
           pushToast('error', msg)
@@ -92,11 +105,25 @@ export default function StationPage() {
         return
       }
 
-      // Sessao ativa — processa item
+      // Sessao ativa — processa item OU abre drawer de cancelamento
       if (!token) return
 
       if (scan.kind === 'qr_token') {
-        pushToast('error', 'Ja existe uma comanda aberta — finalize antes de escanear outro cartao')
+        try {
+          setBusy(true)
+          const res = await resolveScan(scan.token)
+          if (res.kind === 'cancel') {
+            setCancelToken(scan.token)
+            pushToast('ok', 'Modo cancelamento — toque no item pra cancelar')
+          } else {
+            pushToast('error', 'Ja existe uma comanda aberta')
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Erro'
+          pushToast('error', msg)
+        } finally {
+          setBusy(false)
+        }
         return
       }
 
@@ -134,22 +161,47 @@ export default function StationPage() {
 
   return (
     <main className="fixed inset-0 flex flex-col bg-bg">
-      {/* Hidden input que captura o scanner HID */}
-      <input
-        ref={inputRef}
-        autoFocus
-        value={buffer}
-        onChange={(e) => setBuffer(e.target.value)}
-        onKeyDown={onInputKeyDown}
-        className="absolute opacity-0 w-0 h-0 pointer-events-none"
-        aria-hidden
-      />
-
       {/* Conteudo principal */}
       {!session ? (
-        <IdleView busy={busy} />
+        <>
+          <IdleView busy={busy} />
+          {/* Input invisivel pra capturar HID scanner no idle */}
+          <input
+            ref={inputRef}
+            autoFocus
+            value={buffer}
+            onChange={(e) => setBuffer(e.target.value)}
+            onKeyDown={onInputKeyDown}
+            className="absolute opacity-0 w-0 h-0 pointer-events-none"
+            aria-hidden
+          />
+        </>
       ) : (
-        <ActiveView session={session} busy={busy} onFinish={finishSession} />
+        <ActiveView
+          session={session}
+          busy={busy}
+          onFinish={finishSession}
+          inputRef={inputRef}
+          buffer={buffer}
+          setBuffer={setBuffer}
+          onInputKeyDown={onInputKeyDown}
+          cancelToken={cancelToken}
+          onCloseCancelMode={() => setCancelToken(null)}
+          onCancelItem={async (itemId) => {
+            if (!cancelToken) return
+            try {
+              setBusy(true)
+              const snap = await cancelItem(cancelToken, session.order_id, itemId)
+              setSession(snap)
+              pushToast('ok', 'Item cancelado')
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : 'Erro ao cancelar'
+              pushToast('error', msg)
+            } finally {
+              setBusy(false)
+            }
+          }}
+        />
       )}
 
       {/* Camera sempre ativa em background — dispara handleScan sem UI */}
@@ -199,10 +251,24 @@ function ActiveView({
   session,
   busy,
   onFinish,
+  inputRef,
+  buffer,
+  setBuffer,
+  onInputKeyDown,
+  cancelToken,
+  onCloseCancelMode,
+  onCancelItem,
 }: {
   session: StationSnapshot
   busy: boolean
   onFinish: () => void
+  inputRef: React.RefObject<HTMLInputElement | null>
+  buffer: string
+  setBuffer: (v: string) => void
+  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  cancelToken: string | null
+  onCloseCancelMode: () => void
+  onCancelItem: (itemId: string) => void
 }) {
   const mode = session.comanda_card.service_mode
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -290,14 +356,27 @@ function ActiveView({
 
       {/* Footer com total */}
       <footer className="border-t border-border px-8 py-5 bg-bg-card">
-        <div className="flex items-end justify-between">
-          <div className="flex items-center gap-2 text-fg-muted">
-            <ScanLine size={18} />
-            <span className="text-sm">
-              {busy ? 'Processando...' : 'Aguardando proxima leitura...'}
-            </span>
+        <div className="flex items-end justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 text-fg-muted mb-2">
+              <ScanLine size={14} />
+              <span className="text-xs">
+                {busy ? 'Processando...' : 'Escaneie ou digite o codigo + Enter'}
+              </span>
+            </div>
+            <input
+              ref={inputRef}
+              autoFocus
+              value={buffer}
+              onChange={(e) => setBuffer(e.target.value)}
+              onKeyDown={onInputKeyDown}
+              placeholder="Codigo (QR, EAN, barcode)"
+              className="w-full max-w-md px-4 h-11 bg-bg border border-border rounded-lg font-mono text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:border-primary"
+              autoComplete="off"
+              spellCheck={false}
+            />
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <div className="text-xs uppercase tracking-wide text-fg-muted">Total</div>
             <div className="text-4xl font-mono font-bold text-fg">
               {formatCurrency(session.total)}
@@ -305,6 +384,105 @@ function ActiveView({
           </div>
         </div>
       </footer>
+
+      {cancelToken && (
+        <CancelDrawer
+          items={session.items}
+          busy={busy}
+          onCancelItem={onCancelItem}
+          onClose={onCloseCancelMode}
+        />
+      )}
+    </div>
+  )
+}
+
+function CancelDrawer({
+  items,
+  busy,
+  onCancelItem,
+  onClose,
+}: {
+  items: StationItem[]
+  busy: boolean
+  onCancelItem: (itemId: string) => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-h-[85vh] bg-bg-card border-t-2 border-coral rounded-t-2xl shadow-2xl flex flex-col"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-coral/15 flex items-center justify-center">
+              <Ban size={18} className="text-coral" />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-coral font-semibold">
+                Modo cancelamento (caixa)
+              </div>
+              <div className="text-sm text-fg-muted">
+                Toque no item pra cancelar. Unitario {'>'} 1 decrementa.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 px-4 h-10 rounded-xl border border-border text-fg-muted hover:text-fg hover:bg-border text-sm"
+          >
+            <X size={16} />
+            Sair do modo
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
+          {items.length === 0 ? (
+            <div className="py-12 text-center text-fg-muted text-sm">
+              Comanda vazia — nada pra cancelar
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <button
+                    disabled={busy}
+                    onClick={() => onCancelItem(item.id)}
+                    className="w-full flex items-center gap-4 px-5 py-4 rounded-xl bg-bg border border-border hover:border-coral hover:bg-coral/5 disabled:opacity-50 text-left transition-colors"
+                  >
+                    <div
+                      className={
+                        'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' +
+                        (item.weight_grams != null ? 'bg-warm-soft' : 'bg-primary-soft')
+                      }
+                    >
+                      {item.weight_grams != null ? (
+                        <Scale size={18} className="text-warm" />
+                      ) : (
+                        <Package size={18} className="text-primary" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-fg truncate">{item.product_name}</div>
+                      <div className="text-sm text-fg-muted font-mono">
+                        {item.weight_grams != null
+                          ? `${formatWeight(item.weight_grams)} × ${formatCurrency(item.unit_price)}/kg`
+                          : `${item.quantity} × ${formatCurrency(item.unit_price)}`}
+                      </div>
+                    </div>
+                    <div className="font-mono font-semibold text-fg text-lg shrink-0">
+                      {formatCurrency(item.total_price)}
+                    </div>
+                    <Trash2 size={18} className="text-coral shrink-0" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

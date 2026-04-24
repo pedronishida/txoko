@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 type SearchParams = {
   mode?: string
   status?: string
+  kind?: string
 }
 
 export default async function EstacaoImprimirPage({
@@ -16,6 +17,7 @@ export default async function EstacaoImprimirPage({
   searchParams: Promise<SearchParams>
 }) {
   const sp = await searchParams
+  const filterKind = sp.kind === 'cancel' ? 'cancel' : 'customer'
   const filterMode = (sp.mode === 'avontade' || sp.mode === 'por_kg' ? sp.mode : 'all') as
     | ServiceMode
     | 'all'
@@ -30,9 +32,10 @@ export default async function EstacaoImprimirPage({
     .from('comanda_cards')
     .select('*')
     .eq('restaurant_id', restaurantId)
+    .eq('card_kind', filterKind)
     .order('card_number', { ascending: true })
 
-  if (filterMode !== 'all') query = query.eq('service_mode', filterMode)
+  if (filterKind === 'customer' && filterMode !== 'all') query = query.eq('service_mode', filterMode)
   if (filterStatus === 'active') query = query.eq('is_active', true)
   else if (filterStatus === 'inactive') query = query.eq('is_active', false)
 
@@ -94,6 +97,9 @@ export default async function EstacaoImprimirPage({
           text-transform: uppercase;
           color: #1A1A1A;
         }
+        .card.cancel { border-color: #EF4444; border-style: solid; border-width: 0.3mm; }
+        .card.cancel .card-mode { color: #EF4444; font-size: 9pt; }
+        .card.cancel .card-number { color: #EF4444; }
         .card-rest { font-size: 6pt; color: #78716C; margin-top: 0.5mm; }
         .card-qr { width: 32mm; height: 32mm; display: flex; align-items: center; justify-content: center; }
         .card-qr svg { width: 100%; height: 100%; }
@@ -131,23 +137,30 @@ export default async function EstacaoImprimirPage({
 
       {chunk(cardsWithQr, 10).map((page, idx) => (
         <div key={idx} className="sheet">
-          {page.map((c) => (
-            <div key={c.id} className="card">
-              <div className="card-header">
-                <div className="card-mode">
-                  {c.service_mode === 'avontade' ? 'A VONTADE' : 'POR QUILO'}
+          {page.map((c) => {
+            const isCancel = c.card_kind === 'cancel'
+            return (
+              <div key={c.id} className={'card' + (isCancel ? ' cancel' : '')}>
+                <div className="card-header">
+                  <div className="card-mode">
+                    {isCancel
+                      ? 'CANCELAMENTO — CAIXA'
+                      : c.service_mode === 'avontade'
+                      ? 'A VONTADE'
+                      : 'POR QUILO'}
+                  </div>
+                  <div className="card-rest">{restaurantName}</div>
                 </div>
-                <div className="card-rest">{restaurantName}</div>
+                <div className="card-qr" dangerouslySetInnerHTML={{ __html: c.qrSvg }} />
+                <div className="card-number">
+                  #{String(c.card_number).padStart(3, '0')}
+                </div>
+                <div className="card-footer">
+                  {isCancel ? 'Uso exclusivo do operador de caixa' : 'Escaneie no tablet da estacao'}
+                </div>
               </div>
-              <div className="card-qr" dangerouslySetInnerHTML={{ __html: c.qrSvg }} />
-              <div className="card-number">
-                #{String(c.card_number).padStart(3, '0')}
-              </div>
-              <div className="card-footer">
-                Escaneie no tablet da estacao
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ))}
     </>

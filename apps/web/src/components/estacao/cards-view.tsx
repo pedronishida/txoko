@@ -3,8 +3,13 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import type { ComandaCard, ServiceMode } from '@txoko/shared'
-import { Printer, Plus, X, AlertTriangle, ChefHat, Scale } from 'lucide-react'
-import { createCardBatch, deactivateCard, reactivateCard } from '@/app/(app)/estacao/cartoes/actions'
+import { Printer, Plus, X, AlertTriangle, ChefHat, Scale, Ban } from 'lucide-react'
+import {
+  createCardBatch,
+  createCancelCards,
+  deactivateCard,
+  reactivateCard,
+} from '@/app/(app)/estacao/cartoes/actions'
 
 type SelfServiceProduct = {
   id: string
@@ -29,24 +34,28 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
   const [filterMode, setFilterMode] = useState<ServiceMode | 'all'>('all')
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('active')
   const [showBatch, setShowBatch] = useState(false)
+  const [showCancelBatch, setShowCancelBatch] = useState(false)
+
+  const customerCards = useMemo(() => cards.filter((c) => c.card_kind === 'customer'), [cards])
+  const cancelCards = useMemo(() => cards.filter((c) => c.card_kind === 'cancel'), [cards])
 
   const filtered = useMemo(() => {
-    return cards.filter((c) => {
+    return customerCards.filter((c) => {
       if (filterMode !== 'all' && c.service_mode !== filterMode) return false
       if (filterActive === 'active' && !c.is_active) return false
       if (filterActive === 'inactive' && c.is_active) return false
       return true
     })
-  }, [cards, filterMode, filterActive])
+  }, [customerCards, filterMode, filterActive])
 
   const hasAvontade = selfServiceProducts.some(
     (p) => !p.sold_by_weight && p.is_active && p.name.toLowerCase().includes('a vontade'),
   )
   const hasPorKg = selfServiceProducts.some((p) => p.sold_by_weight && p.is_active)
 
-  const activeCount = cards.filter((c) => c.is_active).length
-  const avontadeCount = cards.filter((c) => c.service_mode === 'avontade' && c.is_active).length
-  const porKgCount = cards.filter((c) => c.service_mode === 'por_kg' && c.is_active).length
+  const activeCount = customerCards.filter((c) => c.is_active).length
+  const avontadeCount = customerCards.filter((c) => c.service_mode === 'avontade' && c.is_active).length
+  const porKgCount = customerCards.filter((c) => c.service_mode === 'por_kg' && c.is_active).length
 
   return (
     <div className="space-y-6">
@@ -67,9 +76,15 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Painel cartoes de cancelamento (caixa) */}
+      <CancelCardsPanel
+        cards={cancelCards}
+        onGenerate={() => setShowCancelBatch(true)}
+      />
+
+      {/* Stats (so customer cards) */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Ativos" value={activeCount} sub={`${cards.length} totais`} />
+        <StatCard label="Ativos (cliente)" value={activeCount} sub={`${customerCards.length} totais`} />
         <StatCard label="A Vontade" value={avontadeCount} icon={<ChefHat size={14} />} />
         <StatCard label="Por Kg" value={porKgCount} icon={<Scale size={14} />} />
       </div>
@@ -150,6 +165,176 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
       )}
 
       {showBatch && <BatchModal onClose={() => setShowBatch(false)} />}
+      {showCancelBatch && <CancelBatchModal onClose={() => setShowCancelBatch(false)} />}
+    </div>
+  )
+}
+
+function CancelCardsPanel({
+  cards,
+  onGenerate,
+}: {
+  cards: ComandaCard[]
+  onGenerate: () => void
+}) {
+  const active = cards.filter((c) => c.is_active)
+  const remaining = 2 - active.length
+
+  return (
+    <div className="rounded-xl border border-coral/30 bg-coral/5 p-4">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-lg bg-coral/15 flex items-center justify-center shrink-0">
+          <Ban size={18} className="text-coral" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-cloud">Cartoes de cancelamento (caixa)</h3>
+              <p className="text-xs text-stone-light mt-0.5">
+                Usado pelo caixa pra cancelar itens na estacao. Maximo 2 ativos.
+              </p>
+            </div>
+            {remaining > 0 && (
+              <button
+                onClick={onGenerate}
+                className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 bg-coral/20 text-coral rounded-lg text-xs font-semibold hover:bg-coral/30"
+              >
+                <Plus size={13} />
+                Gerar
+              </button>
+            )}
+          </div>
+
+          {active.length === 0 ? (
+            <p className="mt-3 text-xs text-stone">Nenhum cartao de cancelamento ativo.</p>
+          ) : (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {active.map((c) => (
+                <div
+                  key={c.id}
+                  className="inline-flex items-center gap-2 px-2.5 h-7 rounded-md bg-night border border-night-lighter text-xs"
+                >
+                  <span className="font-data text-cloud">#{String(c.card_number).padStart(3, '0')}</span>
+                  <span className="text-stone font-data">{c.qr_token.slice(0, 8)}...</span>
+                  <CardToggleMini card={c} />
+                </div>
+              ))}
+              <Link
+                href={`/estacao-imprimir?kind=cancel`}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 border border-night-lighter rounded-md text-xs text-stone-light hover:text-cloud hover:bg-night-lighter"
+              >
+                <Printer size={11} />
+                Imprimir
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CardToggleMini({ card }: { card: ComandaCard }) {
+  const [pending, startTransition] = useTransition()
+  return (
+    <button
+      onClick={() =>
+        startTransition(async () => {
+          await deactivateCard(card.id)
+        })
+      }
+      disabled={pending}
+      className="text-stone hover:text-coral text-[10px]"
+      title="Desativar"
+    >
+      {pending ? '...' : 'desativar'}
+    </button>
+  )
+}
+
+function CancelBatchModal({ onClose }: { onClose: () => void }) {
+  const [quantity, setQuantity] = useState('1')
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    const q = parseInt(quantity)
+    startTransition(async () => {
+      const res = await createCancelCards(q)
+      if ('error' in res) setError(res.error)
+      else setSuccess(`${res.created} cartao${res.created === 1 ? '' : 'es'} de cancelamento criado${res.created === 1 ? '' : 's'} (n° ${res.first_number}${res.last_number !== res.first_number ? ` a ${res.last_number}` : ''})`)
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-night-light border border-coral/30 rounded-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-night-lighter">
+          <div className="flex items-center gap-2">
+            <Ban size={16} className="text-coral" />
+            <h2 className="font-semibold text-cloud">Gerar cartao de cancelamento</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md text-stone hover:text-cloud hover:bg-night-lighter">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-stone-light mb-1">Quantidade</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2].map((n) => (
+                <label
+                  key={n}
+                  className={
+                    'flex items-center justify-center gap-2 h-11 border rounded-lg cursor-pointer ' +
+                    (quantity === String(n)
+                      ? 'border-coral bg-coral/10 text-cloud'
+                      : 'border-night-lighter text-stone-light hover:bg-night-lighter')
+                  }
+                >
+                  <input
+                    type="radio"
+                    value={n}
+                    checked={quantity === String(n)}
+                    onChange={() => setQuantity(String(n))}
+                    className="hidden"
+                  />
+                  <span className="text-sm font-data">{n} cartao{n === 1 ? '' : 'es'}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-stone">
+              Maximo 2 cartoes de cancelamento ativos por restaurante. Entregue ao operador de caixa.
+            </p>
+          </div>
+
+          {error && <p className="text-coral text-xs">{error}</p>}
+          {success && <p className="text-leaf text-xs">{success}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-night-lighter rounded-lg text-sm font-medium text-stone-light hover:text-cloud hover:bg-night-lighter"
+            >
+              Fechar
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex-1 py-2.5 bg-coral text-white font-semibold rounded-lg text-sm hover:bg-coral/80 disabled:opacity-50"
+            >
+              {pending ? 'Criando...' : 'Criar'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
@@ -200,7 +385,7 @@ function CardRow({ card }: { card: ComandaCard }) {
           }
         >
           {card.service_mode === 'avontade' ? <ChefHat size={11} /> : <Scale size={11} />}
-          {MODE_LABEL[card.service_mode]}
+          {card.service_mode ? MODE_LABEL[card.service_mode] : '—'}
         </span>
       </td>
       <td className="px-4 py-2.5 font-data text-stone-light text-xs">

@@ -64,3 +64,29 @@ export async function addBarcodeItem(qrToken: string, barcode: string): Promise<
   if (error) throw new Error(error.message)
   return data as StationSnapshot
 }
+
+export type ScanResolveResult =
+  | { kind: 'customer'; session: StationSnapshot }
+  | { kind: 'cancel'; restaurant_id: string; card_number: number }
+
+export async function resolveScan(qrToken: string): Promise<ScanResolveResult> {
+  const { data, error } = await supabase.rpc('station_resolve_scan', {
+    p_qr_token: qrToken,
+  })
+  if (error) throw new Error(error.message)
+  return data as ScanResolveResult
+}
+
+export async function cancelItem(
+  cancelToken: string,
+  orderId: string,
+  itemId: string,
+): Promise<StationSnapshot> {
+  const { data, error } = await supabase.rpc('station_cancel_item', {
+    p_cancel_token: cancelToken,
+    p_order_id: orderId,
+    p_item_id: itemId,
+  })
+  if (error) throw new Error(error.message)
+  return data as StationSnapshot
+}

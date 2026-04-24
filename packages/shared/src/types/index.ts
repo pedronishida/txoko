@@ -95,13 +95,15 @@ export interface Product {
 }
 
 export type ServiceMode = 'avontade' | 'por_kg'
+export type CardKind = 'customer' | 'cancel'
 
 export interface ComandaCard {
   id: string
   restaurant_id: string
   card_number: number
   qr_token: string
-  service_mode: ServiceMode
+  service_mode: ServiceMode | null
+  card_kind: CardKind
   is_active: boolean
   created_at: string
   deactivated_at: string | null
