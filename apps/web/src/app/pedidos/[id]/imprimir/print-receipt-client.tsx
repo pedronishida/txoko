@@ -139,10 +139,17 @@ export function PrintReceiptClient({
                 <div key={item.id}>
                   <div className="flex justify-between gap-2">
                     <span className="flex-1">
-                      {item.quantity}x {productName}
+                      {item.weight_grams != null
+                        ? `${(item.weight_grams / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg ${productName}`
+                        : `${item.quantity}x ${productName}`}
                     </span>
                     <span className="shrink-0">{formatCurrency(item.total_price)}</span>
                   </div>
+                  {item.weight_grams != null && (
+                    <p className="text-[10px] pl-4 text-gray-600">
+                      {formatCurrency(item.unit_price)}/kg
+                    </p>
+                  )}
                   {item.notes && (
                     <p className="text-[10px] pl-4 italic">OBS: {item.notes}</p>
                   )}

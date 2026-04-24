@@ -112,7 +112,9 @@ export function PrintCommandClient({ order, items, table, waiterName, products }
                   <span className="hidden print:inline-block mt-0.5 w-4 h-4 border-2 border-black rounded shrink-0" />
                   <div className={`flex-1 ${checked.has(item.id) ? 'opacity-40 line-through' : ''}`}>
                     <p className="font-bold text-[16px] leading-snug">
-                      {item.quantity}x {productName}
+                      {item.weight_grams != null
+                        ? `${(item.weight_grams / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg — ${productName}`
+                        : `${item.quantity}x ${productName}`}
                     </p>
                     {item.notes && (
                       <p className="text-[13px] pl-4 mt-0.5">

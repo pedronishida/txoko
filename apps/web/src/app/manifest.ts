@@ -15,21 +15,22 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: 'ltr',
     scope: '/',
     categories: ['business', 'productivity', 'food'],
+    // Aponta pras rotas dinamicas do Next (icon.tsx / apple-icon.tsx)
     icons: [
       {
-        src: '/icon.png',
+        src: '/icon',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',
       },
       {
-        src: '/icon.png',
+        src: '/icon',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable',
       },
       {
-        src: '/apple-icon.png',
+        src: '/apple-icon',
         sizes: '180x180',
         type: 'image/png',
         purpose: 'any',

@@ -122,10 +122,90 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
   }
 }
 
+export async function cancelItemFromOrder(
+  qrToken: string,
+  itemId: string,
+): Promise<FindOrderResult> {
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+
+  // Valida que o item pertence a comanda do restaurante logado
+  const { data: itemRow, error: itemErr } = await supabase
+    .from('order_items')
+    .select('id, order_id, quantity, unit_price, weight_grams, status, orders!inner(restaurant_id)')
+    .eq('id', itemId)
+    .maybeSingle()
+
+  if (itemErr) return { error: itemErr.message }
+  const item = itemRow as unknown as
+    | {
+        id: string
+        order_id: string
+        quantity: number
+        unit_price: number
+        weight_grams: number | null
+        status: string
+        orders: { restaurant_id: string }
+      }
+    | null
+  if (!item) return { error: 'Item nao encontrado' }
+  if ((item.orders as unknown as { restaurant_id: string }).restaurant_id !== restaurant_id) {
+    return { error: 'Item de outro restaurante' }
+  }
+  if (item.status === 'cancelled') return { error: 'Item ja cancelado' }
+
+  // Decrementa se unitario com qty > 1, senao cancela linha inteira
+  if (item.weight_grams == null && item.quantity > 1) {
+    const newQty = item.quantity - 1
+    const newTotal = Math.round(Number(item.unit_price) * newQty * 100) / 100
+    const { error: updErr } = await supabase
+      .from('order_items')
+      .update({ quantity: newQty, total_price: newTotal })
+      .eq('id', itemId)
+    if (updErr) return { error: updErr.message }
+  } else {
+    const { error: updErr } = await supabase
+      .from('order_items')
+      .update({
+        status: 'cancelled',
+        cancelled_by: 'cashier',
+        cancelled_at: new Date().toISOString(),
+      })
+      .eq('id', itemId)
+    if (updErr) return { error: updErr.message }
+  }
+
+  // Recalcula totais (chama RPC helper que ja existe)
+  await supabase.rpc('recalc_order_totals', { p_order_id: item.order_id })
+
+  return findOrderByCardToken(qrToken)
+}
+
+export async function addBarcodeToOrder(
+  qrToken: string,
+  barcode: string,
+): Promise<FindOrderResult> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('station_add_barcode_item', {
+    p_qr_token: qrToken,
+    p_barcode: barcode,
+  })
+  if (error) return { error: error.message }
+  // Recarrega a comanda (snapshot atualizado)
+  return findOrderByCardToken(qrToken)
+}
+
+export type PaymentLine = {
+  method: PaymentMethod
+  amount: number
+}
+
 export async function closeOrder(
   orderId: string,
-  paymentMethod: PaymentMethod,
+  payments: PaymentLine[],
 ): Promise<{ ok: true } | { error: string }> {
+  if (!payments || payments.length === 0) return { error: 'Informe pelo menos uma forma de pagamento' }
+
   const supabase = await createClient()
   const restaurant_id = await getActiveRestaurantId()
 
@@ -143,14 +223,28 @@ export async function closeOrder(
   if (order.restaurant_id !== restaurant_id) return { error: 'Comanda de outro restaurante' }
   if (order.status === 'closed') return { error: 'Comanda ja fechada' }
 
-  // Grava payment
-  const { error: payErr } = await supabase.from('payments').insert({
-    restaurant_id,
-    order_id: orderId,
-    method: paymentMethod,
-    amount: order.total,
-    status: 'approved',
-  })
+  // Valida soma
+  const sum = payments.reduce((acc, p) => acc + (p.amount || 0), 0)
+  const total = Number(order.total)
+  const diff = Math.abs(sum - total)
+  if (diff > 0.01) {
+    return {
+      error: `Soma dos pagamentos (R$ ${sum.toFixed(2)}) nao bate com total (R$ ${total.toFixed(2)})`,
+    }
+  }
+
+  // Grava todos os payments
+  const rows = payments
+    .filter((p) => p.amount > 0)
+    .map((p) => ({
+      restaurant_id,
+      order_id: orderId,
+      method: p.method,
+      amount: p.amount,
+      status: 'approved' as const,
+    }))
+
+  const { error: payErr } = await supabase.from('payments').insert(rows)
   if (payErr) return { error: payErr.message }
 
   // Fecha comanda

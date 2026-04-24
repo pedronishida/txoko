@@ -3,7 +3,7 @@
  * Estrategias de cache para modo offline (PDV + KDS criticos)
  */
 
-const CACHE_VERSION = 'txoko-v1'
+const CACHE_VERSION = 'txoko-v2'
 const STATIC_CACHE = `${CACHE_VERSION}-static`
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
 
@@ -74,8 +74,15 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Paginas: stale-while-revalidate
-  event.respondWith(staleWhileRevalidate(request))
+  // Paginas HTML: network-first (evita servir HTML stale com bundles invalidos)
+  event.respondWith(networkFirstHtml(request))
+})
+
+// Escuta mensagem pra skipWaiting (invocado pelo client no deploy)
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })
 
 // ─── Estrategias ─────────────────────────────────────────────────────────────
@@ -116,28 +123,27 @@ async function cacheFirst(request) {
   }
 }
 
-async function staleWhileRevalidate(request) {
-  const cached = await caches.match(request)
-
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        caches
-          .open(RUNTIME_CACHE)
-          .then((cache) => cache.put(request, response.clone()))
-      }
-      return response
-    })
-    .catch(async () => {
-      // Sem rede: tenta cache de rotas offline
-      const offlineFallback = await caches.match('/offline')
-      return (
-        offlineFallback ||
-        new Response('Pagina indisponivel offline', { status: 503 })
-      )
-    })
-
-  return cached || fetchPromise
+async function networkFirstHtml(request) {
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      // Clona ANTES de retornar — senao da "body already used"
+      const clone = response.clone()
+      caches
+        .open(RUNTIME_CACHE)
+        .then((cache) => cache.put(request, clone))
+        .catch(() => {})
+    }
+    return response
+  } catch {
+    const cached = await caches.match(request)
+    if (cached) return cached
+    const offlineFallback = await caches.match('/offline')
+    return (
+      offlineFallback ||
+      new Response('Pagina indisponivel offline', { status: 503 })
+    )
+  }
 }
 
 // ─── Background Sync ─────────────────────────────────────────────────────────

@@ -161,6 +161,7 @@ export interface OrderItem {
   order_id: string
   product_id: string
   quantity: number
+  weight_grams: number | null
   unit_price: number
   total_price: number
   notes: string | null

@@ -92,6 +92,13 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Polyfill pro esbuild helper __name — next-themes inline script depende
+            disso mas nao injeta. Sem isso o browser trava com "__name is not defined". */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__name=window.__name||((t,v)=>(Object.defineProperty(t,"name",{value:v,configurable:true}),t));`,
+          }}
+        />
         <meta name="theme-color" content="#EA1D2C" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
