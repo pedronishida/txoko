@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Design tokens — dark-first pra kiosk */
+:root {
+  --bg: #0A0A0A;
+  --bg-card: #141414;
+  --border: #262626;
+  --border-strong: #3A3A3A;
+
+  --fg: #FAFAF8;
+  --fg-muted: #A8A29E;
+  --fg-subtle: #57534E;
+
+  --primary: #4ADE80;
+  --primary-hover: #22C55E;
+  --primary-soft: rgba(74, 222, 128, 0.1);
+
+  --warm: #F59E0B;
+  --warm-soft: rgba(245, 158, 11, 0.12);
+
+  --coral: #EF4444;
+  --coral-soft: rgba(239, 68, 68, 0.12);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-card: var(--bg-card);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-warm: var(--warm);
+  --color-warm-soft: var(--warm-soft);
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
+
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', 'Roboto Mono', ui-monospace, monospace;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+}
+
+body {
+  /* Kiosk: desabilita seleção e context menu acidentais */
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+}
+
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Esconde scrollbars sem quebrar scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
