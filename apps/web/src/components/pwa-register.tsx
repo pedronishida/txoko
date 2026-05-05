@@ -10,6 +10,10 @@ export function PWARegister() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
+    // Skip Service Worker em dev: o Next.js dev server retorna redirect pro
+    // /sw.js e o navegador rejeita com SecurityError. So registra em prod.
+    if (process.env.NODE_ENV !== 'production') return
+
     navigator.serviceWorker
       .register('/sw.js', { scope: '/', updateViaCache: 'none' })
       .then((registration) => {

@@ -143,6 +143,13 @@
   --color-surface-hover: var(--surface-hover);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted);
+  /* Alias curto pra `text-muted`, `bg-muted`, `border-muted`, `placeholder:text-muted`.
+     Muito codigo do app usa essa forma curta — manter funcional evita texto
+     transparente em not-found, error, avaliacoes, command-palette, etc. */
+  --color-muted: var(--muted);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
