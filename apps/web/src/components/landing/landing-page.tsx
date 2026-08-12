@@ -204,13 +204,13 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/login"
+              href="/login" prefetch={false}
               className="text-[13px] text-muted-foreground hover:text-foreground transition-colors tracking-tight hidden sm:block"
             >
               Entrar
             </Link>
             <Link
-              href="/signup"
+              href="/signup" prefetch={false}
               className="h-9 px-4 inline-flex items-center text-[13px] font-medium bg-foreground text-bg rounded-lg hover:opacity-90 transition-opacity"
             >
               Comecar gratis
@@ -241,7 +241,7 @@ export function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
-              href="/signup"
+              href="/signup" prefetch={false}
               className="h-12 px-7 inline-flex items-center gap-2 text-[15px] font-medium bg-foreground text-bg rounded-lg hover:opacity-90 transition-opacity"
             >
               Comecar gratis
@@ -405,7 +405,7 @@ export function LandingPage() {
           </div>
           <div className="mt-12 sm:mt-14 text-center">
             <Link
-              href="/signup"
+              href="/signup" prefetch={false}
               className="h-12 px-8 inline-flex items-center gap-2 text-[15px] font-medium bg-[#FAFAFA] text-[#0F0F0F] rounded-lg hover:bg-white transition-colors"
             >
               Comecar agora
@@ -519,7 +519,7 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/signup"
+                  href="/signup" prefetch={false}
                   className={`w-full h-11 inline-flex items-center justify-center text-[14px] font-medium rounded-xl transition-colors ${
                     plan.highlight
                       ? 'bg-primary text-primary-foreground hover:bg-[var(--primary-hover)]'
@@ -565,14 +565,14 @@ export function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/signup"
+              href="/signup" prefetch={false}
               className="h-12 px-8 inline-flex items-center gap-2 text-[15px] font-medium bg-[#FF3346] text-white rounded-lg hover:bg-[#FF5260] transition-colors"
             >
               Criar conta gratis
               <span aria-hidden>→</span>
             </Link>
             <Link
-              href="/login"
+              href="/login" prefetch={false}
               className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-[#A3A3A3] border border-[#262626] rounded-lg hover:text-[#FAFAFA] hover:border-[#363636] transition-colors"
             >
               Ja tenho conta
