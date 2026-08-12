@@ -1,20 +1,39 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat, Ban, Trash2 } from 'lucide-react'
+import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat, Ban, Trash2, Users, Minus, Plus } from 'lucide-react'
 import { parseScan } from '@/lib/parse-scan'
 import {
   resolveScan,
   addWeightItem,
   addBarcodeItem,
   cancelItem,
+  setServiceMode,
   type StationSnapshot,
   type StationItem,
+  type ServiceMode,
 } from '@/lib/supabase'
-import { formatCurrency, formatWeight } from '@/lib/format'
+import { formatCurrency, formatWeight, serviceModeLabel } from '@/lib/format'
 import { BackgroundCameraScanner } from '@/components/camera-scanner'
 
 type Toast = { id: number; kind: 'ok' | 'error'; text: string }
+
+// Teclas do teclado numerico -> modalidade
+const MODE_BY_KEY: Record<string, ServiceMode> = {
+  '1': 'avontade',
+  '2': 'por_kg',
+  '3': 'por_kg_2mix',
+}
+
+// Acima disso pede confirmacao: protege do erro de digitar 4850 no lugar de
+// 485. Prato de self-service raramente passa de 1,5 kg.
+const WEIGHT_CONFIRM_THRESHOLD = 1500
+
+const MAX_PEOPLE = 20
+
+function isPorKg(mode: ServiceMode | null): boolean {
+  return mode === 'por_kg' || mode === 'por_kg_2mix'
+}
 
 export default function StationPage() {
   const [session, setSession] = useState<StationSnapshot | null>(null)
@@ -23,6 +42,11 @@ export default function StationPage() {
   const [buffer, setBuffer] = useState('')
   const [busy, setBusy] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
+  // Peso alto aguardando confirmacao (null = nada pendente)
+  const [pendingWeight, setPendingWeight] = useState<number | null>(null)
+  // Quantidade de pessoas no "a vontade". Local: o valor real fica no banco,
+  // isso aqui so alimenta o stepper durante a sessao no tablet.
+  const [people, setPeople] = useState(1)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const lastActivityRef = useRef<number>(Date.now())
@@ -63,7 +87,51 @@ export default function StationPage() {
     setToken(null)
     setCancelToken(null)
     setBuffer('')
+    setPendingWeight(null)
+    setPeople(1)
   }
+
+  // Define (ou corrige) a modalidade da comanda
+  const applyMode = useCallback(
+    async (mode: ServiceMode, qty = 1) => {
+      if (!token) return
+      try {
+        setBusy(true)
+        const snap = await setServiceMode(token, mode, qty)
+        setSession(snap)
+        if (mode === 'avontade') setPeople(qty)
+        pushToast(
+          'ok',
+          mode === 'avontade'
+            ? `${serviceModeLabel(mode)} · ${qty} ${qty === 1 ? 'pessoa' : 'pessoas'}`
+            : serviceModeLabel(mode)
+        )
+      } catch (e) {
+        pushToast('error', e instanceof Error ? e.message : 'Erro ao definir modalidade')
+      } finally {
+        setBusy(false)
+      }
+    },
+    [token, pushToast]
+  )
+
+  // Peso digitado a mao (balanca do piloto nao imprime etiqueta)
+  const applyManualWeight = useCallback(
+    async (grams: number) => {
+      if (!token) return
+      try {
+        setBusy(true)
+        const snap = await addWeightItem(token, grams)
+        setSession(snap)
+        pushToast('ok', `+ ${formatWeight(grams)}`)
+      } catch (e) {
+        pushToast('error', e instanceof Error ? e.message : 'Erro ao lancar peso')
+      } finally {
+        setBusy(false)
+      }
+    },
+    [token, pushToast]
+  )
 
   const handleScan = useCallback(
     async (raw: string) => {
@@ -150,14 +218,72 @@ export default function StationPage() {
   )
 
   // O leitor HID "digita" no input + Enter ao final. Interceptamos via onKeyDown.
+  // Um input so atende tudo: leitor HID, modalidade, pessoas e peso digitado.
+  // Nao ha colisao — o leitor manda 8+ digitos (ou 32 hex do QR) e a digitacao
+  // manual e sempre curta (1 a 4 digitos).
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Escape' && pendingWeight != null) {
       e.preventDefault()
-      const v = e.currentTarget.value
-      e.currentTarget.value = ''
-      setBuffer('')
-      if (v.trim()) handleScan(v)
+      setPendingWeight(null)
+      return
     }
+
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+
+    const v = e.currentTarget.value.trim()
+    e.currentTarget.value = ''
+    setBuffer('')
+
+    // 1) Confirmacao de peso alto pendente — Enter confirma
+    if (pendingWeight != null) {
+      const grams = pendingWeight
+      setPendingWeight(null)
+      void applyManualWeight(grams)
+      return
+    }
+
+    if (!v) return
+
+    // 2) Comanda aberta sem modalidade: 1 / 2 / 3
+    if (session && !session.service_mode) {
+      const mode = MODE_BY_KEY[v]
+      if (mode) {
+        void applyMode(mode)
+      } else {
+        pushToast('error', 'Aperte 1, 2 ou 3 pra escolher a modalidade')
+      }
+      return
+    }
+
+    // 3) "A vontade": digito curto corrige o numero de pessoas
+    if (session?.service_mode === 'avontade' && /^\d{1,2}$/.test(v)) {
+      const qty = Number(v)
+      if (qty >= 1 && qty <= MAX_PEOPLE) {
+        void applyMode('avontade', qty)
+      } else {
+        pushToast('error', `Pessoas: 1 a ${MAX_PEOPLE}`)
+      }
+      return
+    }
+
+    // 4) "Por quilo": digito curto e o peso em gramas
+    if (session && isPorKg(session.service_mode) && /^\d{1,4}$/.test(v)) {
+      const grams = Number(v)
+      if (grams <= 0) {
+        pushToast('error', 'Peso invalido')
+        return
+      }
+      if (grams > WEIGHT_CONFIRM_THRESHOLD) {
+        setPendingWeight(grams)
+        return
+      }
+      void applyManualWeight(grams)
+      return
+    }
+
+    // 5) Resto e scan (QR do cartao, etiqueta de peso, codigo de barras)
+    handleScan(v)
   }
 
   return (
@@ -186,6 +312,9 @@ export default function StationPage() {
           buffer={buffer}
           setBuffer={setBuffer}
           onInputKeyDown={onInputKeyDown}
+          people={people}
+          onPickMode={(m) => void applyMode(m)}
+          onSetPeople={(qty) => void applyMode('avontade', qty)}
           cancelToken={cancelToken}
           onCloseCancelMode={() => setCancelToken(null)}
           onCancelItem={async (itemId) => {
@@ -214,6 +343,39 @@ export default function StationPage() {
 
       {/* Camera sempre ativa em background — dispara handleScan sem UI */}
       <BackgroundCameraScanner onScan={handleScan} />
+
+      {/* Confirmacao de peso alto — protege do erro de digitacao */}
+      {pendingWeight != null && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-8">
+          <div className="bg-bg-card border-2 border-warm rounded-2xl px-10 py-8 text-center max-w-lg">
+            <AlertCircle size={44} className="text-warm mx-auto mb-4" />
+            <div className="text-6xl font-mono font-bold text-fg tabular-nums mb-2">
+              {pendingWeight} g
+            </div>
+            <p className="text-lg text-fg-muted mb-6">
+              Peso acima do normal. Confira o visor da balanca antes de lancar.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setPendingWeight(null)}
+                className="px-6 h-14 rounded-xl border-2 border-border text-fg-muted font-semibold text-lg"
+              >
+                Corrigir (Esc)
+              </button>
+              <button
+                onClick={() => {
+                  const grams = pendingWeight
+                  setPendingWeight(null)
+                  void applyManualWeight(grams)
+                }}
+                className="px-6 h-14 rounded-xl bg-warm text-black font-semibold text-lg"
+              >
+                Confirmar (Enter)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toasts */}
       <div className="fixed top-6 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50 pointer-events-none">
@@ -263,6 +425,9 @@ function ActiveView({
   buffer,
   setBuffer,
   onInputKeyDown,
+  people,
+  onPickMode,
+  onSetPeople,
   cancelToken,
   onCloseCancelMode,
   onCancelItem,
@@ -274,11 +439,14 @@ function ActiveView({
   buffer: string
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  people: number
+  onPickMode: (mode: ServiceMode) => void
+  onSetPeople: (qty: number) => void
   cancelToken: string | null
   onCloseCancelMode: () => void
   onCancelItem: (itemId: string) => void
 }) {
-  const mode = session.comanda_card.service_mode
+  const mode = session.service_mode
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll pro ultimo item
@@ -294,23 +462,56 @@ function ActiveView({
           <div
             className={
               'w-12 h-12 rounded-xl flex items-center justify-center ' +
-              (mode === 'avontade' ? 'bg-primary-soft' : 'bg-warm-soft')
+              (mode === 'avontade'
+                ? 'bg-primary-soft'
+                : mode == null
+                  ? 'bg-bg-card border border-border'
+                  : 'bg-warm-soft')
             }
           >
             {mode === 'avontade' ? (
               <ChefHat size={22} className="text-primary" />
             ) : (
-              <Scale size={22} className="text-warm" />
+              <Scale size={22} className={mode == null ? 'text-fg-muted' : 'text-warm'} />
             )}
           </div>
           <div>
             <div className="text-xs uppercase tracking-wide text-fg-muted">
-              {mode === 'avontade' ? 'A Vontade' : 'Por Quilo'}
+              {serviceModeLabel(mode)}
             </div>
             <div className="text-2xl font-semibold">
               Comanda #{String(session.comanda_card.card_number).padStart(3, '0')}
             </div>
           </div>
+
+          {/* "A vontade" e por pessoa — stepper corrige sem duplicar lancamento */}
+          {mode === 'avontade' && (
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
+              <Users size={16} className="text-fg-muted" />
+              <button
+                onClick={() => onSetPeople(Math.max(1, people - 1))}
+                disabled={busy || people <= 1}
+                className="w-10 h-10 rounded-lg border border-border text-fg-muted disabled:opacity-30 flex items-center justify-center"
+                aria-label="Menos uma pessoa"
+              >
+                <Minus size={16} />
+              </button>
+              <div className="w-12 text-center">
+                <div className="text-2xl font-mono font-bold tabular-nums">{people}</div>
+                <div className="text-[10px] uppercase text-fg-muted -mt-1">
+                  {people === 1 ? 'pessoa' : 'pessoas'}
+                </div>
+              </div>
+              <button
+                onClick={() => onSetPeople(Math.min(MAX_PEOPLE, people + 1))}
+                disabled={busy || people >= MAX_PEOPLE}
+                className="w-10 h-10 rounded-lg border border-border text-fg-muted disabled:opacity-30 flex items-center justify-center"
+                aria-label="Mais uma pessoa"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         <button
@@ -322,9 +523,11 @@ function ActiveView({
         </button>
       </header>
 
-      {/* Items */}
+      {/* Items — ou o seletor de modalidade, que vem antes de tudo */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-8 py-4">
-        {session.items.length === 0 ? (
+        {mode == null ? (
+          <ModePicker busy={busy} onPick={onPickMode} />
+        ) : session.items.length === 0 ? (
           <EmptyHint mode={mode} />
         ) : (
           <ul className="space-y-2">
@@ -362,14 +565,38 @@ function ActiveView({
         )}
       </div>
 
-      {/* Footer com total */}
+      {/* Footer: peso digitado (por quilo) + total */}
       <footer className="border-t border-border px-8 py-5 bg-bg-card">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex items-end justify-between gap-6">
           <div className="flex-1 min-w-0">
+            {isPorKg(mode) && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 text-fg-muted mb-1">
+                  <Scale size={14} />
+                  <span className="text-xs uppercase tracking-wide">Peso em gramas</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-mono font-bold tabular-nums text-fg leading-none">
+                    {/^\d{1,4}$/.test(buffer) ? buffer : '—'}
+                  </span>
+                  <span className="text-2xl font-mono text-fg-muted">g</span>
+                </div>
+                <div className="text-xs text-fg-muted mt-1">
+                  Leia o visor da balanca, digite e Enter
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 text-fg-muted mb-2">
               <ScanLine size={14} />
               <span className="text-xs">
-                {busy ? 'Processando...' : 'Escaneie ou digite o codigo + Enter'}
+                {busy
+                  ? 'Processando...'
+                  : mode == null
+                    ? 'Aperte 1, 2 ou 3 pra escolher a modalidade'
+                    : mode === 'avontade'
+                      ? 'Escaneie bebidas — ou digite o numero de pessoas + Enter'
+                      : 'Escaneie bebidas — ou digite o peso + Enter'}
               </span>
             </div>
             <input
@@ -401,6 +628,58 @@ function ActiveView({
           onClose={onCloseCancelMode}
         />
       )}
+    </div>
+  )
+}
+
+const MODE_OPTIONS: {
+  key: string
+  mode: ServiceMode
+  title: string
+  hint: string
+}[] = [
+  { key: '1', mode: 'avontade', title: 'A Vontade', hint: 'Preco fixo por pessoa' },
+  { key: '2', mode: 'por_kg', title: 'Por Quilo', hint: 'Pesa o prato' },
+  { key: '3', mode: 'por_kg_2mix', title: '2 Misturas', hint: 'Por quilo, outro preco' },
+]
+
+function ModePicker({
+  busy,
+  onPick,
+}: {
+  busy: boolean
+  onPick: (mode: ServiceMode) => void
+}) {
+  return (
+    <div className="h-full flex flex-col items-center justify-center gap-8">
+      <div className="text-center space-y-1">
+        <h2 className="text-3xl font-semibold tracking-tight text-fg">Qual a modalidade?</h2>
+        <p className="text-fg-muted">Aperte 1, 2 ou 3 — ou toque na opcao</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
+        {MODE_OPTIONS.map((opt) => (
+          <button
+            key={opt.mode}
+            onClick={() => onPick(opt.mode)}
+            disabled={busy}
+            className="flex flex-col items-center gap-3 px-6 py-8 rounded-2xl bg-bg-card border-2 border-border hover:border-primary active:scale-[0.98] transition disabled:opacity-40"
+          >
+            <div className="w-14 h-14 rounded-xl bg-bg border border-border flex items-center justify-center text-3xl font-mono font-bold text-fg">
+              {opt.key}
+            </div>
+            {opt.mode === 'avontade' ? (
+              <ChefHat size={30} className="text-primary" />
+            ) : (
+              <Scale size={30} className="text-warm" />
+            )}
+            <div className="text-center">
+              <div className="text-xl font-semibold text-fg leading-tight">{opt.title}</div>
+              <div className="text-sm text-fg-muted">{opt.hint}</div>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -495,17 +774,17 @@ function CancelDrawer({
   )
 }
 
-function EmptyHint({ mode }: { mode: 'avontade' | 'por_kg' }) {
+function EmptyHint({ mode }: { mode: ServiceMode }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center gap-4 py-12">
       <div className="flex gap-3">
-        {mode === 'por_kg' && (
+        {isPorKg(mode) && (
           <div className="flex flex-col items-center gap-2 px-6 py-5 rounded-xl bg-bg-card border border-border min-w-[180px]">
             <Scale size={32} className="text-warm" />
             <div className="text-sm text-fg-muted leading-tight">
-              Etiqueta de peso
+              Peso em gramas
               <br />
-              da balanca
+              digitado ou etiqueta
             </div>
           </div>
         )}
@@ -518,7 +797,11 @@ function EmptyHint({ mode }: { mode: 'avontade' | 'por_kg' }) {
           </div>
         </div>
       </div>
-      <p className="text-fg-muted text-sm mt-2">Escaneie os itens que voce quer lancar nesta comanda.</p>
+      <p className="text-fg-muted text-sm mt-2">
+        {isPorKg(mode)
+          ? 'Digite o peso do prato ou escaneie as bebidas.'
+          : 'Escaneie as bebidas que o cliente pedir.'}
+      </p>
     </div>
   )
 }

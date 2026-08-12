@@ -16,3 +16,10 @@ export function formatWeight(grams: number | null): string {
 export function formatPricePerKg(n: number): string {
   return `${formatCurrency(n)}/kg`
 }
+
+export function serviceModeLabel(mode: string | null): string {
+  if (mode === 'avontade') return 'A Vontade'
+  if (mode === 'por_kg') return 'Por Quilo'
+  if (mode === 'por_kg_2mix') return 'Por Quilo · 2 Misturas'
+  return 'Sem modalidade'
+}

@@ -24,10 +24,13 @@ export type StationItem = {
   created_at: string
 }
 
+export type ServiceMode = 'avontade' | 'por_kg' | 'por_kg_2mix'
+
 export type StationCard = {
   id: string
   card_number: number
-  service_mode: 'avontade' | 'por_kg'
+  // null = cartao generico; a modalidade e escolhida aqui na estacao
+  service_mode: ServiceMode | null
 }
 
 export type StationSnapshot = {
@@ -35,6 +38,9 @@ export type StationSnapshot = {
   status: string
   subtotal: number
   total: number
+  // Modalidade efetiva da comanda (cai pro cartao nos cartoes legados).
+  // null = ainda precisa perguntar.
+  service_mode: ServiceMode | null
   comanda_card: StationCard
   items: StationItem[]
 }
@@ -51,6 +57,26 @@ export async function addWeightItem(qrToken: string, weightGrams: number): Promi
   const { data, error } = await supabase.rpc('station_add_weight_item', {
     p_qr_token: qrToken,
     p_weight_grams: weightGrams,
+  })
+  if (error) throw new Error(error.message)
+  return data as StationSnapshot
+}
+
+/**
+ * Define a modalidade da comanda (tecla 1 / 2 / 3 na estacao).
+ *
+ * 'avontade' cobra preco fixo POR PESSOA — chamar de novo com outro numero
+ * CORRIGE a quantidade em vez de lancar duas vezes.
+ */
+export async function setServiceMode(
+  qrToken: string,
+  mode: ServiceMode,
+  people = 1
+): Promise<StationSnapshot> {
+  const { data, error } = await supabase.rpc('station_set_service_mode', {
+    p_qr_token: qrToken,
+    p_mode: mode,
+    p_people: people,
   })
   if (error) throw new Error(error.message)
   return data as StationSnapshot
