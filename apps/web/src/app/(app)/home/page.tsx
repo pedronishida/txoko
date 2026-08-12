@@ -194,17 +194,29 @@ export default async function HomePage() {
     },
   ]
 
+  // Este componente roda no servidor (Cloudflare, UTC). Sem fixar o fuso, as
+  // 21h de Brasilia viram 00h do dia seguinte — saudacao e data saem erradas.
+  const TIMEZONE = 'America/Sao_Paulo'
+  const now = new Date()
+
   const greeting = (() => {
-    const h = new Date().getHours()
+    const h = Number(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: TIMEZONE,
+        hour: '2-digit',
+        hourCycle: 'h23',
+      }).format(now)
+    )
     if (h < 12) return 'Bom dia'
     if (h < 18) return 'Boa tarde'
     return 'Boa noite'
   })()
 
-  const today = new Date().toLocaleDateString('pt-BR', {
+  const today = now.toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: TIMEZONE,
   })
 
   return (
