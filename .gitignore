@@ -36,3 +36,6 @@ supabase/.temp/
 
 # Local Claude Code config (never commit)
 .claude/
+
+# build artifacts do OpenNext — contem .env.local inlinado (segredos!)
+apps/web/.open-next/
