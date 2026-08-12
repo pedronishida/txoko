@@ -22,16 +22,16 @@ export function PageHeader({
     <header
       className={cn(
         'pb-5 flex items-start justify-between gap-4',
-        border && 'border-b border-night-lighter',
+        border && 'border-b border-border',
         className
       )}
     >
       <div className="min-w-0 flex-1">
-        <h1 className="text-[20px] font-medium tracking-[-0.02em] text-cloud leading-none">
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground leading-none">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-[12px] text-stone mt-1.5 tracking-tight">
+          <p className="text-[13px] text-muted mt-1.5">
             {subtitle}
           </p>
         )}

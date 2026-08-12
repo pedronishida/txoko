@@ -6,28 +6,32 @@ type ReportCardProps = {
   label: string
   value: string
   sub?: string
-  tone?: 'positive' | 'negative' | 'neutral' | 'warn'
+  tone?: 'positive' | 'negative' | 'neutral' | 'warn' | 'primary'
   className?: string
 }
 
 const toneColor: Record<string, string> = {
-  positive: 'text-leaf',
-  negative: 'text-coral',
-  neutral: 'text-cloud',
-  warn: 'text-warm',
+  positive: 'text-success',
+  negative: 'text-destructive',
+  neutral: 'text-foreground',
+  warn: 'text-accent-foreground',
+  primary: 'text-primary',
 }
 
 export function ReportCard({ label, value, sub, tone = 'neutral', className }: ReportCardProps) {
   return (
-    <div className={cn('bg-night-light/30 border border-night-lighter rounded-lg p-4', className)}>
-      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone mb-2">
+    <div
+      className={cn('bg-bg-elevated rounded-lg p-4 border border-border hover-lift', className)}
+      style={{ boxShadow: 'var(--shadow-island)' }}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted mb-2">
         {label}
       </p>
-      <p className={cn('text-[22px] font-medium tracking-[-0.02em] leading-none font-data', toneColor[tone])}>
+      <p className={cn('text-[24px] font-semibold tracking-[-0.02em] leading-none font-data', toneColor[tone])}>
         {value}
       </p>
       {sub && (
-        <p className="text-[11px] text-stone-dark tracking-tight mt-1.5">{sub}</p>
+        <p className="text-[11px] text-muted tracking-tight mt-2">{sub}</p>
       )}
     </div>
   )

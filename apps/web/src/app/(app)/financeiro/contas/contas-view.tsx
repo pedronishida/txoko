@@ -177,13 +177,13 @@ export function ContasView({
             className={cn(
               'relative text-[12px] font-medium tracking-tight transition-colors pb-2 -mb-2',
               tab === 'expense'
-                ? 'text-cloud'
-                : 'text-stone hover:text-stone-light'
+                ? 'text-foreground'
+                : 'text-muted hover:text-foreground/75'
             )}
           >
             Contas a pagar
             {tab === 'expense' && (
-              <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
+              <span className="absolute left-0 right-0 -bottom-px h-px bg-primary" />
             )}
           </button>
           <button
@@ -191,19 +191,19 @@ export function ContasView({
             className={cn(
               'relative text-[12px] font-medium tracking-tight transition-colors pb-2 -mb-2',
               tab === 'income'
-                ? 'text-cloud'
-                : 'text-stone hover:text-stone-light'
+                ? 'text-foreground'
+                : 'text-muted hover:text-foreground/75'
             )}
           >
             Contas a receber
             {tab === 'income' && (
-              <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
+              <span className="absolute left-0 right-0 -bottom-px h-px bg-primary" />
             )}
           </button>
         </div>
         <button
           onClick={() => openForm(null)}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-semibold rounded-md hover:bg-primary-hover transition-colors"
         >
           <Plus size={14} strokeWidth={2} />
           Nova {tab === 'expense' ? 'despesa' : 'entrada'}
@@ -211,20 +211,20 @@ export function ContasView({
       </div>
 
       {error && (
-        <div className="mb-6 px-3.5 py-2.5 bg-primary/5 border border-primary/20 rounded-md text-[12px] text-primary tracking-tight">
+        <div className="mb-6 px-3.5 py-2.5 bg-destructive/5 border border-destructive/20 rounded-md text-[12px] text-destructive font-medium tracking-tight">
           {error}
         </div>
       )}
 
       {/* KPI band */}
-      <section className="grid grid-cols-3 gap-x-10 pb-8 mb-8 border-b border-night-lighter">
+      <section className="grid grid-cols-3 gap-x-10 pb-8 mb-8 border-b border-border">
         <Metric label="Pendentes" value={formatCurrency(summary.pending)} tone="warm" />
-        <Metric label="Vencidos" value={formatCurrency(summary.overdue)} tone="primary" />
-        <Metric label="Pagos" value={formatCurrency(summary.paid)} />
+        <Metric label="Vencidos" value={formatCurrency(summary.overdue)} tone="destructive" />
+        <Metric label="Pagos" value={formatCurrency(summary.paid)} tone="success" />
       </section>
 
       {/* Status filter */}
-      <div className="flex items-center gap-6 mb-6 pb-4 border-b border-night-lighter">
+      <div className="flex items-center gap-6 mb-6 pb-4 border-b border-border">
         {(['all', 'pending', 'overdue', 'paid'] as const).map((s) => {
           const label =
             s === 'all'
@@ -241,15 +241,15 @@ export function ContasView({
               onClick={() => setStatusFilter(s)}
               className={cn(
                 'relative text-[12px] font-medium tracking-tight transition-colors pb-4 -mb-4',
-                active ? 'text-cloud' : 'text-stone hover:text-stone-light'
+                active ? 'text-foreground' : 'text-muted hover:text-foreground/75'
               )}
             >
               {label}
-              <span className="ml-1.5 text-[10px] font-data text-stone-dark">
+              <span className="ml-1.5 text-[10px] font-data text-muted">
                 {counts[s as keyof typeof counts]}
               </span>
               {active && (
-                <span className="absolute left-0 right-0 -bottom-px h-px bg-cloud" />
+                <span className="absolute left-0 right-0 -bottom-px h-px bg-primary" />
               )}
             </button>
           )
@@ -258,7 +258,7 @@ export function ContasView({
 
       {/* Table */}
       <div>
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_0.8fr_auto] gap-4 pb-3 border-b border-night-lighter text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_0.8fr_auto] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
           <span>Descricao</span>
           <span>Categoria</span>
           <span className="text-right">Valor</span>
@@ -266,9 +266,9 @@ export function ContasView({
           <span>Status</span>
           <span></span>
         </div>
-        <div className="divide-y divide-night-lighter">
+        <div className="divide-y divide-border">
           {filtered.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
               Nenhuma transacao encontrada
             </p>
           ) : (
@@ -277,25 +277,25 @@ export function ContasView({
                 key={tx.id}
                 className="group grid grid-cols-[2fr_1fr_1fr_1fr_0.8fr_auto] gap-4 py-3 items-center"
               >
-                <span className="text-[13px] text-cloud tracking-tight truncate">
+                <span className="text-[13px] text-foreground tracking-tight truncate">
                   {tx.description ?? '—'}
                 </span>
-                <span className="text-[11px] text-stone tracking-tight capitalize">
+                <span className="text-[11px] text-muted tracking-tight capitalize">
                   {tx.category}
                 </span>
-                <span className="text-[12px] font-data text-cloud text-right">
+                <span className="text-[12px] font-data text-foreground text-right">
                   {formatCurrency(Number(tx.amount))}
                 </span>
-                <span className="text-[11px] text-stone-dark font-data">
+                <span className="text-[11px] text-muted font-data">
                   {formatDate(tx.due_date)}
                 </span>
                 <span
                   className={cn(
-                    'text-[11px] tracking-tight',
-                    tx.status === 'paid' && 'text-leaf',
-                    tx.status === 'pending' && 'text-warm',
-                    tx.status === 'overdue' && 'text-primary',
-                    tx.status === 'cancelled' && 'text-stone-dark'
+                    'text-[11px] tracking-tight font-medium',
+                    tx.status === 'paid' && 'text-success',
+                    tx.status === 'pending' && 'text-accent-foreground',
+                    tx.status === 'overdue' && 'text-destructive',
+                    tx.status === 'cancelled' && 'text-muted'
                   )}
                 >
                   {STATUS_LABEL[tx.status]}
@@ -304,28 +304,28 @@ export function ContasView({
                   {tx.status !== 'paid' && tx.status !== 'cancelled' && (
                     <button
                       onClick={() => handleMarkPaid(tx.id)}
-                      className="text-[10px] text-stone-light hover:text-leaf tracking-tight"
+                      className="text-[10px] text-muted hover:text-success tracking-tight"
                     >
                       pagar
                     </button>
                   )}
                   <button
                     onClick={() => openForm(tx)}
-                    className="text-[10px] text-stone-light hover:text-cloud tracking-tight"
+                    className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight"
                   >
                     editar
                   </button>
                   {tx.status !== 'cancelled' && (
                     <button
                       onClick={() => handleCancel(tx.id)}
-                      className="text-[10px] text-stone-dark hover:text-warm tracking-tight"
+                      className="text-[10px] text-muted hover:text-accent-foreground tracking-tight"
                     >
                       cancelar
                     </button>
                   )}
                   <button
                     onClick={() => handleDelete(tx.id)}
-                    className="text-[10px] text-stone-dark hover:text-primary tracking-tight"
+                    className="text-[10px] text-muted hover:text-primary tracking-tight"
                   >
                     remover
                   </button>
@@ -343,17 +343,17 @@ export function ContasView({
           onClick={() => setShowForm(false)}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-md"
+            className="bg-surface border border-border rounded-xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-              <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-[14px] font-medium text-foreground tracking-tight">
                 {editing ? 'Editar' : 'Nova'}{' '}
                 {tab === 'expense' ? 'despesa' : 'entrada'}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -363,7 +363,7 @@ export function ContasView({
                 <input
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud focus:outline-none focus:border-stone-dark transition-colors"
+                  className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground focus:outline-none focus:border-stone-dark transition-colors"
                 />
               </Field>
               <div className="grid grid-cols-2 gap-4">
@@ -375,7 +375,7 @@ export function ContasView({
                     value={formAmount}
                     onChange={(e) => setFormAmount(e.target.value)}
                     placeholder="R$"
-                    className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark font-data focus:outline-none focus:border-stone-dark transition-colors"
+                    className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted font-data focus:outline-none focus:border-stone-dark transition-colors"
                   />
                 </Field>
                 <Field label="Vencimento">
@@ -383,7 +383,7 @@ export function ContasView({
                     type="date"
                     value={formDueDate}
                     onChange={(e) => setFormDueDate(e.target.value)}
-                    className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud font-data focus:outline-none focus:border-stone-dark transition-colors"
+                    className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground font-data focus:outline-none focus:border-stone-dark transition-colors"
                   />
                 </Field>
               </div>
@@ -391,7 +391,7 @@ export function ContasView({
                 <select
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
-                  className="w-full h-10 px-3 bg-night border border-night-lighter rounded-md text-[13px] text-cloud focus:outline-none focus:border-stone-dark transition-colors capitalize"
+                  className="w-full h-10 px-3 bg-night border border-border rounded-md text-[13px] text-foreground focus:outline-none focus:border-stone-dark transition-colors capitalize"
                 >
                   <option value="">Selecionar</option>
                   {(tab === 'expense'
@@ -407,14 +407,14 @@ export function ContasView({
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                  className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={pending}
-                  className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                  className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
                 >
                   {pending ? 'Salvando' : editing ? 'Salvar' : 'Criar'}
                 </button>
@@ -434,19 +434,21 @@ function Metric({
 }: {
   label: string
   value: string
-  tone?: 'neutral' | 'warm' | 'primary'
+  tone?: 'neutral' | 'warm' | 'primary' | 'destructive' | 'success'
 }) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
         {label}
       </p>
       <p
         className={cn(
           'text-[28px] font-medium tracking-[-0.03em] leading-none font-data mt-3',
-          tone === 'neutral' && 'text-cloud',
-          tone === 'warm' && 'text-warm',
-          tone === 'primary' && 'text-primary'
+          tone === 'neutral' && 'text-foreground',
+          tone === 'warm' && 'text-accent-foreground',
+          tone === 'primary' && 'text-primary',
+          tone === 'destructive' && 'text-destructive',
+          tone === 'success' && 'text-success'
         )}
       >
         {value}
@@ -464,7 +466,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
         {label}
       </label>
       {children}

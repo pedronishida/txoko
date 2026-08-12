@@ -223,14 +223,14 @@ export function KdsView({
               key={status}
               className={cn(
                 'flex flex-col min-h-0 px-6 py-5',
-                idx > 0 && 'border-l border-night-lighter'
+                idx > 0 && 'border-l border-border'
               )}
             >
               <div className="flex items-baseline justify-between mb-5">
-                <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+                <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                   {COLUMN_LABEL[status]}
                 </h2>
-                <span className="text-[11px] font-data text-stone-dark">
+                <span className="text-[11px] font-data text-muted">
                   {colCards.length}
                 </span>
               </div>
@@ -246,19 +246,20 @@ export function KdsView({
                     <div
                       key={`${card.order.id}-${status}`}
                       className={cn(
-                        'border rounded-lg overflow-hidden transition-colors',
+                        'border rounded-lg overflow-hidden hover-lift',
                         isLate
-                          ? 'border-primary/30 bg-primary/5'
-                          : 'border-night-lighter bg-night-light/40'
+                          ? 'border-destructive/30 bg-destructive/5'
+                          : 'border-border bg-bg-elevated'
                       )}
+                      style={isLate ? undefined : { boxShadow: 'var(--shadow-island)' }}
                     >
                       {/* Card header */}
                       <div className="px-4 py-3 flex items-baseline justify-between gap-3">
                         <div className="flex items-baseline gap-2 min-w-0">
-                          <span className="text-[11px] font-data text-stone-dark">
+                          <span className="text-[11px] font-data text-muted">
                             #{card.order.id.slice(0, 6)}
                           </span>
-                          <span className="text-[13px] font-medium text-cloud tracking-tight truncate">
+                          <span className="text-[13px] font-medium text-foreground tracking-tight truncate">
                             {card.tableNumber
                               ? `Mesa ${card.tableNumber}`
                               : card.order.type === 'delivery'
@@ -272,10 +273,10 @@ export function KdsView({
                           className={cn(
                             'text-[11px] font-data tracking-tight shrink-0',
                             isLate
-                              ? 'text-primary font-medium'
+                              ? 'text-destructive font-semibold'
                               : isWarn
-                                ? 'text-warm'
-                                : 'text-stone-dark'
+                                ? 'text-accent-foreground font-medium'
+                                : 'text-muted'
                           )}
                         >
                           {elapsed}m
@@ -289,14 +290,14 @@ export function KdsView({
                           const product = productById.get(item.product_id)
                           return (
                             <div key={item.id}>
-                              <p className="text-[12px] text-stone-light tracking-tight leading-snug">
-                                <span className="text-cloud font-data mr-1.5">
+                              <p className="text-[12px] text-foreground/75 tracking-tight leading-snug">
+                                <span className="text-foreground font-data mr-1.5">
                                   {item.quantity}×
                                 </span>
                                 {product?.name}
                               </p>
                               {item.notes && (
-                                <p className="text-[10px] text-warm mt-0.5 ml-5 tracking-tight">
+                                <p className="text-[10px] text-accent-foreground mt-0.5 ml-5 tracking-tight">
                                   {item.notes}
                                 </p>
                               )}
@@ -306,11 +307,11 @@ export function KdsView({
                       </div>
 
                       {/* Action */}
-                      <div className="border-t border-night-lighter">
+                      <div className="border-t border-border">
                         {status === 'pending' && (
                           <button
                             onClick={() => doAccept(card.order.id)}
-                            className="w-full h-9 text-[12px] font-medium text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+                            className="w-full h-9 text-[12px] font-semibold text-primary hover:bg-primary-soft transition-colors tracking-tight"
                           >
                             Aceitar
                           </button>
@@ -318,7 +319,7 @@ export function KdsView({
                         {status === 'preparing' && (
                           <button
                             onClick={() => doReady(card.order.id)}
-                            className="w-full h-9 text-[12px] font-medium text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+                            className="w-full h-9 text-[12px] font-semibold text-success hover:bg-success/10 transition-colors tracking-tight"
                           >
                             Marcar pronto
                           </button>
@@ -326,7 +327,7 @@ export function KdsView({
                         {status === 'ready' && (
                           <button
                             onClick={() => doDeliver(card.order.id)}
-                            className="w-full h-9 text-[12px] font-medium text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+                            className="w-full h-9 text-[12px] font-semibold text-accent-foreground bg-accent-soft hover:bg-accent/30 transition-colors tracking-tight"
                           >
                             Entregar
                           </button>
@@ -337,7 +338,7 @@ export function KdsView({
                 })}
 
                 {colCards.length === 0 && (
-                  <p className="py-6 text-center text-[12px] text-stone tracking-tight">
+                  <p className="py-6 text-center text-[12px] text-muted tracking-tight">
                     Vazio
                   </p>
                 )}

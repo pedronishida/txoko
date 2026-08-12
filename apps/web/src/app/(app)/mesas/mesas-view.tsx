@@ -3,10 +3,9 @@
 import { useEffect, useState, useTransition, useCallback, useRef } from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { Order, OrderItem, Product, Table, TableStatus } from '@txoko/shared'
-import { X, QrCode, Download, Printer, Grid2X2 } from 'lucide-react'
+import { X, QrCode, Download, Printer } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateTableStatus } from './actions'
-import { PageHeader } from '@/components/page-header'
 import QRCode from 'qrcode'
 
 const STATUS_LABEL: Record<TableStatus, string> = {
@@ -229,63 +228,56 @@ export function MesasView({
   }
 
   return (
-    <div className="-mx-8 -mt-6">
+    <div>
       {/* Header */}
-      <div className="px-8 pt-6 pb-5 border-b border-night-lighter">
-        <PageHeader
-          title="Mesas"
-          subtitle={`${counts.occupied} ocupadas · ${counts.available} disponiveis · ${counts.reserved} reservadas`}
-          border={false}
-          action={
-            <div className="flex items-center gap-5">
-              {restaurantSlug && (
-                <a
-                  href="/mesas/qrs"
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-stone hover:text-cloud transition-colors tracking-tight"
-                  title="Gerar QR codes de todas as mesas"
+      <div className="pb-5 border-b border-border mb-5 -mx-8 px-8">
+        <div className="flex items-end justify-between gap-6 mb-3">
+          <div>
+            <h2 className="text-[16px] font-medium tracking-[-0.02em] text-foreground leading-none">
+              Salao
+            </h2>
+            <p className="text-[12px] text-foreground/75 tracking-tight mt-1.5">
+              {counts.occupied} ocupadas · {counts.available} disponiveis · {counts.reserved} reservadas
+            </p>
+          </div>
+          <div className="flex items-center gap-5">
+            {areas.length > 1 && (
+              <>
+                <button
+                  onClick={() => setFilterArea(null)}
+                  className={cn(
+                    'text-[12px] font-medium tracking-tight transition-colors',
+                    filterArea ? 'text-muted hover:text-foreground/75' : 'text-foreground'
+                  )}
                 >
-                  <Grid2X2 size={13} />
-                  QRs de todas as mesas
-                </a>
-              )}
-              {areas.length > 1 && (
-                <>
+                  Todas
+                </button>
+                {areas.map((area) => (
                   <button
-                    onClick={() => setFilterArea(null)}
+                    key={area}
+                    onClick={() => setFilterArea(area === filterArea ? null : area)}
                     className={cn(
-                      'text-[12px] font-medium tracking-tight transition-colors',
-                      !filterArea ? 'text-cloud' : 'text-stone hover:text-stone-light'
+                      'text-[12px] font-medium tracking-tight transition-colors capitalize',
+                      filterArea === area
+                        ? 'text-foreground'
+                        : 'text-muted hover:text-foreground/75'
                     )}
                   >
-                    Todas
+                    {AREA_LABEL[area] ?? area}
                   </button>
-                  {areas.map((area) => (
-                    <button
-                      key={area}
-                      onClick={() => setFilterArea(area === filterArea ? null : area)}
-                      className={cn(
-                        'text-[12px] font-medium tracking-tight transition-colors capitalize',
-                        filterArea === area
-                          ? 'text-cloud'
-                          : 'text-stone hover:text-stone-light'
-                      )}
-                    >
-                      {AREA_LABEL[area] ?? area}
-                    </button>
-                  ))}
-                </>
-              )}
-            </div>
-          }
-        />
+                ))}
+              </>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-6 mt-3">
           {(Object.keys(STATUS_LABEL) as TableStatus[]).map((status) => (
             <div key={status} className="flex items-center gap-2">
               <StatusDot tone={STATUS_DOT_TONE[status]} />
-              <span className="text-[11px] text-stone tracking-tight">
+              <span className="text-[11px] text-muted tracking-tight">
                 {STATUS_LABEL[status]}
               </span>
-              <span className="text-[11px] font-data text-stone-dark">
+              <span className="text-[11px] font-data text-muted">
                 {counts[status]}
               </span>
             </div>
@@ -295,7 +287,7 @@ export function MesasView({
 
       <div className="flex min-h-[calc(100vh-14rem)]">
         {/* Grid */}
-        <section className={cn('flex-1 p-8', selectedTable && 'border-r border-night-lighter')}>
+        <section className={cn('flex-1 p-8', selectedTable && 'border-r border-border')}>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             {filteredTables.map((table) => {
               const minutes = getOccupiedMinutes(table.occupied_at)
@@ -308,15 +300,15 @@ export function MesasView({
                   className={cn(
                     'group relative aspect-square flex flex-col items-start justify-between p-4 rounded-lg border transition-all',
                     active
-                      ? 'border-cloud bg-night-light/70'
-                      : 'border-night-lighter hover:border-stone-dark hover:bg-night-light/40'
+                      ? 'border-cloud bg-surface/70'
+                      : 'border-border hover:border-stone-dark hover:bg-surface/40'
                   )}
                 >
                   {/* QR button — top-right corner */}
                   {restaurantSlug && (
                     <button
                       onClick={(e) => { e.stopPropagation(); openQrModal(table) }}
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 text-stone hover:text-cloud transition-all"
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 text-muted hover:text-foreground transition-all"
                       title="Ver QR code"
                       aria-label="QR code da mesa"
                     >
@@ -336,16 +328,16 @@ export function MesasView({
 
                   <div className="relative pointer-events-none flex items-center gap-2">
                     <StatusDot tone={tone} />
-                    <span className="text-[10px] text-stone tracking-tight">
+                    <span className="text-[10px] text-muted tracking-tight">
                       {table.capacity} lug.
                     </span>
                   </div>
 
                   <div className="relative pointer-events-none">
-                    <p className="text-[28px] font-medium text-cloud font-data tracking-[-0.03em] leading-none">
+                    <p className="text-[28px] font-medium text-foreground font-data tracking-[-0.03em] leading-none">
                       {table.number}
                     </p>
-                    <p className="text-[10px] text-stone-dark tracking-tight mt-1">
+                    <p className="text-[10px] text-muted tracking-tight mt-1">
                       {STATUS_LABEL[table.status]}
                     </p>
                   </div>
@@ -358,14 +350,14 @@ export function MesasView({
                           minutes > 60
                             ? 'text-primary'
                             : minutes > 30
-                              ? 'text-warm'
-                              : 'text-stone-dark'
+                              ? 'text-accent-foreground'
+                              : 'text-muted'
                         )}
                       >
                         {minutes}m
                       </span>
                       {tableOrder && (
-                        <span className="text-[10px] font-data text-stone-light">
+                        <span className="text-[10px] font-data text-foreground/75">
                           {formatCurrency(tableOrder.total)}
                         </span>
                       )}
@@ -380,27 +372,27 @@ export function MesasView({
         {/* Panel */}
         {selectedTable && (
           <aside className="w-[340px] flex flex-col">
-            <div className="px-6 py-5 border-b border-night-lighter flex items-start justify-between gap-4">
+            <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                   {AREA_LABEL[selectedTable.area] ?? selectedTable.area} ·{' '}
                   {selectedTable.capacity} lugares
                 </p>
-                <h2 className="text-[28px] font-medium font-data tracking-[-0.03em] text-cloud leading-none mt-2">
+                <h2 className="text-[28px] font-medium font-data tracking-[-0.03em] text-foreground leading-none mt-2">
                   Mesa {selectedTable.number}
                 </h2>
               </div>
               <button
                 onClick={() => setSelectedTable(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
                 aria-label="Fechar"
               >
                 <X size={14} />
               </button>
             </div>
 
-            <div className="px-6 py-5 border-b border-night-lighter">
-              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+            <div className="px-6 py-5 border-b border-border">
+              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                 Status
               </p>
               <div className="grid grid-cols-2 gap-1">
@@ -415,8 +407,8 @@ export function MesasView({
                       className={cn(
                         'h-9 text-[12px] font-medium rounded-md transition-colors tracking-tight',
                         active
-                          ? 'bg-cloud text-night'
-                          : 'text-stone-light hover:text-cloud hover:bg-night-light'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground/75 hover:text-foreground hover:bg-surface'
                       )}
                     >
                       {STATUS_LABEL[status]}
@@ -427,10 +419,10 @@ export function MesasView({
             </div>
 
             {restaurantSlug && (
-              <div className="px-6 py-5 border-b border-night-lighter">
+              <div className="px-6 py-5 border-b border-border">
                 <button
                   onClick={() => openQrModal(selectedTable)}
-                  className="flex items-center gap-2 text-[11px] text-stone-light hover:text-cloud transition-colors tracking-tight"
+                  className="flex items-center gap-2 text-[11px] text-foreground/75 hover:text-foreground transition-colors tracking-tight"
                 >
                   <QrCode size={13} />
                   Ver QR code do cardapio
@@ -442,10 +434,10 @@ export function MesasView({
               <div className="flex-1 overflow-y-auto">
                 <div className="px-6 py-5">
                   <div className="flex items-baseline justify-between mb-4">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                       Pedido em andamento
                     </p>
-                    <span className="text-[11px] font-data text-stone-dark">
+                    <span className="text-[11px] font-data text-muted">
                       #{activeOrder.id.slice(0, 6)}
                     </span>
                   </div>
@@ -456,7 +448,7 @@ export function MesasView({
                     />
                     <Row label="Status" value={activeOrder.status} />
                   </div>
-                  <div className="space-y-2.5 pb-5 border-b border-night-lighter">
+                  <div className="space-y-2.5 pb-5 border-b border-border">
                     {activeOrder.items.map((item) => {
                       const product = products.find(
                         (p) => p.id === item.product_id
@@ -467,19 +459,19 @@ export function MesasView({
                           className="flex items-start justify-between gap-3"
                         >
                           <div className="min-w-0">
-                            <p className="text-[12px] text-cloud tracking-tight">
-                              <span className="font-data text-stone-dark mr-1.5">
+                            <p className="text-[12px] text-foreground tracking-tight">
+                              <span className="font-data text-muted mr-1.5">
                                 {item.quantity}×
                               </span>
                               {product?.name}
                             </p>
                             {item.notes && (
-                              <p className="text-[10px] text-warm mt-0.5 ml-5 tracking-tight">
+                              <p className="text-[10px] text-accent-foreground mt-0.5 ml-5 tracking-tight">
                                 {item.notes}
                               </p>
                             )}
                           </div>
-                          <span className="text-[11px] font-data text-stone-dark shrink-0">
+                          <span className="text-[11px] font-data text-muted shrink-0">
                             {formatCurrency(item.total_price)}
                           </span>
                         </div>
@@ -487,16 +479,16 @@ export function MesasView({
                     })}
                   </div>
                   <div className="flex items-baseline justify-between mt-4">
-                    <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+                    <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                       Total
                     </span>
-                    <span className="text-[16px] font-medium text-cloud font-data tracking-tight">
+                    <span className="text-[16px] font-medium text-foreground font-data tracking-tight">
                       {formatCurrency(activeOrder.total)}
                     </span>
                   </div>
                   <button
                     onClick={() => handleStatusChange(selectedTable.id, 'available')}
-                    className="mt-5 w-full h-9 rounded-md border border-night-lighter text-[12px] font-medium text-stone-light hover:text-cloud hover:border-stone-dark transition-colors tracking-tight"
+                    className="mt-5 w-full h-9 rounded-md border border-border text-[12px] font-medium text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors tracking-tight"
                   >
                     Liberar mesa
                   </button>
@@ -504,7 +496,7 @@ export function MesasView({
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center p-6">
-                <p className="text-[12px] text-stone tracking-tight">
+                <p className="text-[12px] text-muted tracking-tight">
                   Sem pedido ativo
                 </p>
               </div>
@@ -520,16 +512,16 @@ export function MesasView({
           onClick={() => setQrModal(null)}
         >
           <div
-            className="bg-night rounded-xl border border-night-lighter p-6 w-[340px] flex flex-col items-center gap-4"
+            className="bg-night rounded-xl border border-border p-6 w-[340px] flex flex-col items-center gap-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between w-full">
-              <h3 className="text-[13px] font-medium text-cloud tracking-tight">
+              <h3 className="text-[13px] font-medium text-foreground tracking-tight">
                 QR Code — Mesa {qrModal.table.number}
               </h3>
               <button
                 onClick={() => setQrModal(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
                 aria-label="Fechar"
               >
                 <X size={14} />
@@ -557,14 +549,14 @@ export function MesasView({
                 <div className="flex gap-2 w-full">
                   <button
                     onClick={() => handleDownloadQr(qrModal.dataUrl!, qrModal.table.number)}
-                    className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-md border border-night-lighter text-[12px] font-medium text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                    className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-md border border-border text-[12px] font-medium text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                   >
                     <Download size={13} />
                     Baixar PNG
                   </button>
                   <button
                     onClick={() => handlePrintQr(qrModal.dataUrl!, qrModal.table.number)}
-                    className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-md border border-night-lighter text-[12px] font-medium text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                    className="flex-1 h-9 flex items-center justify-center gap-1.5 rounded-md border border-border text-[12px] font-medium text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                   >
                     <Printer size={13} />
                     Imprimir
@@ -573,7 +565,7 @@ export function MesasView({
               </>
             ) : (
               <div className="h-[260px] flex items-center justify-center">
-                <span className="text-[12px] text-stone tracking-tight">Gerando QR code...</span>
+                <span className="text-[12px] text-muted tracking-tight">Gerando QR code...</span>
               </div>
             )}
           </div>
@@ -591,13 +583,13 @@ function StatusDot({
   return (
     <span className="relative flex shrink-0">
       {tone === 'leaf' && (
-        <span className="absolute inline-flex h-full w-full rounded-full bg-leaf opacity-60 animate-ping" />
+        <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping" />
       )}
       <span
         className={cn(
           'relative inline-flex rounded-full h-1.5 w-1.5',
-          tone === 'leaf' && 'bg-leaf',
-          tone === 'warm' && 'bg-warm',
+          tone === 'leaf' && 'bg-success',
+          tone === 'warm' && 'bg-accent',
           tone === 'stone' && 'bg-stone',
           tone === 'primary' && 'bg-primary'
         )}
@@ -609,8 +601,8 @@ function StatusDot({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between">
-      <span className="text-[11px] text-stone tracking-tight">{label}</span>
-      <span className="text-[11px] text-stone-light capitalize tracking-tight">
+      <span className="text-[11px] text-muted tracking-tight">{label}</span>
+      <span className="text-[11px] text-foreground/75 capitalize tracking-tight">
         {value}
       </span>
     </div>

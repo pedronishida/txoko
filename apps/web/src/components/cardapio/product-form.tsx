@@ -87,17 +87,17 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
     onClose()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-night border border-night-lighter rounded-lg text-sm text-cloud placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/50 transition-colors'
-  const labelClass = 'block text-sm font-medium text-stone-light mb-1'
+  const inputClass = 'w-full px-3 py-2 bg-night border border-border rounded-lg text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/50 transition-colors'
+  const labelClass = 'block text-sm font-medium text-foreground/75 mb-1'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-night-light border border-night-lighter rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-night-lighter">
-          <h2 className="font-semibold text-cloud">
+      <div className="bg-surface border border-border rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="font-semibold text-foreground">
             {product ? 'Editar Produto' : 'Novo Produto'}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-md text-stone hover:text-cloud hover:bg-night-lighter">
+          <button onClick={onClose} className="p-1.5 rounded-md text-muted hover:text-foreground hover:bg-muted-subtle">
             <X size={18} />
           </button>
         </div>
@@ -106,12 +106,12 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
           <div>
             <label className={labelClass}>Imagem</label>
             <div className="flex items-center gap-3">
-              <label className="relative w-20 h-20 rounded-lg border-2 border-dashed border-night-lighter bg-night flex items-center justify-center cursor-pointer hover:border-leaf/40 transition-colors overflow-hidden">
+              <label className="relative w-20 h-20 rounded-lg border-2 border-dashed border-border bg-night flex items-center justify-center cursor-pointer hover:border-success/40 transition-colors overflow-hidden">
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={imageUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <ImagePlus size={20} className="text-stone" />
+                  <ImagePlus size={20} className="text-muted" />
                 )}
                 <input
                   type="file"
@@ -121,16 +121,16 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
               </label>
-              <div className="flex-1 text-xs text-stone">
+              <div className="flex-1 text-xs text-muted">
                 {uploading ? (
-                  <p className="text-leaf">Enviando...</p>
+                  <p className="text-success">Enviando...</p>
                 ) : imageUrl ? (
                   <>
-                    <p className="text-cloud">Imagem enviada</p>
+                    <p className="text-foreground">Imagem enviada</p>
                     <button
                       type="button"
                       onClick={() => setImageUrl(null)}
-                      className="text-coral text-[10px] hover:underline mt-0.5"
+                      className="text-destructive text-[10px] hover:underline mt-0.5"
                     >
                       Remover
                     </button>
@@ -138,7 +138,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
                 ) : (
                   <p>PNG, JPG ou WebP. Maximo 5MB.</p>
                 )}
-                {uploadError && <p className="text-coral mt-1">{uploadError}</p>}
+                {uploadError && <p className="text-destructive mt-1">{uploadError}</p>}
               </div>
             </div>
           </div>
@@ -200,9 +200,9 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
               type="checkbox"
               checked={soldByWeight}
               onChange={e => setSoldByWeight(e.target.checked)}
-              className="w-4 h-4 rounded border-night-lighter bg-night text-primary focus:ring-1 focus:ring-primary/30"
+              className="w-4 h-4 rounded border-border bg-night text-primary focus:ring-1 focus:ring-primary/30"
             />
-            <label htmlFor="sold_by_weight" className="text-sm text-stone-light cursor-pointer">
+            <label htmlFor="sold_by_weight" className="text-sm text-foreground/75 cursor-pointer">
               Vendido por kg (self-service)
             </label>
           </div>
@@ -219,7 +219,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
                 className={`${inputClass} font-data`}
                 required
               />
-              <p className="mt-1 text-xs text-stone">
+              <p className="mt-1 text-xs text-muted">
                 Usado pela estacao de pesagem. Preco por unidade fica desativado.
               </p>
             </div>
@@ -233,7 +233,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
               placeholder="Escaneie ou digite o EAN"
               className={`${inputClass} font-data`}
             />
-            <p className="mt-1 text-xs text-stone">
+            <p className="mt-1 text-xs text-muted">
               Usado pela estacao pra identificar itens unitarios (refri, agua, sobremesa).
             </p>
           </div>
@@ -289,7 +289,7 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 border border-night-lighter rounded-lg text-sm font-medium text-stone-light hover:text-cloud hover:bg-night-lighter transition-colors"
+              className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground/75 hover:text-foreground hover:bg-muted-subtle transition-colors"
             >
               Cancelar
             </button>

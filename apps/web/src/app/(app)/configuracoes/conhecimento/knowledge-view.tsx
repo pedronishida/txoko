@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect } from 'react'
-import { Plus, Pencil, Trash2, X, ChevronLeft } from 'lucide-react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { PageHeader } from '@/components/page-header'
 import {
   createKnowledgeEntry,
   updateKnowledgeEntry,
   deleteKnowledgeEntry,
   toggleKnowledgeEntry,
+  seedKnowledgeTemplates,
   type KnowledgeEntry,
   type KnowledgeEntryInput,
 } from './actions'
@@ -31,12 +31,12 @@ type CategoryValue = (typeof CATEGORIES)[number]['value']
 
 const CATEGORY_COLORS: Record<CategoryValue | 'default', string> = {
   horarios: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  cardapio: 'bg-leaf/10 text-leaf border-leaf/20',
-  reserva: 'bg-warm/10 text-warm border-warm/20',
+  cardapio: 'bg-success/10 text-success border-success/20',
+  reserva: 'bg-accent/10 text-accent-foreground border-accent/20',
   entrega: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   pagamento: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-  outros: 'bg-stone/10 text-stone border-stone/20',
-  default: 'bg-stone/10 text-stone border-stone/20',
+  outros: 'bg-stone/10 text-muted border-stone/20',
+  default: 'bg-stone/10 text-muted border-stone/20',
 }
 
 function getCategoryColor(cat: string | null): string {
@@ -129,19 +129,19 @@ function EntryFormModal({
       aria-modal="true"
       aria-labelledby="entry-form-title"
     >
-      <div className="w-full max-w-lg bg-night border border-night-lighter rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-night border border-border rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-night-lighter shrink-0">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border shrink-0">
           <h2
             id="entry-form-title"
-            className="text-[15px] font-medium text-cloud tracking-tight"
+            className="text-[15px] font-medium text-foreground tracking-tight"
           >
             {isEditing ? 'Editar entrada' : 'Nova entrada'}
           </h2>
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
           >
             <X size={14} />
           </button>
@@ -153,14 +153,14 @@ function EntryFormModal({
           className="flex-1 overflow-y-auto px-6 py-5 space-y-5"
         >
           {error && (
-            <div className="px-3 py-2 bg-coral/10 border border-coral/20 rounded-md">
-              <p className="text-[12px] text-coral tracking-tight">{error}</p>
+            <div className="px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-[12px] text-destructive tracking-tight">{error}</p>
             </div>
           )}
 
           {/* Title */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
               Titulo *
             </label>
             <input
@@ -171,13 +171,13 @@ function EntryFormModal({
               placeholder="Ex: Horario de funcionamento"
               required
               maxLength={200}
-              className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
               Categoria
             </label>
             <select
@@ -188,7 +188,7 @@ function EntryFormModal({
                   category: e.target.value as CategoryValue | '',
                 }))
               }
-              className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud focus:outline-none focus:border-stone-dark transition-colors appearance-none"
+              className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground focus:outline-none focus:border-stone-dark transition-colors appearance-none"
             >
               <option value="">Sem categoria</option>
               {CATEGORIES.map((cat) => (
@@ -201,7 +201,7 @@ function EntryFormModal({
 
           {/* Content */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
               Conteudo *
             </label>
             <textarea
@@ -212,16 +212,16 @@ function EntryFormModal({
               minLength={10}
               maxLength={8000}
               rows={6}
-              className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors resize-none leading-relaxed"
+              className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors resize-none leading-relaxed"
             />
-            <p className="text-[10px] text-stone-dark mt-1 font-data">
+            <p className="text-[10px] text-muted mt-1 font-data">
               {form.content.length}/8000 caracteres
             </p>
           </div>
 
           {/* Keywords */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
               Palavras-chave (opcional)
             </label>
             <div className="flex gap-2 mb-2">
@@ -236,13 +236,13 @@ function EntryFormModal({
                   }
                 }}
                 placeholder="Adicionar palavra-chave"
-                className="flex-1 h-8 px-3 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+                className="flex-1 h-8 px-3 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
               />
               <button
                 type="button"
                 onClick={addKeyword}
                 disabled={!keywordInput.trim()}
-                className="h-8 px-3 bg-night-lighter text-cloud rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+                className="h-8 px-3 bg-muted-subtle text-foreground rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 Adicionar
               </button>
@@ -252,14 +252,14 @@ function EntryFormModal({
                 {form.keywords.map((kw) => (
                   <span
                     key={kw}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-night-lighter text-[11px] text-cloud-dark group"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted-subtle text-[11px] text-foreground/75 group"
                   >
                     {kw}
                     <button
                       type="button"
                       onClick={() => removeKeyword(kw)}
                       aria-label={`Remover ${kw}`}
-                      className="text-stone hover:text-coral transition-colors"
+                      className="text-muted hover:text-destructive transition-colors"
                     >
                       <X size={9} />
                     </button>
@@ -278,28 +278,28 @@ function EntryFormModal({
               onClick={() => setForm((prev) => ({ ...prev, enabled: !prev.enabled }))}
               className={cn(
                 'relative w-9 h-5 rounded-full transition-colors shrink-0',
-                form.enabled ? 'bg-leaf' : 'bg-night-lighter'
+                form.enabled ? 'bg-success' : 'bg-muted-subtle'
               )}
             >
               <span
                 className={cn(
-                  'absolute top-0.5 w-4 h-4 rounded-full bg-cloud transition-transform',
+                  'absolute top-0.5 w-4 h-4 rounded-full bg-primary transition-transform',
                   form.enabled ? 'left-[18px]' : 'left-0.5'
                 )}
               />
             </button>
-            <span className="text-[13px] text-stone-light tracking-tight">
+            <span className="text-[13px] text-foreground/75 tracking-tight">
               {form.enabled ? 'Ativa' : 'Inativa'}
             </span>
           </div>
         </form>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-night-lighter shrink-0">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="h-9 px-4 text-[13px] text-stone hover:text-cloud transition-colors rounded-md hover:bg-night-lighter tracking-tight"
+            className="h-9 px-4 text-[13px] text-muted hover:text-foreground transition-colors rounded-md hover:bg-muted-subtle tracking-tight"
           >
             Cancelar
           </button>
@@ -312,7 +312,7 @@ function EntryFormModal({
               !form.title.trim() ||
               form.content.length < 10
             }
-            className="h-9 px-4 bg-cloud text-night rounded-md text-[13px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 tracking-tight"
+            className="h-9 px-4 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 tracking-tight"
           >
             {pending ? 'Salvando...' : isEditing ? 'Salvar alteracoes' : 'Criar entrada'}
           </button>
@@ -343,7 +343,7 @@ function EntryCard({
   return (
     <div
       className={cn(
-        'border border-night-lighter rounded-xl px-5 py-4 transition-opacity',
+        'border border-border rounded-xl px-5 py-4 transition-opacity',
         !entry.enabled && 'opacity-50'
       )}
     >
@@ -356,12 +356,12 @@ function EntryCard({
           aria-label={entry.enabled ? 'Desativar entrada' : 'Ativar entrada'}
           className={cn(
             'relative w-9 h-5 rounded-full transition-colors shrink-0 mt-0.5',
-            entry.enabled ? 'bg-leaf' : 'bg-night-lighter'
+            entry.enabled ? 'bg-success' : 'bg-muted-subtle'
           )}
         >
           <span
             className={cn(
-              'absolute top-0.5 w-4 h-4 rounded-full bg-cloud transition-transform',
+              'absolute top-0.5 w-4 h-4 rounded-full bg-primary transition-transform',
               entry.enabled ? 'left-[18px]' : 'left-0.5'
             )}
           />
@@ -370,7 +370,7 @@ function EntryCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[14px] font-medium text-cloud tracking-tight">
+            <h3 className="text-[14px] font-medium text-foreground tracking-tight">
               {entry.title}
             </h3>
             <span
@@ -382,7 +382,7 @@ function EntryCard({
               {catLabel}
             </span>
           </div>
-          <p className="text-[12px] text-stone tracking-tight mt-1 leading-relaxed line-clamp-2">
+          <p className="text-[12px] text-muted tracking-tight mt-1 leading-relaxed line-clamp-2">
             {entry.content}
           </p>
           {entry.keywords.length > 0 && (
@@ -390,13 +390,13 @@ function EntryCard({
               {entry.keywords.slice(0, 5).map((kw) => (
                 <span
                   key={kw}
-                  className="px-1.5 py-0.5 rounded bg-night-lighter text-[10px] text-stone-light tracking-tight"
+                  className="px-1.5 py-0.5 rounded bg-muted-subtle text-[10px] text-foreground/75 tracking-tight"
                 >
                   {kw}
                 </span>
               ))}
               {entry.keywords.length > 5 && (
-                <span className="text-[10px] text-stone-dark">
+                <span className="text-[10px] text-muted">
                   +{entry.keywords.length - 5}
                 </span>
               )}
@@ -409,14 +409,14 @@ function EntryCard({
           <button
             onClick={onEdit}
             aria-label="Editar"
-            className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
           >
             <Pencil size={13} />
           </button>
           <button
             onClick={onDelete}
             aria-label="Apagar"
-            className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-coral hover:bg-coral/10 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
             <Trash2 size={13} />
           </button>
@@ -440,7 +440,7 @@ export function KnowledgeView({
   const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | undefined>(undefined)
   const [modalError, setModalError] = useState<string | null>(null)
   const [inlineError, setInlineError] = useState<string | null>(null)
-  const [, startTransition] = useTransition()
+  const [pending, startTransition] = useTransition()
   const [savePending, startSaveTransition] = useTransition()
 
   function openCreate() {
@@ -531,40 +531,60 @@ export function KnowledgeView({
 
   const activeCount = entries.filter((e) => e.enabled).length
 
+  function handleSeed() {
+    if (
+      !confirm(
+        'Inserir 8 entradas de FAQ comum (horario, pagamento, delivery, reservas, eventos)? Voce edita depois.'
+      )
+    )
+      return
+    startTransition(async () => {
+      const res = await seedKnowledgeTemplates()
+      if (!res.ok) {
+        setInlineError(res.error)
+        return
+      }
+      setInlineError(null)
+      window.location.reload()
+    })
+  }
+
   return (
     <div className="max-w-3xl">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Link
-              href="/configuracoes"
-              className="text-stone hover:text-cloud transition-colors"
-              aria-label="Voltar para configuracoes"
-            >
-              <ChevronLeft size={14} />
-            </Link>
-            <PageHeader
-              title="Base de Conhecimento IA"
-              subtitle={`${activeCount} entrada${activeCount !== 1 ? 's' : ''} ativa${activeCount !== 1 ? 's' : ''} — usadas pelo agente automatico`}
-            />
-          </div>
+          <h2 className="text-[16px] font-medium tracking-[-0.02em] text-foreground leading-none">
+            Base de Conhecimento IA
+          </h2>
+          <p className="text-[12px] text-foreground/75 tracking-tight mt-1.5">
+            {activeCount} entrada{activeCount !== 1 ? 's' : ''} ativa
+            {activeCount !== 1 ? 's' : ''} — usadas pelo agente automatico
+          </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="shrink-0 flex items-center gap-2 h-9 px-4 bg-cloud text-night rounded-md text-[13px] font-medium hover:opacity-90 transition-opacity tracking-tight"
-        >
-          <Plus size={14} />
-          Nova entrada
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/configuracoes/conhecimento/test"
+            className="text-[11px] tracking-[0.05em] uppercase px-3 h-9 inline-flex items-center rounded-md border border-border text-muted hover:text-success hover:border-success/40 transition-colors"
+          >
+            Testar
+          </Link>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 h-9 px-4 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:opacity-90 transition-opacity tracking-tight"
+          >
+            <Plus size={14} />
+            Nova entrada
+          </button>
+        </div>
       </div>
 
       {/* Error banner */}
       {inlineError && (
-        <div className="mb-4 px-3 py-2 bg-coral/10 border border-coral/20 rounded-md flex items-center justify-between gap-2">
-          <span className="text-[12px] text-coral tracking-tight">{inlineError}</span>
+        <div className="mb-4 px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-md flex items-center justify-between gap-2">
+          <span className="text-[12px] text-destructive tracking-tight">{inlineError}</span>
           <button
             onClick={() => setInlineError(null)}
-            className="text-coral/60 hover:text-coral shrink-0"
+            className="text-destructive/60 hover:text-destructive shrink-0"
             aria-label="Fechar erro"
           >
             <X size={10} />
@@ -574,20 +594,32 @@ export function KnowledgeView({
 
       {/* Empty state */}
       {entries.length === 0 && (
-        <div className="py-20 text-center border border-dashed border-night-lighter rounded-xl">
-          <p className="text-[14px] text-stone tracking-tight">
+        <div className="py-16 text-center border border-dashed border-border rounded-xl">
+          <p className="text-[14px] text-muted tracking-tight">
             Nenhuma entrada ainda
           </p>
-          <p className="text-[12px] text-stone-dark mt-1 tracking-tight">
-            Adicione informacoes sobre horarios, cardapio, reservas e mais para que a IA possa responder automaticamente.
+          <p className="text-[12px] text-muted mt-1 tracking-tight max-w-md mx-auto">
+            Adicione informacoes sobre horarios, cardapio, reservas e mais para que a IA possa responder clientes automaticamente.
           </p>
-          <button
-            onClick={openCreate}
-            className="mt-4 flex items-center gap-2 h-9 px-4 bg-cloud text-night rounded-md text-[13px] font-medium hover:opacity-90 transition-opacity tracking-tight mx-auto"
-          >
-            <Plus size={14} />
-            Adicionar primeira entrada
-          </button>
+          <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2">
+            <button
+              onClick={handleSeed}
+              disabled={pending}
+              className="flex items-center gap-2 h-9 px-4 bg-success/15 text-success border border-success/30 rounded-md text-[13px] font-medium hover:bg-success/25 transition-colors tracking-tight disabled:opacity-50"
+            >
+              ⚡ Inserir 8 FAQs prontas
+            </button>
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 h-9 px-4 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:opacity-90 transition-opacity tracking-tight"
+            >
+              <Plus size={14} />
+              Criar do zero
+            </button>
+          </div>
+          <p className="text-[10px] text-muted mt-3">
+            Os templates sao genericos — voce edita os detalhes depois (endereco, taxas, telefones).
+          </p>
         </div>
       )}
 

@@ -28,7 +28,7 @@ export default function RelatoriosLayout({ children }: { children: React.ReactNo
             <button
               type="button"
               onClick={() => window.print()}
-              className="text-[12px] tracking-tight px-4 h-8 rounded border border-night-lighter text-stone hover:text-cloud hover:border-stone-dark transition-colors print:hidden"
+              className="text-[12px] tracking-tight px-4 h-8 rounded border border-border text-muted hover:text-foreground hover:border-stone-dark transition-colors print:hidden"
             >
               Exportar PDF
             </button>

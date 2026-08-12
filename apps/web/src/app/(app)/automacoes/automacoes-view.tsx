@@ -75,6 +75,40 @@ const TRIGGER_LABEL: Record<string, string> = {
   new_order: 'Novo pedido',
   order_completed: 'Pedido concluido',
   review_negative: 'Avaliacao negativa',
+  menu_abandoned: 'Carrinho abandonado',
+  post_order_review: 'Pos-pedido (pedir review)',
+  churn_rescue: 'Recuperar cliente em churn',
+  vip_upgrade: 'Cliente virou VIP',
+}
+
+type TriggerCategory = 'events' | 'time' | 'behavior' | 'operational' | 'other'
+
+const TRIGGER_CATEGORY: Record<string, TriggerCategory> = {
+  new_order: 'events',
+  order_completed: 'events',
+  review_negative: 'events',
+  new_customer: 'events',
+  birthday: 'time',
+  no_visit_30d: 'time',
+  post_order_review: 'time',
+  menu_abandoned: 'behavior',
+  churn_rescue: 'behavior',
+  vip_upgrade: 'behavior',
+  low_stock: 'operational',
+}
+
+const CATEGORY_LABEL: Record<Exclude<TriggerCategory, 'other'>, string> = {
+  events: 'Eventos imediatos',
+  time: 'Agendados por tempo',
+  behavior: 'Sinais comportamentais',
+  operational: 'Operacionais',
+}
+
+const CATEGORY_DESCRIPTION: Record<Exclude<TriggerCategory, 'other'>, string> = {
+  events: 'Disparam no momento que algo acontece (pedido novo, review ruim).',
+  time: 'Rodam no cron — diario ou apos N horas/dias.',
+  behavior: 'Detectam padroes do cliente (abandono, churn, virou VIP).',
+  operational: 'Alertas internos pra equipe agir (estoque baixo, etc).',
 }
 
 const ACTION_LABEL: Record<string, string> = {
@@ -181,9 +215,34 @@ export function AutomacoesView({
   // ---------------------------------------------------------------------------
 
   const filtered = useMemo(() => {
-    if (areaFilter === 'all') return automations
-    return automations.filter((a) => a.area === areaFilter)
+    const list =
+      areaFilter === 'all'
+        ? automations
+        : automations.filter((a) => a.area === areaFilter)
+    const order: Record<TriggerCategory, number> = {
+      events: 0,
+      time: 1,
+      behavior: 2,
+      operational: 3,
+      other: 4,
+    }
+    return [...list].sort((a, b) => {
+      const catA =
+        ((a.trigger_type ?? a.trigger) &&
+          TRIGGER_CATEGORY[(a.trigger_type ?? a.trigger) as string]) ||
+        'other'
+      const catB =
+        ((b.trigger_type ?? b.trigger) &&
+          TRIGGER_CATEGORY[(b.trigger_type ?? b.trigger) as string]) ||
+        'other'
+      return order[catA] - order[catB]
+    })
   }, [automations, areaFilter])
+
+  const categoryOf = (auto: AutomationRow): TriggerCategory => {
+    const trigger = auto.trigger_type ?? auto.trigger
+    return (trigger && TRIGGER_CATEGORY[trigger]) || 'other'
+  }
 
   const activeCount = automations.filter((a) => a.enabled).length
   const totalExec = automations.reduce((s, a) => s + (a.run_count ?? a.executions_today), 0)
@@ -315,7 +374,7 @@ export function AutomacoesView({
                 setEditingAutomation(null)
                 setShowBuilder(true)
               }}
-              className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+              className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
             >
               <Plus size={14} strokeWidth={2.5} />
               Nova automacao
@@ -359,15 +418,29 @@ export function AutomacoesView({
             />
           </div>
 
-          <div className="divide-y divide-night-lighter">
-            {filtered.map((auto) => {
+          <div className="divide-y divide-border">
+            {filtered.map((auto, index) => {
               const isLive = LIVE_CODES.has(auto.code)
               const isCustom = auto.area === 'custom'
               const isExpanded = expandedId === auto.id
               const { trigger, action } = getDisplayLabel(auto)
+              const category = categoryOf(auto)
+              const prevCategory = index > 0 ? categoryOf(filtered[index - 1]) : null
 
               return (
                 <div key={auto.id}>
+                  {category !== prevCategory && (
+                    <div className="pt-6 pb-3 first:pt-2 -mx-0">
+                      <h3 className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+                        {category === 'other' ? 'Outras' : CATEGORY_LABEL[category]}
+                      </h3>
+                      {category !== 'other' && (
+                        <p className="text-[10px] text-muted/70 tracking-tight mt-1">
+                          {CATEGORY_DESCRIPTION[category]}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <article
                     className={cn(
                       'py-5 flex items-start justify-between gap-4 transition-opacity',
@@ -376,16 +449,16 @@ export function AutomacoesView({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2 mb-2 flex-wrap">
-                        <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                           {AREA_LABEL[auto.area] || auto.area}
                         </span>
                         {isLive && (
                           <>
-                            <span className="text-stone-dark text-[10px]">·</span>
-                            <span className="flex items-center gap-1.5 text-[10px] text-leaf tracking-tight">
+                            <span className="text-muted text-[10px]">·</span>
+                            <span className="flex items-center gap-1.5 text-[10px] text-success tracking-tight">
                               <span className="relative flex">
-                                <span className="absolute inline-flex h-full w-full rounded-full bg-leaf opacity-60 animate-ping" />
-                                <span className="relative inline-flex rounded-full h-1 w-1 bg-leaf" />
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping" />
+                                <span className="relative inline-flex rounded-full h-1 w-1 bg-success" />
                               </span>
                               ao vivo
                             </span>
@@ -393,16 +466,16 @@ export function AutomacoesView({
                         )}
                         {(auto.run_count ?? auto.executions_today) > 0 && (
                           <>
-                            <span className="text-stone-dark text-[10px]">·</span>
-                            <span className="text-[10px] font-data text-stone-dark">
+                            <span className="text-muted text-[10px]">·</span>
+                            <span className="text-[10px] font-data text-muted">
                               {auto.run_count ?? auto.executions_today}× executado
                             </span>
                           </>
                         )}
                         {auto.last_run_at && (
                           <>
-                            <span className="text-stone-dark text-[10px]">·</span>
-                            <span className="text-[10px] text-stone-dark">
+                            <span className="text-muted text-[10px]">·</span>
+                            <span className="text-[10px] text-muted">
                               {formatTime(auto.last_run_at)}
                             </span>
                           </>
@@ -411,22 +484,22 @@ export function AutomacoesView({
 
                       {/* Name (for custom automations) */}
                       {isCustom && auto.name && (
-                        <p className="text-[12px] font-medium text-cloud tracking-tight mb-1">
+                        <p className="text-[12px] font-medium text-foreground tracking-tight mb-1">
                           {auto.name}
                         </p>
                       )}
 
-                      <p className="text-[13px] text-cloud tracking-tight leading-snug">
-                        <span className="text-stone-dark">Quando </span>
+                      <p className="text-[13px] text-foreground tracking-tight leading-snug">
+                        <span className="text-muted">Quando </span>
                         {trigger}
                       </p>
-                      <p className="text-[13px] text-stone-light tracking-tight leading-snug mt-0.5">
-                        <span className="text-stone-dark">Entao </span>
+                      <p className="text-[13px] text-foreground/75 tracking-tight leading-snug mt-0.5">
+                        <span className="text-muted">Entao </span>
                         {action}
                       </p>
 
                       {auto.description && (
-                        <p className="text-[11px] text-stone tracking-tight mt-1.5 leading-snug">
+                        <p className="text-[11px] text-muted tracking-tight mt-1.5 leading-snug">
                           {auto.description}
                         </p>
                       )}
@@ -440,21 +513,21 @@ export function AutomacoesView({
                             onClick={() => handleTest(auto.id)}
                             disabled={pending}
                             title="Testar automacao"
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-stone hover:text-leaf hover:bg-leaf/10 transition-colors disabled:opacity-40"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-success hover:bg-success/10 transition-colors disabled:opacity-40"
                           >
                             <Play size={12} />
                           </button>
                           <button
                             onClick={() => handleEdit(auto)}
                             title="Editar automacao"
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
                           >
                             <Pencil size={12} />
                           </button>
                           <button
                             onClick={() => handleDelete(auto.id)}
                             title="Remover automacao"
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-stone hover:text-primary hover:bg-primary/10 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-primary hover:bg-primary/10 transition-colors"
                           >
                             <Trash2 size={12} />
                           </button>
@@ -466,8 +539,8 @@ export function AutomacoesView({
                         className={cn(
                           'h-8 px-3 text-[11px] font-medium rounded-md transition-colors disabled:opacity-40 tracking-tight',
                           auto.enabled
-                            ? 'text-stone-light hover:text-cloud hover:bg-night-light'
-                            : 'bg-cloud text-night hover:bg-cloud-dark'
+                            ? 'text-foreground/75 hover:text-foreground hover:bg-surface'
+                            : 'bg-primary text-primary-foreground hover:bg-primary-hover'
                         )}
                       >
                         {auto.enabled ? 'Desativar' : 'Ativar'}
@@ -477,7 +550,7 @@ export function AutomacoesView({
                       {isCustom && (
                         <button
                           onClick={() => handleExpand(auto.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
                           title="Ver historico de execucoes"
                         >
                           {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -489,16 +562,16 @@ export function AutomacoesView({
                   {/* Runs panel */}
                   {isExpanded && (
                     <div className="pb-4 -mt-1">
-                      <div className="bg-night rounded-lg border border-night-lighter p-4">
-                        <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                      <div className="bg-night rounded-lg border border-border p-4">
+                        <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                           Historico de execucoes
                         </p>
                         {loadingRuns ? (
-                          <p className="text-[12px] text-stone tracking-tight">
+                          <p className="text-[12px] text-muted tracking-tight">
                             Carregando...
                           </p>
                         ) : !runs[auto.id] || runs[auto.id].length === 0 ? (
-                          <p className="text-[12px] text-stone tracking-tight">
+                          <p className="text-[12px] text-muted tracking-tight">
                             Nenhuma execucao registrada. Use o botao
                             &ldquo;Testar&rdquo; para executar manualmente.
                           </p>
@@ -509,30 +582,30 @@ export function AutomacoesView({
                                 <span
                                   className={cn(
                                     'absolute left-0 top-1.5 w-1 h-1 rounded-full',
-                                    run.status === 'success' ? 'bg-leaf' : 'bg-primary'
+                                    run.status === 'success' ? 'bg-success' : 'bg-primary'
                                   )}
                                 />
-                                <p className="text-[11px] font-data text-stone-dark tracking-tight">
+                                <p className="text-[11px] font-data text-muted tracking-tight">
                                   {formatTime(run.triggered_at)} —
                                   <span
                                     className={cn(
                                       'ml-1',
-                                      run.status === 'success' ? 'text-leaf' : 'text-primary'
+                                      run.status === 'success' ? 'text-success' : 'text-primary'
                                     )}
                                   >
                                     {run.status === 'success' ? 'sucesso' : 'falhou'}
                                   </span>
                                   {run.target_entity_id && run.target_entity_id !== 'test' && (
-                                    <span className="ml-1 text-stone">
+                                    <span className="ml-1 text-muted">
                                       (id: {run.target_entity_id.slice(0, 8)})
                                     </span>
                                   )}
                                   {run.target_entity_id === 'test' && (
-                                    <span className="ml-1 text-warm text-[10px]">teste</span>
+                                    <span className="ml-1 text-accent-foreground text-[10px]">teste</span>
                                   )}
                                 </p>
                                 {Boolean((run.result as Record<string, unknown> | null)?.message) && (
-                                  <p className="text-[11px] text-stone tracking-tight mt-0.5">
+                                  <p className="text-[11px] text-muted tracking-tight mt-0.5">
                                     {String((run.result as Record<string, unknown>).message)}
                                   </p>
                                 )}
@@ -550,11 +623,11 @@ export function AutomacoesView({
 
           {filtered.length === 0 && (
             <div className="py-16 text-center">
-              <p className="text-[14px] text-stone tracking-tight">
+              <p className="text-[14px] text-muted tracking-tight">
                 Nenhuma automacao encontrada
               </p>
               {areaFilter !== 'all' && (
-                <p className="text-[12px] text-stone-dark mt-1.5 tracking-tight">
+                <p className="text-[12px] text-muted mt-1.5 tracking-tight">
                   Tente filtrar por &ldquo;Todas&rdquo; ou crie uma nova automacao
                 </p>
               )}
@@ -564,11 +637,11 @@ export function AutomacoesView({
 
         {/* Right panel: execution log */}
         <aside>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
             Execucoes recentes
           </h2>
           {logs.length === 0 ? (
-            <p className="text-[12px] text-stone tracking-tight leading-relaxed">
+            <p className="text-[12px] text-muted tracking-tight leading-relaxed">
               Nenhuma execucao registrada. Triggers ao vivo geram logs
               automaticamente ao fechar pedidos, mover estoque e criar
               avaliacoes negativas.
@@ -580,16 +653,16 @@ export function AutomacoesView({
                   <span
                     className={cn(
                       'absolute left-0 top-1.5 w-1 h-1 rounded-full',
-                      log.status === 'success' ? 'bg-leaf' : 'bg-primary'
+                      log.status === 'success' ? 'bg-success' : 'bg-primary'
                     )}
                   />
-                  <p className="text-[11px] font-data text-stone-dark tracking-tight mb-0.5">
+                  <p className="text-[11px] font-data text-muted tracking-tight mb-0.5">
                     {formatTime(log.executed_at)}
                   </p>
-                  <p className="text-[12px] text-cloud tracking-tight leading-snug">
+                  <p className="text-[12px] text-foreground tracking-tight leading-snug">
                     {log.trigger_desc}
                   </p>
-                  <p className="text-[11px] text-stone tracking-tight mt-0.5 leading-snug">
+                  <p className="text-[11px] text-muted tracking-tight mt-0.5 leading-snug">
                     {log.action_desc}
                   </p>
                   {log.error_message && (

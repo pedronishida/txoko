@@ -154,16 +154,16 @@ export function FinanceiroRelatorioView({
       {chartData.length > 0 && (
         <section>
           <div className="flex items-center gap-4 mb-4">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
               Receita e Despesas Diarias
             </h2>
-            <div className="flex items-center gap-4 text-[10px] text-stone-dark">
+            <div className="flex items-center gap-4 text-[10px] text-muted">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-leaf" />
+                <span className="w-2 h-2 rounded-full bg-success" />
                 Receita
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-warm" />
+                <span className="w-2 h-2 rounded-full bg-accent" />
                 Despesas
               </span>
             </div>
@@ -181,22 +181,22 @@ export function FinanceiroRelatorioView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* DRE */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             DRE Detalhado
           </h2>
-          <div className="divide-y divide-night-lighter">
+          <div className="divide-y divide-border">
             {dreRows.map((row, i) => (
               <div
                 key={i}
                 className={cn(
                   'py-2.5 flex items-baseline justify-between',
-                  row.highlight && 'bg-night-light/40 -mx-4 px-4 rounded'
+                  row.highlight && 'bg-surface/40 -mx-4 px-4 rounded'
                 )}
               >
                 <span
                   className={cn(
                     'tracking-tight',
-                    row.bold ? 'text-[13px] text-cloud font-medium' : 'text-[12px] text-stone-light'
+                    row.bold ? 'text-[13px] text-foreground font-medium' : 'text-[12px] text-foreground/75'
                   )}
                   style={{ paddingLeft: `${row.indent * 14}px` }}
                 >
@@ -205,10 +205,10 @@ export function FinanceiroRelatorioView({
                 <span
                   className={cn(
                     'font-data shrink-0',
-                    row.highlight ? 'text-[14px] text-cloud font-medium' : 'text-[12px]',
-                    !row.highlight && row.value < 0 && 'text-coral/80',
-                    !row.highlight && row.value >= 0 && row.bold && 'text-cloud',
-                    !row.highlight && row.value >= 0 && !row.bold && 'text-stone-light'
+                    row.highlight ? 'text-[14px] text-foreground font-medium' : 'text-[12px]',
+                    !row.highlight && row.value < 0 && 'text-destructive/80',
+                    !row.highlight && row.value >= 0 && row.bold && 'text-foreground',
+                    !row.highlight && row.value >= 0 && !row.bold && 'text-foreground/75'
                   )}
                 >
                   {row.value < 0
@@ -218,8 +218,8 @@ export function FinanceiroRelatorioView({
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-stone-dark tracking-tight mt-3">
-            Margem liquida: <span className={cn('font-data', netMargin >= 0 ? 'text-leaf' : 'text-coral')}>{netMargin.toFixed(1)}%</span>
+          <p className="text-[10px] text-muted tracking-tight mt-3">
+            Margem liquida: <span className={cn('font-data', netMargin >= 0 ? 'text-success' : 'text-destructive')}>{netMargin.toFixed(1)}%</span>
           </p>
         </section>
 
@@ -228,26 +228,26 @@ export function FinanceiroRelatorioView({
           {/* Revenue by source */}
           {sourceEntries.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
                 Receita por Canal
               </h2>
               <div className="space-y-3">
                 {sourceEntries.map(([src, amount]) => (
                   <div key={src}>
                     <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-[12px] text-cloud tracking-tight">
+                      <span className="text-[12px] text-foreground tracking-tight">
                         {SOURCE_LABELS[src] ?? src}
                       </span>
                       <div className="flex gap-3 items-baseline">
-                        <span className="text-[12px] font-data text-cloud">{formatCurrency(amount)}</span>
-                        <span className="text-[10px] font-data text-stone-dark w-8 text-right">
+                        <span className="text-[12px] font-data text-foreground">{formatCurrency(amount)}</span>
+                        <span className="text-[10px] font-data text-muted w-8 text-right">
                           {revenue > 0 ? Math.round((amount / revenue) * 100) : 0}%
                         </span>
                       </div>
                     </div>
-                    <div className="h-0.5 w-full bg-night-lighter rounded-full overflow-hidden">
+                    <div className="h-0.5 w-full bg-muted-subtle rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-leaf/70 rounded-full"
+                        className="h-full bg-success/70 rounded-full"
                         style={{ width: `${revenue > 0 ? (amount / revenue) * 100 : 0}%` }}
                       />
                     </div>
@@ -260,26 +260,26 @@ export function FinanceiroRelatorioView({
           {/* Expenses by category */}
           {expenseCategories.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
                 Despesas por Categoria
               </h2>
               <div className="space-y-3">
                 {expenseCategories.map(({ cat, amount }) => (
                   <div key={cat}>
                     <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-[12px] text-cloud tracking-tight">
+                      <span className="text-[12px] text-foreground tracking-tight">
                         {CAT_LABELS[cat] ?? cat}
                       </span>
                       <div className="flex gap-3 items-baseline">
-                        <span className="text-[12px] font-data text-cloud">{formatCurrency(amount)}</span>
-                        <span className="text-[10px] font-data text-stone-dark w-8 text-right">
+                        <span className="text-[12px] font-data text-foreground">{formatCurrency(amount)}</span>
+                        <span className="text-[10px] font-data text-muted w-8 text-right">
                           {totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0}%
                         </span>
                       </div>
                     </div>
-                    <div className="h-0.5 w-full bg-night-lighter rounded-full overflow-hidden">
+                    <div className="h-0.5 w-full bg-muted-subtle rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-warm/70 rounded-full"
+                        className="h-full bg-accent/70 rounded-full"
                         style={{ width: `${totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0}%` }}
                       />
                     </div>

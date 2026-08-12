@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import type { Table } from '@txoko/shared'
-import { Printer, ArrowLeft } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import QRCode from 'qrcode'
-import Link from 'next/link'
 
 type Props = {
   tables: Table[]
@@ -46,30 +45,21 @@ export function MesasQrsView({ tables, restaurantSlug, restaurantName }: Props) 
   }, [tables, restaurantSlug])
 
   return (
-    <div className="-mx-8 -mt-6">
+    <div>
       {/* Header — hidden on print */}
-      <div className="px-8 pt-6 pb-5 border-b border-night-lighter flex items-center justify-between print:hidden">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/mesas"
-            className="flex items-center gap-1.5 text-[12px] text-stone hover:text-cloud transition-colors tracking-tight"
-          >
-            <ArrowLeft size={13} />
-            Voltar
-          </Link>
-          <div>
-            <h1 className="text-[18px] font-medium text-cloud tracking-tight">
-              QR Codes — Todas as mesas
-            </h1>
-            <p className="text-[12px] text-stone mt-0.5 tracking-tight">
-              {tables.length} {tables.length === 1 ? 'mesa' : 'mesas'} · {restaurantName}
-            </p>
-          </div>
+      <div className="pb-5 mb-5 border-b border-border flex items-center justify-between print:hidden">
+        <div>
+          <h2 className="text-[16px] font-medium tracking-[-0.02em] text-foreground leading-none">
+            QR Codes — todas as mesas
+          </h2>
+          <p className="text-[12px] text-foreground/75 mt-1.5 tracking-tight">
+            {tables.length} {tables.length === 1 ? 'mesa' : 'mesas'} · {restaurantName}
+          </p>
         </div>
         <button
           onClick={() => window.print()}
           disabled={loading}
-          className="flex items-center gap-2 h-9 px-4 rounded-md bg-cloud text-night text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
         >
           <Printer size={13} />
           Imprimir todos
@@ -79,7 +69,7 @@ export function MesasQrsView({ tables, restaurantSlug, restaurantName }: Props) 
       {/* Grid */}
       <div className="p-8 print:p-4">
         {loading ? (
-          <p className="text-[13px] text-stone tracking-tight print:hidden">
+          <p className="text-[13px] text-muted tracking-tight print:hidden">
             Gerando QR codes...
           </p>
         ) : (
@@ -89,7 +79,7 @@ export function MesasQrsView({ tables, restaurantSlug, restaurantName }: Props) 
               return (
                 <div
                   key={table.id}
-                  className="flex flex-col items-center bg-white rounded-xl p-5 border border-night-lighter print:border print:border-neutral-200 print:rounded-lg print:p-4"
+                  className="flex flex-col items-center bg-white rounded-xl p-5 border border-border print:border print:border-neutral-200 print:rounded-lg print:p-4"
                 >
                   <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-neutral-500 mb-3">
                     {restaurantName}

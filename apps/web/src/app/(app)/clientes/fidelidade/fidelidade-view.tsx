@@ -104,7 +104,7 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
   return (
     <div>
       {/* KPI band */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6 pb-8 mb-10 border-b border-night-lighter">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6 pb-8 mb-10 border-b border-border">
         <Metric label="Pontos disponiveis" value={formatNumber(stats.activePoints)} />
         <Metric label="Pontos resgatados" value={formatNumber(stats.redeemedPoints)} />
         <Metric
@@ -116,15 +116,15 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
 
       <div className="flex items-baseline justify-between mb-8">
         <div>
-          <p className="text-[13px] text-cloud tracking-tight">
+          <p className="text-[13px] text-foreground tracking-tight">
             A cada{' '}
-            <span className="font-data text-cloud">
+            <span className="font-data text-foreground">
               {formatCurrency(pointsPer)}
             </span>{' '}
             gasto o cliente ganha{' '}
-            <span className="font-data text-cloud">1 ponto</span>
+            <span className="font-data text-foreground">1 ponto</span>
           </p>
-          <p className="text-[11px] text-stone-dark tracking-tight mt-1">
+          <p className="text-[11px] text-muted tracking-tight mt-1">
             Aplicado automaticamente ao fechar pedido com cliente vinculado
           </p>
         </div>
@@ -133,7 +133,7 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
             setError(null)
             setShowRedeem(true)
           }}
-          className="inline-flex items-center h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+          className="inline-flex items-center h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
         >
           Resgatar pontos
         </button>
@@ -142,19 +142,19 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-10">
         {/* Rewards table */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
             Recompensas
           </h2>
-          <div className="divide-y divide-night-lighter">
+          <div className="divide-y divide-border">
             {REWARDS.map((r) => (
               <div
                 key={r.points}
                 className="py-3 flex items-baseline justify-between"
               >
-                <span className="text-[13px] text-cloud tracking-tight">
+                <span className="text-[13px] text-foreground tracking-tight">
                   {r.reward}
                 </span>
-                <span className="text-[12px] font-data text-stone-light">
+                <span className="text-[12px] font-data text-foreground/75">
                   {formatNumber(r.points)} pts
                 </span>
               </div>
@@ -164,33 +164,33 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
 
         {/* Top customers */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
             Top por pontos
           </h2>
           {topCustomers.length === 0 ? (
-            <p className="text-[12px] text-stone tracking-tight">
+            <p className="text-[12px] text-muted tracking-tight">
               Ainda nao ha clientes com pontos
             </p>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {topCustomers.map((c, i) => (
                 <div
                   key={c.id}
                   className="py-3 flex items-center gap-4"
                 >
-                  <span className="text-[11px] font-data text-stone-dark w-4">
+                  <span className="text-[11px] font-data text-muted w-4">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-cloud tracking-tight truncate">
+                    <p className="text-[13px] text-foreground tracking-tight truncate">
                       {c.name}
                     </p>
-                    <p className="text-[10px] text-stone-dark tracking-tight mt-0.5 font-data">
+                    <p className="text-[10px] text-muted tracking-tight mt-0.5 font-data">
                       {c.total_orders ?? 0} pedidos ·{' '}
                       {formatCurrency(Number(c.total_spent ?? 0))}
                     </p>
                   </div>
-                  <span className="text-[13px] font-medium text-cloud font-data tracking-tight shrink-0">
+                  <span className="text-[13px] font-medium text-foreground font-data tracking-tight shrink-0">
                     {formatNumber(Number(c.loyalty_points))}
                   </span>
                 </div>
@@ -201,21 +201,21 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
 
         {/* Recent redemptions */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
             Resgates recentes
           </h2>
           {redemptions.length === 0 ? (
-            <p className="text-[12px] text-stone tracking-tight">
+            <p className="text-[12px] text-muted tracking-tight">
               Nenhum resgate ainda
             </p>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {redemptions.map((r) => {
                 const customer = customerMap.get(r.customer_id)
                 return (
                   <div key={r.id} className="py-3">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[13px] text-cloud tracking-tight truncate">
+                      <span className="text-[13px] text-foreground tracking-tight truncate">
                         {customer?.name ?? 'Cliente removido'}
                       </span>
                       <span className="text-[11px] font-data text-primary shrink-0">
@@ -223,10 +223,10 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
                       </span>
                     </div>
                     <div className="flex items-baseline justify-between mt-0.5">
-                      <span className="text-[11px] text-stone tracking-tight">
+                      <span className="text-[11px] text-muted tracking-tight">
                         {r.reward}
                       </span>
-                      <span className="text-[10px] font-data text-stone-dark">
+                      <span className="text-[10px] font-data text-muted">
                         {new Date(r.created_at).toLocaleDateString('pt-BR', {
                           day: '2-digit',
                           month: 'short',
@@ -248,16 +248,16 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
           onClick={() => setShowRedeem(false)}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-md"
+            className="bg-surface border border-border rounded-xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-              <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-[14px] font-medium text-foreground tracking-tight">
                 Resgatar pontos
               </h2>
               <button
                 onClick={() => setShowRedeem(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -269,13 +269,13 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Cliente
                 </label>
                 <select
                   value={selectedCustomerId}
                   onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud focus:outline-none focus:border-stone-dark transition-colors"
+                  className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground focus:outline-none focus:border-stone-dark transition-colors"
                 >
                   <option value="">Selecionar</option>
                   {customers
@@ -290,10 +290,10 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
 
               {selectedCustomer && (
                 <div>
-                  <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                  <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                     Recompensa
                   </label>
-                  <div className="divide-y divide-night-lighter border-y border-night-lighter">
+                  <div className="divide-y divide-border border-y border-border">
                     {REWARDS.map((r) => {
                       const disabled =
                         Number(selectedCustomer.loyalty_points) < r.points
@@ -305,19 +305,19 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
                           onClick={() => setSelectedReward(r)}
                           className={cn(
                             'w-full flex items-center justify-between py-2.5 text-left transition-colors px-2 -mx-2',
-                            active && 'bg-night-lighter',
+                            active && 'bg-muted-subtle',
                             disabled && 'opacity-40 cursor-not-allowed'
                           )}
                         >
                           <span
                             className={cn(
                               'text-[12px] tracking-tight',
-                              active ? 'text-cloud' : 'text-stone-light'
+                              active ? 'text-foreground' : 'text-foreground/75'
                             )}
                           >
                             {r.reward}
                           </span>
-                          <span className="text-[11px] font-data text-stone-dark">
+                          <span className="text-[11px] font-data text-muted">
                             {formatNumber(r.points)} pts
                           </span>
                         </button>
@@ -330,14 +330,14 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => setShowRedeem(false)}
-                  className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                  className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleRedeem}
                   disabled={!canRedeem || pending}
-                  className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                  className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
                 >
                   {pending ? 'Resgatando' : 'Confirmar resgate'}
                 </button>
@@ -353,10 +353,10 @@ export function FidelidadeView({ customers, redemptions, pointsPer }: Props) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
         {label}
       </p>
-      <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
+      <p className="text-[28px] font-medium text-foreground tracking-[-0.03em] leading-none font-data mt-3">
         {value}
       </p>
     </div>

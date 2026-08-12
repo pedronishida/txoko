@@ -73,19 +73,19 @@ export function AudiencesView({ audiences, totalCustomers }: Props) {
 
   return (
     <div className="-mx-8 -mt-6">
-      <header className="px-8 pt-6 pb-8 border-b border-night-lighter flex items-end justify-between">
+      <header className="px-8 pt-6 pb-8 border-b border-border flex items-end justify-between">
         <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
+          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-foreground leading-none">
             Audiencias
           </h1>
-          <p className="text-[13px] text-stone mt-2 tracking-tight">
+          <p className="text-[13px] text-muted mt-2 tracking-tight">
             Segmentos de clientes para campanhas · {totalCustomers} clientes
             no total
           </p>
         </div>
         <button
           onClick={() => openForm(null)}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
         >
           <Plus size={14} strokeWidth={2} />
           Nova audiencia
@@ -104,16 +104,16 @@ export function AudiencesView({ audiences, totalCustomers }: Props) {
 
         {audiences.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-[14px] text-stone tracking-tight">
+            <p className="text-[14px] text-muted tracking-tight">
               Nenhuma audiencia criada
             </p>
-            <p className="text-[12px] text-stone-dark tracking-tight mt-1.5">
+            <p className="text-[12px] text-muted tracking-tight mt-1.5">
               Audiencias filtram clientes por gasto, frequencia,
               aniversario e mais
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-night-lighter">
+          <div className="divide-y divide-border">
             {audiences.map((aud) => {
               const filters = (aud.filters ?? []) as AudienceFilter[]
               return (
@@ -123,22 +123,22 @@ export function AudiencesView({ audiences, totalCustomers }: Props) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-3 mb-1">
-                      <span className="text-[14px] font-medium text-cloud tracking-tight">
+                      <span className="text-[14px] font-medium text-foreground tracking-tight">
                         {aud.name}
                       </span>
-                      <span className="text-[13px] font-data text-stone-light">
+                      <span className="text-[13px] font-data text-foreground/75">
                         {aud.cached_count}
                       </span>
-                      <span className="text-[10px] text-stone-dark tracking-tight">
+                      <span className="text-[10px] text-muted tracking-tight">
                         clientes
                       </span>
                     </div>
                     {aud.description && (
-                      <p className="text-[12px] text-stone tracking-tight mb-2">
+                      <p className="text-[12px] text-muted tracking-tight mb-2">
                         {aud.description}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 flex-wrap text-[10px] text-stone-dark tracking-tight">
+                    <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted tracking-tight">
                       {filters.map((f, i) => {
                         const fieldDef = FILTER_FIELDS.find(
                           (ff) => ff.value === f.field
@@ -159,20 +159,20 @@ export function AudiencesView({ audiences, totalCustomers }: Props) {
                     <button
                       onClick={() => handleRefresh(aud.id)}
                       disabled={pending}
-                      className="text-[10px] text-stone-light hover:text-cloud tracking-tight disabled:opacity-40"
+                      className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight disabled:opacity-40"
                     >
                       atualizar
                     </button>
                     <button
                       onClick={() => openForm(aud)}
-                      className="text-[10px] text-stone-light hover:text-cloud tracking-tight"
+                      className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight"
                     >
                       editar
                     </button>
                     <button
                       onClick={() => handleDelete(aud.id)}
                       disabled={pending}
-                      className="text-[10px] text-stone-dark hover:text-primary tracking-tight disabled:opacity-40"
+                      className="text-[10px] text-muted hover:text-primary tracking-tight disabled:opacity-40"
                     >
                       remover
                     </button>
@@ -260,16 +260,16 @@ function AudienceFormModal({
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-surface border border-border rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between sticky top-0 bg-night-light z-10">
-          <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between sticky top-0 bg-surface z-10">
+          <h2 className="text-[14px] font-medium text-foreground tracking-tight">
             {audience ? 'Editar audiencia' : 'Nova audiencia'}
           </h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
           >
             <X size={14} />
           </button>
@@ -280,7 +280,7 @@ function AudienceFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Clientes VIP"
-              className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </Field>
           <Field label="Descricao">
@@ -288,25 +288,25 @@ function AudienceFormModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descricao opcional do segmento"
-              className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </Field>
 
           {/* Filters */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+              <label className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                 Filtros
               </label>
               <button
                 onClick={addFilter}
-                className="text-[11px] text-stone-light hover:text-cloud tracking-tight transition-colors"
+                className="text-[11px] text-foreground/75 hover:text-foreground tracking-tight transition-colors"
               >
                 + Adicionar filtro
               </button>
             </div>
             {filters.length === 0 && (
-              <p className="text-[12px] text-stone-dark tracking-tight py-3">
+              <p className="text-[12px] text-muted tracking-tight py-3">
                 Sem filtros — inclui todos os clientes
               </p>
             )}
@@ -322,7 +322,7 @@ function AudienceFormModal({
                       onChange={(e) =>
                         updateFilter(i, { field: e.target.value })
                       }
-                      className="flex-1 h-9 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-cloud focus:outline-none focus:border-stone-dark transition-colors"
+                      className="flex-1 h-9 px-2 bg-night border border-border rounded-md text-[11px] text-foreground focus:outline-none focus:border-stone-dark transition-colors"
                     >
                       {FILTER_FIELDS.map((ff) => (
                         <option key={ff.value} value={ff.value}>
@@ -333,7 +333,7 @@ function AudienceFormModal({
                     <select
                       value={f.op}
                       onChange={(e) => updateFilter(i, { op: e.target.value })}
-                      className="w-16 h-9 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-cloud font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-16 h-9 px-2 bg-night border border-border rounded-md text-[11px] text-foreground font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
                     >
                       {(fieldDef?.ops ?? ['eq']).map((op) => (
                         <option key={op} value={op}>
@@ -349,11 +349,11 @@ function AudienceFormModal({
                           value: Number(e.target.value) || 0,
                         })
                       }
-                      className="w-24 h-9 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-cloud font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-24 h-9 px-2 bg-night border border-border rounded-md text-[11px] text-foreground font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
                     />
                     <button
                       onClick={() => removeFilter(i)}
-                      className="w-7 h-7 flex items-center justify-center text-stone-dark hover:text-primary rounded-md hover:bg-night-lighter transition-colors"
+                      className="w-7 h-7 flex items-center justify-center text-muted hover:text-primary rounded-md hover:bg-muted-subtle transition-colors"
                     >
                       <X size={10} />
                     </button>
@@ -364,12 +364,12 @@ function AudienceFormModal({
           </div>
 
           {/* Preview */}
-          <div className="border-t border-night-lighter pt-4 flex items-center justify-between">
+          <div className="border-t border-border pt-4 flex items-center justify-between">
             <div>
               {previewCount !== null && (
-                <p className="text-[13px] text-cloud font-data tracking-tight">
+                <p className="text-[13px] text-foreground font-data tracking-tight">
                   {previewCount}{' '}
-                  <span className="text-[11px] text-stone-dark font-sans">
+                  <span className="text-[11px] text-muted font-sans">
                     clientes encontrados
                   </span>
                 </p>
@@ -378,7 +378,7 @@ function AudienceFormModal({
             <button
               onClick={handlePreview}
               disabled={pending}
-              className="h-8 px-3 text-[11px] font-medium text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors disabled:opacity-40 tracking-tight"
+              className="h-8 px-3 text-[11px] font-medium text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors disabled:opacity-40 tracking-tight"
             >
               Contar clientes
             </button>
@@ -387,14 +387,14 @@ function AudienceFormModal({
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+              className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={pending || !name.trim()}
-              className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+              className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
             >
               {pending
                 ? 'Salvando'
@@ -418,7 +418,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
         {label}
       </label>
       {children}

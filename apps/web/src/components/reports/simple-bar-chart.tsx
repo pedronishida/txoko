@@ -22,8 +22,8 @@ export function SimpleBarChart({
   data,
   height = 160,
   formatValue,
-  primaryColor = '#4ADE80',
-  secondaryColor = '#F59E0B',
+  primaryColor = '#1B3FCB',
+  secondaryColor = '#F2C94C',
   showSecondary = false,
   className,
 }: SimpleBarChartProps) {
@@ -90,8 +90,8 @@ export function SimpleBarChart({
                 y={svgH - 6}
                 textAnchor="middle"
                 fontSize={9}
-                fill="#78716C"
-                fontFamily="Space Mono, monospace"
+                fill="#6B6862"
+                fontFamily="JetBrains Mono, monospace"
               >
                 {d.label}
               </text>
@@ -104,7 +104,7 @@ export function SimpleBarChart({
           y1={paddingTop + chartH}
           x2={svgW}
           y2={paddingTop + chartH}
-          stroke="#2A2A2A"
+          stroke="#E8E4DA"
           strokeWidth={1}
         />
       </svg>

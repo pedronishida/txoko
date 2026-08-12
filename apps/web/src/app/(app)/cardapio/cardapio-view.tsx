@@ -91,7 +91,7 @@ export function CardapioView({ products, categories }: Props) {
               setEditingProduct(null)
               setShowForm(true)
             }}
-            className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+            className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
           >
             <Plus size={14} strokeWidth={2} />
             Novo produto
@@ -107,13 +107,13 @@ export function CardapioView({ products, categories }: Props) {
       )}
 
       {/* Controls */}
-      <div className="mb-8 space-y-5 pb-5 border-b border-night-lighter">
+      <div className="mb-8 space-y-5 pb-5 border-b border-border">
         <input
           type="text"
           placeholder="Buscar produto"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-9 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
+          className="w-full h-9 bg-transparent border-0 text-[13px] text-foreground placeholder:text-muted focus:outline-none tracking-tight"
         />
 
         <div className="flex items-center gap-5 overflow-x-auto no-scrollbar">
@@ -122,12 +122,12 @@ export function CardapioView({ products, categories }: Props) {
             className={cn(
               'text-[11px] font-medium tracking-tight transition-colors whitespace-nowrap shrink-0',
               !selectedCategory
-                ? 'text-cloud'
-                : 'text-stone hover:text-stone-light'
+                ? 'text-foreground'
+                : 'text-muted hover:text-foreground/75'
             )}
           >
             Todos
-            <span className="ml-1.5 text-[10px] text-stone-dark font-data">
+            <span className="ml-1.5 text-[10px] text-muted font-data">
               {products.length}
             </span>
           </button>
@@ -146,11 +146,11 @@ export function CardapioView({ products, categories }: Props) {
                   }
                   className={cn(
                     'text-[11px] font-medium tracking-tight transition-colors whitespace-nowrap shrink-0',
-                    active ? 'text-cloud' : 'text-stone hover:text-stone-light'
+                    active ? 'text-foreground' : 'text-muted hover:text-foreground/75'
                   )}
                 >
                   {cat.name}
-                  <span className="ml-1.5 text-[10px] text-stone-dark font-data">
+                  <span className="ml-1.5 text-[10px] text-muted font-data">
                     {count}
                   </span>
                 </button>
@@ -160,7 +160,7 @@ export function CardapioView({ products, categories }: Props) {
             {!showNewCategory ? (
               <button
                 onClick={() => setShowNewCategory(true)}
-                className="text-[11px] font-medium tracking-tight text-stone-dark hover:text-cloud transition-colors whitespace-nowrap"
+                className="text-[11px] font-medium tracking-tight text-muted hover:text-foreground transition-colors whitespace-nowrap"
               >
                 + Categoria
               </button>
@@ -171,18 +171,18 @@ export function CardapioView({ products, categories }: Props) {
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
                   placeholder="Nome"
-                  className="w-28 h-6 bg-transparent border-0 text-[11px] text-cloud placeholder:text-stone-dark focus:outline-none tracking-tight"
+                  className="w-28 h-6 bg-transparent border-0 text-[11px] text-foreground placeholder:text-muted focus:outline-none tracking-tight"
                   autoFocus
                 />
                 <button
                   onClick={handleAddCategory}
-                  className="text-[11px] text-cloud hover:text-cloud-dark transition-colors tracking-tight"
+                  className="text-[11px] text-foreground hover:text-foreground/75 transition-colors tracking-tight"
                 >
                   criar
                 </button>
                 <button
                   onClick={() => setShowNewCategory(false)}
-                  className="w-4 h-4 flex items-center justify-center text-stone-dark hover:text-cloud"
+                  className="w-4 h-4 flex items-center justify-center text-muted hover:text-foreground"
                 >
                   <X size={10} />
                 </button>
@@ -194,7 +194,7 @@ export function CardapioView({ products, categories }: Props) {
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <p className="py-16 text-center text-[13px] text-stone tracking-tight">
+        <p className="py-16 text-center text-[13px] text-muted tracking-tight">
           Nenhum produto encontrado
         </p>
       ) : (

@@ -70,6 +70,40 @@ const STATUS_META: Record<ChannelStatus, { label: string; tone: 'active' | 'neut
   pending_setup: { label: 'Aguardando setup', tone: 'warning' },
 }
 
+type CategoryKey = 'all' | 'whatsapp' | 'ifood' | 'social'
+
+const CATEGORY_FILTERS: {
+  key: CategoryKey
+  label: string
+  matches: (type: ChannelType) => boolean
+}[] = [
+  { key: 'all', label: 'Todos', matches: () => true },
+  { key: 'whatsapp', label: 'WhatsApp', matches: (type) => type === 'whatsapp_zapi' },
+  { key: 'ifood', label: 'iFood', matches: (type) => type === 'ifood_chat' },
+  {
+    key: 'social',
+    label: 'Social / Reviews',
+    matches: (type) =>
+      type === 'instagram' || type === 'facebook_messenger' || type === 'google_reviews',
+  },
+]
+
+const COMING_SOON: { label: string; description: string }[] = [
+  {
+    label: 'WhatsApp Cloud API (oficial)',
+    description:
+      'Migra do Z-API pra API oficial da Meta. Elimina risco de ban e libera templates HSM.',
+  },
+  {
+    label: 'Telegram',
+    description: 'Bot Telegram pra atendimento em paralelo ao WhatsApp.',
+  },
+  {
+    label: 'iFood Pedidos (alem do chat)',
+    description: 'Ingest direto dos pedidos no KDS sem precisar de polling manual.',
+  },
+]
+
 export function CanaisView({
   channels,
   baseUrl,
@@ -80,6 +114,7 @@ export function CanaisView({
   const [showNew, setShowNew] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [category, setCategory] = useState<CategoryKey>('all')
   const [pending, startTransition] = useTransition()
 
   function handleRotate(channelId: string) {
@@ -107,30 +142,40 @@ export function CanaisView({
     })
   }
 
+  const activeCategory =
+    CATEGORY_FILTERS.find((f) => f.key === category) ?? CATEGORY_FILTERS[0]
+  const filteredChannels = channels.filter((c) => activeCategory.matches(c.type))
+  const categoryTabs = CATEGORY_FILTERS.map((f) => ({
+    key: f.key,
+    label: f.label,
+    count:
+      f.key === 'all'
+        ? channels.length
+        : channels.filter((c) => f.matches(c.type)).length,
+  }))
+
   return (
     <div className="max-w-4xl">
       {/* Page header */}
-      <header className="mb-10">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
-              Canais
-            </h1>
-            <p className="text-[13px] text-stone mt-2 tracking-tight max-w-lg">
-              Conecte WhatsApp, Instagram, Messenger, iFood e Google ao Inbox.
-              Cada canal tem sua propria URL de webhook.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setError(null)
-              setShowNew(true)
-            }}
-            className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
-          >
-            Novo canal
-          </button>
+      <header className="mb-8 flex items-end justify-between gap-6">
+        <div>
+          <h2 className="text-[16px] font-medium tracking-[-0.02em] text-foreground leading-none">
+            Canais de atendimento
+          </h2>
+          <p className="text-[12px] text-foreground/75 mt-1.5 tracking-tight max-w-lg">
+            Conecte WhatsApp, Instagram, Messenger, iFood e Google ao Inbox.
+            Cada canal tem sua propria URL de webhook.
+          </p>
         </div>
+        <button
+          onClick={() => {
+            setError(null)
+            setShowNew(true)
+          }}
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
+        >
+          Novo canal
+        </button>
       </header>
 
       {error && (
@@ -146,18 +191,50 @@ export function CanaisView({
         </div>
       )}
 
+      {channels.length > 0 && (
+        <div className="flex gap-5 pb-3 mb-5 border-b border-border">
+          {categoryTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setCategory(tab.key)}
+              className={cn(
+                'relative text-[12px] tracking-tight whitespace-nowrap pb-3 -mb-3 transition-colors',
+                category === tab.key
+                  ? 'text-foreground font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-success after:rounded-full'
+                  : 'text-muted hover:text-foreground/70'
+              )}
+            >
+              {tab.label}
+              <span
+                className={cn(
+                  'ml-1.5 text-[10px] font-data',
+                  category === tab.key ? 'text-foreground/75' : 'text-muted'
+                )}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {channels.length === 0 ? (
-        <div className="border border-night-lighter rounded-lg py-16 text-center">
-          <p className="text-[13px] text-stone tracking-tight">
+        <div className="border border-border rounded-lg py-16 text-center">
+          <p className="text-[13px] text-muted tracking-tight">
             Nenhum canal configurado ainda
           </p>
-          <p className="text-[11px] text-stone-dark mt-1.5 tracking-tight">
+          <p className="text-[11px] text-muted mt-1.5 tracking-tight">
             Crie um canal para comecar a receber mensagens no Inbox
           </p>
         </div>
       ) : (
-        <div className="border border-night-lighter rounded-lg overflow-hidden divide-y divide-night-lighter">
-          {channels.map((channel) => {
+        <div className="border border-border rounded-lg overflow-hidden divide-y divide-border">
+          {filteredChannels.length === 0 && (
+            <div className="py-12 text-center text-[12px] text-muted tracking-tight">
+              Nenhum canal nesse filtro
+            </div>
+          )}
+          {filteredChannels.map((channel) => {
             const meta = CHANNEL_META[channel.type]
             const statusMeta = STATUS_META[channel.status]
             const isExpanded = expandedId === channel.id
@@ -166,31 +243,31 @@ export function CanaisView({
               <div key={channel.id}>
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : channel.id)}
-                  className="w-full text-left px-6 py-5 hover:bg-night-light/40 transition-colors flex items-start justify-between gap-6"
+                  className="w-full text-left px-6 py-5 hover:bg-surface/40 transition-colors flex items-start justify-between gap-6"
                 >
                   <div className="flex items-start gap-4 min-w-0 flex-1">
                     <StatusDot tone={statusMeta.tone} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2 mb-0.5">
-                        <span className="text-[14px] font-medium text-cloud tracking-tight">
+                        <span className="text-[14px] font-medium text-foreground tracking-tight">
                           {channel.name}
                         </span>
-                        <span className="text-[11px] text-stone-dark tracking-tight">
+                        <span className="text-[11px] text-muted tracking-tight">
                           {meta.label}
                         </span>
                       </div>
-                      <p className="text-[12px] text-stone tracking-tight">
+                      <p className="text-[12px] text-muted tracking-tight">
                         {meta.description}
                       </p>
                     </div>
                   </div>
                   <span
                     className={cn(
-                      'text-[11px] tracking-tight shrink-0 self-start mt-0.5',
-                      statusMeta.tone === 'active' && 'text-leaf',
-                      statusMeta.tone === 'error' && 'text-primary',
-                      statusMeta.tone === 'warning' && 'text-warm',
-                      statusMeta.tone === 'neutral' && 'text-stone'
+                      'text-[11px] tracking-tight shrink-0 self-start mt-0.5 font-medium',
+                      statusMeta.tone === 'active' && 'text-success',
+                      statusMeta.tone === 'error' && 'text-destructive',
+                      statusMeta.tone === 'warning' && 'text-accent-foreground',
+                      statusMeta.tone === 'neutral' && 'text-muted'
                     )}
                   >
                     {statusMeta.label}
@@ -198,7 +275,7 @@ export function CanaisView({
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-night-lighter px-6 py-5 bg-night-light/20">
+                  <div className="border-t border-border px-6 py-5 bg-surface/20">
                     {channel.type === 'whatsapp_zapi' ? (
                       <ZapiChannelPanel
                         channel={channel}
@@ -226,8 +303,38 @@ export function CanaisView({
       {/* ============================================================= */}
       {/* Integracao iFood — pedidos chegam via polling ou webhook push  */}
       {/* ============================================================= */}
-      <section className="mt-12 border border-night-lighter rounded-lg p-6">
+      <section className="mt-12 border border-border rounded-lg p-6">
         <IfoodPanel baseUrl={baseUrl} />
+      </section>
+
+      {/* Roadmap de conexoes */}
+      <section className="mt-8">
+        <div className="mb-5">
+          <h3 className="text-[13px] font-medium text-foreground tracking-tight">
+            Em desenvolvimento
+          </h3>
+          <p className="text-[12px] text-foreground/75 tracking-tight mt-1 max-w-lg">
+            Conexoes que estao no nosso backlog. Notifique seu gerente de conta
+            se alguma e prioridade pro seu negocio.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {COMING_SOON.map((item) => (
+            <div key={item.label} className="border border-border rounded-lg p-4">
+              <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                <p className="text-[12px] font-medium text-foreground tracking-tight">
+                  {item.label}
+                </p>
+                <span className="text-[10px] uppercase tracking-[0.06em] text-muted shrink-0">
+                  Em breve
+                </span>
+              </div>
+              <p className="text-[11px] text-foreground/75 tracking-tight leading-snug">
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {showNew && (
@@ -248,15 +355,15 @@ function StatusDot({ tone }: { tone: 'active' | 'neutral' | 'error' | 'warning' 
   return (
     <span className="relative flex shrink-0 mt-1.5">
       {tone === 'active' && (
-        <span className="absolute inline-flex h-full w-full rounded-full bg-leaf opacity-75 animate-ping" />
+        <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping" />
       )}
       <span
         className={cn(
           'relative inline-flex rounded-full h-2 w-2',
-          tone === 'active' && 'bg-leaf',
-          tone === 'error' && 'bg-primary',
-          tone === 'warning' && 'bg-warm',
-          tone === 'neutral' && 'bg-stone-dark'
+          tone === 'active' && 'bg-success',
+          tone === 'error' && 'bg-destructive',
+          tone === 'warning' && 'bg-accent',
+          tone === 'neutral' && 'bg-muted'
         )}
       />
     </span>
@@ -272,9 +379,9 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
       }}
-      className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] text-stone-light hover:text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+      className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] text-foreground/75 hover:text-foreground hover:bg-muted-subtle transition-colors tracking-tight"
     >
-      {copied ? <Check size={12} className="text-leaf" /> : <Copy size={12} />}
+      {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
       {label ?? (copied ? 'Copiado' : 'Copiar')}
     </button>
   )
@@ -392,7 +499,7 @@ function ZapiChannelPanel({
       {/* Credenciais */}
       <section>
         <div className="mb-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
             Credenciais
           </span>
         </div>
@@ -424,12 +531,12 @@ function ZapiChannelPanel({
             <button
               onClick={handleSaveCredentials}
               disabled={pending || !instanceId || !token}
-              className="h-8 px-3.5 bg-night-lighter text-cloud text-[12px] font-medium rounded-md hover:bg-night-lighter/70 transition-colors disabled:opacity-40 tracking-tight"
+              className="h-8 px-3.5 bg-muted-subtle text-foreground text-[12px] font-medium rounded-md hover:bg-muted-subtle/70 transition-colors disabled:opacity-40 tracking-tight"
             >
               Salvar credenciais
             </button>
           </div>
-          <p className="text-[11px] text-stone-dark tracking-tight mt-1">
+          <p className="text-[11px] text-muted tracking-tight mt-1">
             Obtenha em painel Z-API &rarr; Instancia &rarr; ID, Token e Token de
             seguranca da conta.
           </p>
@@ -440,13 +547,13 @@ function ZapiChannelPanel({
       {hasCredentials && webhookUrl && (
         <section>
           <div className="mb-3">
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
               Webhook
             </span>
           </div>
           <div className="max-w-xl space-y-2.5">
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-night border border-night-lighter rounded-md">
-              <code className="flex-1 text-[11px] font-data text-cloud truncate">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-night border border-border rounded-md">
+              <code className="flex-1 text-[11px] font-data text-foreground truncate">
                 {webhookUrl}
               </code>
               <CopyButton text={webhookUrl} label="" />
@@ -454,11 +561,11 @@ function ZapiChannelPanel({
             <button
               onClick={handleRegisterWebhooks}
               disabled={pending}
-              className="h-8 px-3.5 bg-night-lighter text-cloud text-[12px] font-medium rounded-md hover:bg-night-lighter/70 transition-colors disabled:opacity-40 tracking-tight"
+              className="h-8 px-3.5 bg-muted-subtle text-foreground text-[12px] font-medium rounded-md hover:bg-muted-subtle/70 transition-colors disabled:opacity-40 tracking-tight"
             >
               {pending ? 'Registrando' : 'Registrar webhooks no Z-API'}
             </button>
-            <p className="text-[11px] text-stone-dark tracking-tight">
+            <p className="text-[11px] text-muted tracking-tight">
               Registra todos os callbacks do Z-API (recebidas, enviadas, status, presenca, conexao) com notifySentByMe ativo.
             </p>
           </div>
@@ -469,16 +576,16 @@ function ZapiChannelPanel({
       {hasCredentials && (
         <section>
           <div className="mb-3">
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
               Conexao
             </span>
           </div>
           <div className="max-w-xl">
             {connectedPhone && channel.status === 'active' && (
-              <div className="flex items-center gap-2 mb-3 text-[12px] text-stone-light tracking-tight">
+              <div className="flex items-center gap-2 mb-3 text-[12px] text-foreground/75 tracking-tight">
                 <StatusDot tone="active" />
                 Conectado como{' '}
-                <span className="font-data text-cloud">{connectedPhone}</span>
+                <span className="font-data text-foreground">{connectedPhone}</span>
               </div>
             )}
             <div className="flex flex-wrap gap-2">
@@ -486,7 +593,7 @@ function ZapiChannelPanel({
                 <button
                   onClick={handleConnect}
                   disabled={pending}
-                  className="h-8 px-3.5 bg-cloud text-night text-[12px] font-medium rounded-md hover:bg-cloud-dark transition-colors disabled:opacity-40 tracking-tight"
+                  className="h-8 px-3.5 bg-primary text-primary-foreground text-[12px] font-medium rounded-md hover:bg-primary-hover transition-colors disabled:opacity-40 tracking-tight"
                 >
                   Conectar via QR
                 </button>
@@ -494,14 +601,14 @@ function ZapiChannelPanel({
               <button
                 onClick={handleCheckStatus}
                 disabled={pending}
-                className="h-8 px-3.5 text-stone-light text-[12px] font-medium rounded-md hover:text-cloud hover:bg-night-lighter transition-colors disabled:opacity-40 tracking-tight"
+                className="h-8 px-3.5 text-foreground/75 text-[12px] font-medium rounded-md hover:text-foreground hover:bg-muted-subtle transition-colors disabled:opacity-40 tracking-tight"
               >
                 Checar status
               </button>
               <button
                 onClick={handleRestart}
                 disabled={pending}
-                className="h-8 px-3.5 text-stone-light text-[12px] font-medium rounded-md hover:text-cloud hover:bg-night-lighter transition-colors disabled:opacity-40 tracking-tight"
+                className="h-8 px-3.5 text-foreground/75 text-[12px] font-medium rounded-md hover:text-foreground hover:bg-muted-subtle transition-colors disabled:opacity-40 tracking-tight"
               >
                 Reiniciar
               </button>
@@ -529,11 +636,11 @@ function ZapiChannelPanel({
           }}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-sm"
+            className="bg-surface border border-border rounded-xl w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-night-lighter flex items-center justify-between">
-              <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-[14px] font-medium text-foreground tracking-tight">
                 Escaneie o QR code
               </h2>
               <button
@@ -541,7 +648,7 @@ function ZapiChannelPanel({
                   setShowQrModal(false)
                   setQrData(null)
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -559,16 +666,16 @@ function ZapiChannelPanel({
                   <Loader2
                     size={20}
                     strokeWidth={2}
-                    className="text-stone animate-spin"
+                    className="text-muted animate-spin"
                   />
                 </div>
               )}
-              <ol className="mt-5 space-y-2 text-[12px] text-stone-light tracking-tight list-decimal list-inside marker:text-stone-dark marker:font-data">
+              <ol className="mt-5 space-y-2 text-[12px] text-foreground/75 tracking-tight list-decimal list-inside marker:text-muted marker:font-data">
                 <li>Abra o WhatsApp no celular</li>
                 <li>Configuracoes &rarr; Aparelhos conectados</li>
                 <li>Toque em Conectar um aparelho e aponte para o QR</li>
               </ol>
-              <p className="text-[10px] text-stone-dark mt-5 tracking-tight flex items-center gap-1.5">
+              <p className="text-[10px] text-muted mt-5 tracking-tight flex items-center gap-1.5">
                 <Loader2 size={9} className="animate-spin" />
                 Aguardando conexao
               </p>
@@ -610,19 +717,19 @@ function GenericChannelPanel({
       {meta.hasWebhook && webhookUrl && (
         <section>
           <div className="mb-3">
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
               Webhook
             </span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-night border border-night-lighter rounded-md">
-            <code className="flex-1 text-[11px] font-data text-cloud truncate">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-night border border-border rounded-md">
+            <code className="flex-1 text-[11px] font-data text-foreground truncate">
               {webhookUrl}
             </code>
             <CopyButton text={webhookUrl} label="" />
             <button
               onClick={() => onRotate(channel.id)}
               disabled={pending}
-              className="text-[11px] text-stone-light hover:text-cloud h-7 px-2 rounded-md hover:bg-night-lighter transition-colors tracking-tight"
+              className="text-[11px] text-foreground/75 hover:text-foreground h-7 px-2 rounded-md hover:bg-muted-subtle transition-colors tracking-tight"
             >
               Rotacionar
             </button>
@@ -637,8 +744,8 @@ function GenericChannelPanel({
           className={cn(
             'h-8 px-3.5 text-[12px] font-medium rounded-md transition-colors disabled:opacity-40 tracking-tight',
             channel.status === 'active'
-              ? 'text-stone-light hover:text-cloud hover:bg-night-lighter'
-              : 'bg-cloud text-night hover:bg-cloud-dark'
+              ? 'text-foreground/75 hover:text-foreground hover:bg-muted-subtle'
+              : 'bg-primary text-primary-foreground hover:bg-primary-hover'
           )}
         >
           {channel.status === 'active' ? 'Desativar' : 'Ativar'}
@@ -653,7 +760,7 @@ function GenericChannelPanel({
       </div>
 
       {channel.last_synced_at && (
-        <p className="text-[10px] text-stone-dark tracking-tight">
+        <p className="text-[10px] text-muted tracking-tight">
           Ultima sincronizacao:{' '}
           {new Date(channel.last_synced_at).toLocaleString('pt-BR')}
         </p>
@@ -685,7 +792,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-1.5">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1.5">
         {label}
       </label>
       <input
@@ -693,7 +800,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'w-full h-9 px-3 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors',
+          'w-full h-9 px-3 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors',
           mono && 'font-data'
         )}
       />
@@ -731,26 +838,26 @@ function NewChannelModal({
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-md"
+        className="bg-surface border border-border rounded-xl w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-          <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h2 className="text-[14px] font-medium text-foreground tracking-tight">
             Novo canal
           </h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
           >
             <X size={14} />
           </button>
         </div>
         <div className="p-6 space-y-6">
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2.5">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2.5">
               Tipo
             </label>
-            <div className="border border-night-lighter rounded-md divide-y divide-night-lighter overflow-hidden">
+            <div className="border border-border rounded-md divide-y divide-border overflow-hidden">
               {(Object.keys(CHANNEL_META) as ChannelType[]).map((t) => {
                 const meta = CHANNEL_META[t]
                 const active = type === t
@@ -761,20 +868,20 @@ function NewChannelModal({
                     className={cn(
                       'w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-colors',
                       active
-                        ? 'bg-night-lighter'
-                        : 'hover:bg-night-lighter/50'
+                        ? 'bg-muted-subtle'
+                        : 'hover:bg-muted-subtle/50'
                     )}
                   >
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-cloud tracking-tight">
+                      <p className="text-[13px] font-medium text-foreground tracking-tight">
                         {meta.label}
                       </p>
-                      <p className="text-[11px] text-stone tracking-tight truncate">
+                      <p className="text-[11px] text-muted tracking-tight truncate">
                         {meta.description}
                       </p>
                     </div>
                     {active && (
-                      <Check size={13} strokeWidth={2.5} className="text-cloud shrink-0" />
+                      <Check size={13} strokeWidth={2.5} className="text-foreground shrink-0" />
                     )}
                   </button>
                 )
@@ -782,27 +889,27 @@ function NewChannelModal({
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2">
               Nome
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: WhatsApp principal"
-              className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </div>
           <div className="flex gap-3 pt-1">
             <button
               onClick={onClose}
-              className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+              className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={pending || name.trim().length === 0}
-              className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+              className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
             >
               {pending ? 'Criando' : 'Criar canal'}
             </button>

@@ -25,25 +25,25 @@ const SEGMENT_CONFIG: Record<
 > = {
   champion: {
     label: 'Campeoes',
-    color: 'text-leaf',
-    bg: 'bg-leaf/20',
+    color: 'text-success',
+    bg: 'bg-success/20',
     desc: 'Compraram recentemente, com frequencia e alto valor',
   },
   loyal: {
     label: 'Fieis',
-    color: 'text-warm',
-    bg: 'bg-warm/20',
+    color: 'text-accent-foreground',
+    bg: 'bg-accent/20',
     desc: 'Compram regularmente, bom relacionamento',
   },
   at_risk: {
     label: 'Em Risco',
-    color: 'text-coral',
-    bg: 'bg-coral/20',
+    color: 'text-destructive',
+    bg: 'bg-destructive/20',
     desc: 'Costumavam comprar mas estao sumindo',
   },
   lost: {
     label: 'Perdidos',
-    color: 'text-stone',
+    color: 'text-muted',
     bg: 'bg-stone/20',
     desc: 'Nao compram ha mais de 60 dias',
   },
@@ -111,7 +111,7 @@ export function ClientesRelatorioView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* RFM Segments */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Segmentos RFM
           </h2>
           <div className="space-y-4">
@@ -126,14 +126,14 @@ export function ClientesRelatorioView({
                       <span className={cn('text-[12px] font-medium tracking-tight', cfg.color)}>
                         {cfg.label}
                       </span>
-                      <span className="text-[10px] text-stone-dark ml-2">{cfg.desc}</span>
+                      <span className="text-[10px] text-muted ml-2">{cfg.desc}</span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[12px] font-data text-cloud">{count}</span>
-                      <span className="text-[10px] font-data text-stone-dark">{pct.toFixed(1)}%</span>
+                      <span className="text-[12px] font-data text-foreground">{count}</span>
+                      <span className="text-[10px] font-data text-muted">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
-                  <div className="h-1 w-full bg-night-lighter rounded-full overflow-hidden">
+                  <div className="h-1 w-full bg-muted-subtle rounded-full overflow-hidden">
                     <div
                       className={cn('h-full rounded-full transition-all')}
                       style={{
@@ -159,51 +159,51 @@ export function ClientesRelatorioView({
 
         {/* Churn rates */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Taxa de Churn
           </h2>
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone mb-1">30 dias</p>
-              <p className={cn('text-[24px] font-data font-medium', churn30 > 50 ? 'text-coral' : 'text-warm')}>
+              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1">30 dias</p>
+              <p className={cn('text-[24px] font-data font-medium', churn30 > 50 ? 'text-destructive' : 'text-accent-foreground')}>
                 {churn30.toFixed(0)}%
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone mb-1">60 dias</p>
-              <p className={cn('text-[24px] font-data font-medium', churn60 > 60 ? 'text-coral' : 'text-warm')}>
+              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1">60 dias</p>
+              <p className={cn('text-[24px] font-data font-medium', churn60 > 60 ? 'text-destructive' : 'text-accent-foreground')}>
                 {churn60.toFixed(0)}%
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone mb-1">90 dias</p>
-              <p className={cn('text-[24px] font-data font-medium', churn90 > 70 ? 'text-coral' : 'text-warm')}>
+              <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1">90 dias</p>
+              <p className={cn('text-[24px] font-data font-medium', churn90 > 70 ? 'text-destructive' : 'text-accent-foreground')}>
                 {churn90.toFixed(0)}%
               </p>
             </div>
           </div>
-          <p className="text-[11px] text-stone-dark leading-relaxed">
+          <p className="text-[11px] text-muted leading-relaxed">
             % de clientes que nao realizaram nenhuma compra dentro do periodo. Meta saudavel: abaixo de 40% em 60 dias.
           </p>
 
           {/* LTV distribution */}
           <div className="mt-6">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-3">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-3">
               Distribuicao de LTV
             </h3>
             <div className="space-y-2">
               {ltvDist.map((bucket) => (
                 <div key={bucket.label} className="flex items-center gap-3">
-                  <span className="text-[10px] font-data text-stone-dark w-20 shrink-0">
+                  <span className="text-[10px] font-data text-muted w-20 shrink-0">
                     {bucket.label}
                   </span>
-                  <div className="flex-1 h-4 bg-night-lighter rounded-sm overflow-hidden">
+                  <div className="flex-1 h-4 bg-muted-subtle rounded-sm overflow-hidden">
                     <div
-                      className="h-full bg-leaf/60 rounded-sm transition-all"
+                      className="h-full bg-success/60 rounded-sm transition-all"
                       style={{ width: `${(bucket.count / maxLtv) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-data text-stone-light w-6 text-right">
+                  <span className="text-[10px] font-data text-foreground/75 w-6 text-right">
                     {bucket.count}
                   </span>
                 </div>
@@ -216,7 +216,7 @@ export function ClientesRelatorioView({
       {/* Monthly new customers */}
       {monthlyNewSeries.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Novos Clientes por Mes
           </h2>
           <SimpleBarChart
@@ -230,40 +230,40 @@ export function ClientesRelatorioView({
       {/* RFM Scatter approximation as table */}
       {rfmCustomers.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-2">
             Mapa RFM — Recencia vs Valor
           </h2>
-          <p className="text-[11px] text-stone-dark mb-4">
+          <p className="text-[11px] text-muted mb-4">
             Cada linha e um cliente. Recencia (dias desde ultima compra), Frequencia (pedidos) e Valor total.
           </p>
           {/* Simple scatter as colored table rows sorted by monetary */}
           <div className="overflow-x-auto">
             <div className="grid grid-cols-4 gap-1 min-w-[300px]">
               {/* Header */}
-              <span className="text-[10px] text-stone uppercase tracking-[0.06em] pb-2">Segmento</span>
-              <span className="text-[10px] text-stone uppercase tracking-[0.06em] pb-2 text-right">Recencia</span>
-              <span className="text-[10px] text-stone uppercase tracking-[0.06em] pb-2 text-right">Freq.</span>
-              <span className="text-[10px] text-stone uppercase tracking-[0.06em] pb-2 text-right">Valor</span>
+              <span className="text-[10px] text-muted uppercase tracking-[0.06em] pb-2">Segmento</span>
+              <span className="text-[10px] text-muted uppercase tracking-[0.06em] pb-2 text-right">Recencia</span>
+              <span className="text-[10px] text-muted uppercase tracking-[0.06em] pb-2 text-right">Freq.</span>
+              <span className="text-[10px] text-muted uppercase tracking-[0.06em] pb-2 text-right">Valor</span>
               {rfmCustomers.slice(0, 30).map((c) => (
                 <>
-                  <span key={`${c.id}-seg`} className="py-1.5 border-t border-night-lighter/50">
+                  <span key={`${c.id}-seg`} className="py-1.5 border-t border-border/50">
                     <SegmentBadge segment={c.segment} />
                   </span>
                   <span
                     key={`${c.id}-rec`}
-                    className="py-1.5 border-t border-night-lighter/50 font-data text-[11px] text-stone-light text-right"
+                    className="py-1.5 border-t border-border/50 font-data text-[11px] text-foreground/75 text-right"
                   >
                     {c.recencyDays}d
                   </span>
                   <span
                     key={`${c.id}-freq`}
-                    className="py-1.5 border-t border-night-lighter/50 font-data text-[11px] text-stone-light text-right"
+                    className="py-1.5 border-t border-border/50 font-data text-[11px] text-foreground/75 text-right"
                   >
                     {c.frequency}
                   </span>
                   <span
                     key={`${c.id}-mon`}
-                    className="py-1.5 border-t border-night-lighter/50 font-data text-[11px] text-cloud text-right"
+                    className="py-1.5 border-t border-border/50 font-data text-[11px] text-foreground text-right"
                   >
                     {formatCurrency(c.monetary)}
                   </span>
@@ -271,7 +271,7 @@ export function ClientesRelatorioView({
               ))}
             </div>
             {rfmCustomers.length > 30 && (
-              <p className="text-[10px] text-stone-dark mt-3">
+              <p className="text-[10px] text-muted mt-3">
                 Mostrando 30 de {rfmCustomers.length} clientes. Use export PDF para ver todos.
               </p>
             )}
@@ -282,7 +282,7 @@ export function ClientesRelatorioView({
       {/* Top 20 customers */}
       {top20.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Top 20 Clientes por Valor Total
           </h2>
           <ReportTable
@@ -292,9 +292,9 @@ export function ClientesRelatorioView({
                 label: 'Cliente',
                 render: (row) => (
                   <div>
-                    <span className="text-cloud tracking-tight">{row.name}</span>
+                    <span className="text-foreground tracking-tight">{row.name}</span>
                     {row.phone && (
-                      <span className="block text-[10px] text-stone-dark font-data">{row.phone}</span>
+                      <span className="block text-[10px] text-muted font-data">{row.phone}</span>
                     )}
                   </div>
                 ),
@@ -315,7 +315,7 @@ export function ClientesRelatorioView({
                 label: 'Total Gasto',
                 align: 'right',
                 render: (row) => (
-                  <span className="font-data text-cloud">{formatCurrency(row.monetary)}</span>
+                  <span className="font-data text-foreground">{formatCurrency(row.monetary)}</span>
                 ),
               },
               {
@@ -323,7 +323,7 @@ export function ClientesRelatorioView({
                 label: 'Ultima Visita',
                 align: 'right',
                 render: (row) => (
-                  <span className="font-data text-stone-dark text-[11px]">
+                  <span className="font-data text-muted text-[11px]">
                     {row.lastVisit
                       ? new Date(row.lastVisit).toLocaleDateString('pt-BR', {
                           day: '2-digit',

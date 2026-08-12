@@ -91,8 +91,8 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
           className={cn(
             'text-[11px] tracking-tight px-3 h-7 rounded border transition-colors',
             activePreset === p.key
-              ? 'border-leaf/60 bg-leaf/10 text-leaf'
-              : 'border-night-lighter text-stone hover:text-cloud hover:border-stone-dark'
+              ? 'border-success/60 bg-success/10 text-success'
+              : 'border-border text-muted hover:text-foreground hover:border-stone-dark'
           )}
         >
           {p.label}
@@ -103,14 +103,14 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
           type="date"
           value={value.from}
           onChange={(e) => handleCustom('from', e.target.value)}
-          className="text-[11px] font-data bg-night-light border border-night-lighter rounded px-2 h-7 text-cloud focus:outline-none focus:border-stone-dark"
+          className="text-[11px] font-data bg-surface border border-border rounded px-2 h-7 text-foreground focus:outline-none focus:border-stone-dark"
         />
-        <span className="text-stone-dark text-[11px]">–</span>
+        <span className="text-muted text-[11px]">–</span>
         <input
           type="date"
           value={value.to}
           onChange={(e) => handleCustom('to', e.target.value)}
-          className="text-[11px] font-data bg-night-light border border-night-lighter rounded px-2 h-7 text-cloud focus:outline-none focus:border-stone-dark"
+          className="text-[11px] font-data bg-surface border border-border rounded px-2 h-7 text-foreground focus:outline-none focus:border-stone-dark"
         />
       </div>
     </div>

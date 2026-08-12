@@ -186,7 +186,7 @@ export function AvaliacoesView({
                 setError(null)
                 setShowForm(true)
               }}
-              className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+              className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
             >
               <Plus size={14} strokeWidth={2} />
               Nova avaliacao
@@ -222,7 +222,7 @@ export function AvaliacoesView({
       <div className="px-8 py-10 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-x-12 gap-y-10">
         {/* Distribution */}
         <aside>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
             Distribuicao
           </h2>
           <div className="space-y-2.5">
@@ -231,16 +231,16 @@ export function AvaliacoesView({
               const pct = stats.total > 0 ? (count / stats.total) * 100 : 0
               return (
                 <div key={rating} className="flex items-center gap-3">
-                  <span className="text-[11px] font-data text-stone-dark w-3">
+                  <span className="text-[11px] font-data text-muted w-3">
                     {rating}
                   </span>
-                  <div className="flex-1 h-0.5 bg-night-lighter rounded-full overflow-hidden">
+                  <div className="flex-1 h-0.5 bg-muted-subtle rounded-full overflow-hidden">
                     <div
                       className="h-full bg-stone-light rounded-full transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="text-[11px] font-data text-stone-dark w-6 text-right">
+                  <span className="text-[11px] font-data text-muted w-6 text-right">
                     {count}
                   </span>
                 </div>
@@ -260,19 +260,19 @@ export function AvaliacoesView({
           </div>
 
           {filtered.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
               Nenhuma avaliacao ainda
             </p>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {filtered.map((review) => (
                 <article key={review.id} className="py-5">
                   <div className="flex items-baseline justify-between gap-4 mb-2">
                     <div className="flex items-baseline gap-3">
-                      <span className="text-[13px] font-medium text-cloud font-data tracking-tight">
+                      <span className="text-[13px] font-medium text-foreground font-data tracking-tight">
                         {Number(review.rating).toFixed(1)}
                       </span>
-                      <span className="text-[10px] text-stone-dark tracking-tight">
+                      <span className="text-[10px] text-muted tracking-tight">
                         {renderStars(Number(review.rating))}
                       </span>
                       {review.nps !== null && review.nps !== undefined && (
@@ -280,9 +280,9 @@ export function AvaliacoesView({
                           className={cn(
                             'text-[10px] font-data tracking-tight',
                             review.nps >= 9
-                              ? 'text-leaf'
+                              ? 'text-success'
                               : review.nps >= 7
-                                ? 'text-warm'
+                                ? 'text-accent-foreground'
                                 : 'text-primary'
                           )}
                         >
@@ -292,10 +292,10 @@ export function AvaliacoesView({
                       {review.sentiment && (
                         <span
                           className={cn(
-                            'text-[10px] tracking-tight',
-                            review.sentiment === 'positive' && 'text-leaf',
-                            review.sentiment === 'negative' && 'text-primary',
-                            review.sentiment === 'neutral' && 'text-stone'
+                            'text-[10px] tracking-tight font-semibold',
+                            review.sentiment === 'positive' && 'text-success',
+                            review.sentiment === 'negative' && 'text-destructive',
+                            review.sentiment === 'neutral' && 'text-muted'
                           )}
                         >
                           {SENTIMENT_LABEL[review.sentiment]}
@@ -303,21 +303,21 @@ export function AvaliacoesView({
                       )}
                     </div>
                     <div className="flex items-baseline gap-2 shrink-0">
-                      <span className="text-[10px] text-stone-dark tracking-tight">
+                      <span className="text-[10px] text-muted tracking-tight">
                         {SOURCE_LABEL[review.source] || review.source}
                       </span>
-                      <span className="text-[10px] font-data text-stone-dark">
+                      <span className="text-[10px] font-data text-muted">
                         {formatDate(review.created_at)}
                       </span>
                     </div>
                   </div>
                   {review.comment && (
-                    <p className="text-[13px] text-stone-light leading-relaxed tracking-tight">
+                    <p className="text-[13px] text-foreground/75 leading-relaxed tracking-tight">
                       {review.comment}
                     </p>
                   )}
                   {review.is_anonymous && (
-                    <p className="text-[10px] text-stone-dark mt-1.5 tracking-tight">
+                    <p className="text-[10px] text-muted mt-1.5 tracking-tight">
                       Anonima
                     </p>
                   )}
@@ -335,16 +335,16 @@ export function AvaliacoesView({
           onClick={() => setShowForm(false)}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-md"
+            className="bg-surface border border-border rounded-xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-              <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-[14px] font-medium text-foreground tracking-tight">
                 Nova avaliacao
               </h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -356,7 +356,7 @@ export function AvaliacoesView({
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Nota
                 </label>
                 <div className="flex items-center gap-1">
@@ -366,7 +366,7 @@ export function AvaliacoesView({
                       onClick={() => setFormRating(n)}
                       className={cn(
                         'w-9 h-9 text-[18px] font-data transition-colors',
-                        n <= formRating ? 'text-cloud' : 'text-stone-dark hover:text-stone'
+                        n <= formRating ? 'text-foreground' : 'text-muted hover:text-muted'
                       )}
                     >
                       {n <= formRating ? '★' : '·'}
@@ -375,7 +375,7 @@ export function AvaliacoesView({
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   NPS (0–10, opcional)
                 </label>
                 <input
@@ -384,11 +384,11 @@ export function AvaliacoesView({
                   max={10}
                   value={formNps}
                   onChange={(e) => setFormNps(e.target.value)}
-                  className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud font-data focus:outline-none focus:border-stone-dark transition-colors"
+                  className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground font-data focus:outline-none focus:border-stone-dark transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Comentario
                 </label>
                 <textarea
@@ -396,14 +396,14 @@ export function AvaliacoesView({
                   onChange={(e) => setFormComment(e.target.value)}
                   rows={3}
                   placeholder="O que o cliente achou?"
-                  className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark resize-none transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark resize-none transition-colors"
                 />
-                <p className="text-[10px] text-stone-dark mt-2 tracking-tight">
+                <p className="text-[10px] text-muted mt-2 tracking-tight">
                   Sentimento sera classificado automaticamente pelo Claude
                 </p>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <label className="flex items-center gap-2 text-[12px] text-stone-light cursor-pointer tracking-tight">
+                <label className="flex items-center gap-2 text-[12px] text-foreground/75 cursor-pointer tracking-tight">
                   <input
                     type="checkbox"
                     checked={formAnonymous}
@@ -416,7 +416,7 @@ export function AvaliacoesView({
                   <select
                     value={formCustomerId}
                     onChange={(e) => setFormCustomerId(e.target.value)}
-                    className="flex-1 h-9 px-3 bg-night border border-night-lighter rounded-md text-[12px] text-cloud focus:outline-none focus:border-stone-dark transition-colors"
+                    className="flex-1 h-9 px-3 bg-night border border-border rounded-md text-[12px] text-foreground focus:outline-none focus:border-stone-dark transition-colors"
                   >
                     <option value="">Cliente (opcional)</option>
                     {customers.map((c) => (
@@ -430,14 +430,14 @@ export function AvaliacoesView({
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                  className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={pending}
-                  className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                  className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
                 >
                   {pending ? 'Classificando' : 'Enviar'}
                 </button>

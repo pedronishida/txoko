@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import type { Campaign, CampaignRecipient, RecipientStatus } from '@txoko/shared'
-import { getAbTestResults } from '../../actions'
+import { getAbTestResults, promoteAbWinner } from '../../actions'
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Rascunho',
@@ -34,6 +34,12 @@ const CHANNEL_LABEL: Record<string, string> = {
   sms: 'SMS',
 }
 
+const CURRENCY_FORMAT = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  maximumFractionDigits: 0,
+})
+
 type AbVariantStats = {
   variant: 'a' | 'b'
   templateId: string | null
@@ -43,6 +49,24 @@ type AbVariantStats = {
   failed: number
   deliveryRate: number
   readRate: number
+}
+
+type TrackedLink = {
+  id: string
+  short_code: string
+  target_url: string
+  label: string | null
+  clicks_count: number
+  unique_clicks: number
+  last_click_at: string | null
+}
+
+type CampaignRevenue = {
+  total_clicks: number
+  unique_clicks: number
+  recipients_delivered: number
+  orders_attributed: number
+  revenue_attributed: number
 }
 
 type Props = {
@@ -55,6 +79,8 @@ type Props = {
     created_at: string
   }>
   customerMap: Record<string, { name: string; phone: string | null }>
+  trackedLinks?: TrackedLink[]
+  revenue?: CampaignRevenue | null
 }
 
 export function CampaignDetailView({
@@ -62,6 +88,8 @@ export function CampaignDetailView({
   recipients,
   events,
   customerMap,
+  trackedLinks = [],
+  revenue = null,
 }: Props) {
   const [abStats, setAbStats] = useState<AbVariantStats[] | null>(null)
   const [abWinner, setAbWinner] = useState<{
@@ -70,6 +98,8 @@ export function CampaignDetailView({
     reason: string
   } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [promotedVariant, setPromotedVariant] = useState<'a' | 'b' | null>(null)
+  const [promoteError, setPromoteError] = useState<string | null>(null)
 
   function handleLoadAbResults() {
     startTransition(async () => {
@@ -80,6 +110,18 @@ export function CampaignDetailView({
           res.winner as { winner: 'a' | 'b' | null; confidence: string; reason: string }
         )
       }
+    })
+  }
+
+  function handlePromoteWinner(variant: 'a' | 'b') {
+    setPromoteError(null)
+    startTransition(async () => {
+      const res = await promoteAbWinner({ campaignId: campaign.id, variant })
+      if ('error' in res && res.error) {
+        setPromoteError(res.error)
+        return
+      }
+      setPromotedVariant(variant)
     })
   }
 
@@ -115,38 +157,38 @@ export function CampaignDetailView({
 
   return (
     <div className="-mx-8 -mt-6">
-      <header className="px-8 pt-6 pb-8 border-b border-night-lighter">
+      <header className="px-8 pt-6 pb-8 border-b border-border">
         <Link
           href="/marketing"
-          className="inline-flex items-center text-[11px] text-stone hover:text-cloud transition-colors tracking-tight mb-4"
+          className="inline-flex items-center text-[11px] text-muted hover:text-foreground transition-colors tracking-tight mb-4"
         >
           ← Campanhas
         </Link>
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
+            <h1 className="text-[26px] font-medium tracking-[-0.03em] text-foreground leading-none">
               {campaign.name}
             </h1>
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-[12px] text-stone tracking-tight">
+              <span className="text-[12px] text-muted tracking-tight">
                 {CHANNEL_LABEL[campaign.channel]}
               </span>
-              <span className="text-stone-dark text-[12px]">·</span>
+              <span className="text-muted text-[12px]">·</span>
               <span
                 className={cn(
-                  'text-[12px] tracking-tight',
-                  campaign.status === 'running' && 'text-leaf',
-                  campaign.status === 'completed' && 'text-cloud',
-                  campaign.status === 'error' && 'text-primary',
-                  campaign.status === 'draft' && 'text-stone'
+                  'text-[12px] tracking-tight font-medium',
+                  campaign.status === 'running' && 'text-success',
+                  campaign.status === 'completed' && 'text-foreground',
+                  campaign.status === 'error' && 'text-destructive',
+                  campaign.status === 'draft' && 'text-muted'
                 )}
               >
                 {STATUS_LABEL[campaign.status]}
               </span>
               {campaign.started_at && (
                 <>
-                  <span className="text-stone-dark text-[12px]">·</span>
-                  <span className="text-[11px] font-data text-stone-dark">
+                  <span className="text-muted text-[12px]">·</span>
+                  <span className="text-[11px] font-data text-muted">
                     Iniciada {formatTime(campaign.started_at)}
                   </span>
                 </>
@@ -162,7 +204,7 @@ export function CampaignDetailView({
       </header>
 
       {/* KPI band */}
-      <section className="px-8 py-8 border-b border-night-lighter grid grid-cols-2 lg:grid-cols-6 gap-x-8 gap-y-6">
+      <section className="px-8 py-8 border-b border-border grid grid-cols-2 lg:grid-cols-6 gap-x-8 gap-y-6">
         <Metric label="Total" value={String(campaign.stats_total)} />
         <Metric label="Enviadas" value={String(campaign.stats_sent)} />
         <Metric label="Entregues" value={`${deliveryRate}%`} />
@@ -175,17 +217,86 @@ export function CampaignDetailView({
         <Metric label="Opt-out" value={String(campaign.stats_opted_out)} />
       </section>
 
+      {/* Link tracking */}
+      {(trackedLinks.length > 0 || (revenue && revenue.total_clicks > 0)) && (
+        <section className="px-8 py-8 border-b border-border">
+          <div className="flex items-baseline justify-between mb-6">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
+              Tracking de links
+            </h2>
+            <span className="text-[10px] font-data text-muted tracking-tight">
+              {trackedLinks.length} {trackedLinks.length === 1 ? 'link' : 'links'}
+            </span>
+          </div>
+          {revenue && (
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-6 mb-8">
+              <Metric label="Cliques" value={String(revenue.total_clicks ?? 0)} />
+              <Metric label="Cliques unicos" value={String(revenue.unique_clicks ?? 0)} />
+              <Metric
+                label="CTR"
+                value={
+                  revenue.recipients_delivered > 0
+                    ? `${Math.round((Number(revenue.unique_clicks ?? 0) / Number(revenue.recipients_delivered)) * 100)}%`
+                    : '—'
+                }
+              />
+              <Metric label="Pedidos" value={String(revenue.orders_attributed ?? 0)} />
+              <Metric
+                label="Receita atribuida"
+                value={CURRENCY_FORMAT.format(Number(revenue.revenue_attributed ?? 0))}
+              />
+            </div>
+          )}
+          {trackedLinks.length > 0 && (
+            <div>
+              <div className="grid grid-cols-[2fr_80px_80px_120px] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
+                <span>Destino</span>
+                <span className="text-right">Cliques</span>
+                <span className="text-right">Unicos</span>
+                <span className="text-right">Ultimo</span>
+              </div>
+              <div className="divide-y divide-border max-h-[40vh] overflow-y-auto">
+                {trackedLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    className="grid grid-cols-[2fr_80px_80px_120px] gap-4 py-3 items-center"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[12px] text-foreground tracking-tight truncate">
+                        {link.label ?? link.target_url}
+                      </p>
+                      <p className="text-[10px] font-data text-muted truncate">
+                        /l/{link.short_code}
+                      </p>
+                    </div>
+                    <span className="text-[12px] font-data text-foreground text-right">
+                      {link.clicks_count}
+                    </span>
+                    <span className="text-[12px] font-data text-foreground/75 text-right">
+                      {link.unique_clicks}
+                    </span>
+                    <span className="text-[10px] font-data text-muted text-right">
+                      {link.last_click_at ? formatTime(link.last_click_at) : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* A/B Test Results */}
       {recipients.some((r) => r.ab_variant) && (
-        <section className="px-8 py-8 border-b border-night-lighter">
+        <section className="px-8 py-8 border-b border-border">
           <div className="flex items-baseline justify-between mb-6">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
               Teste A/B
             </h2>
             <button
               onClick={handleLoadAbResults}
               disabled={pending}
-              className="text-[11px] text-stone-light hover:text-cloud tracking-tight transition-colors disabled:opacity-40"
+              className="text-[11px] text-foreground/75 hover:text-foreground tracking-tight transition-colors disabled:opacity-40"
             >
               {abStats ? 'Atualizar' : 'Carregar resultados'}
             </button>
@@ -199,57 +310,57 @@ export function CampaignDetailView({
                   className={cn(
                     'border rounded-lg p-5',
                     abWinner?.winner === v.variant
-                      ? 'border-leaf/30 bg-leaf/5'
-                      : 'border-night-lighter'
+                      ? 'border-success/30 bg-success/5'
+                      : 'border-border'
                   )}
                 >
                   <div className="flex items-baseline justify-between mb-4">
-                    <span className="text-[14px] font-medium text-cloud tracking-tight">
+                    <span className="text-[14px] font-medium text-foreground tracking-tight">
                       Variante {v.variant.toUpperCase()}
                     </span>
                     {abWinner?.winner === v.variant && (
-                      <span className="text-[10px] text-leaf tracking-tight font-medium">
+                      <span className="text-[10px] text-success tracking-tight font-medium">
                         Vencedora
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                         Enviadas
                       </p>
-                      <p className="text-[18px] font-medium text-cloud font-data mt-1">
+                      <p className="text-[18px] font-medium text-foreground font-data mt-1">
                         {v.sent}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                         Entregues
                       </p>
-                      <p className="text-[18px] font-medium text-cloud font-data mt-1">
+                      <p className="text-[18px] font-medium text-foreground font-data mt-1">
                         {v.deliveryRate}%
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                         Lidas
                       </p>
                       <p
                         className={cn(
                           'text-[18px] font-medium font-data mt-1',
                           abWinner?.winner === v.variant
-                            ? 'text-leaf'
-                            : 'text-cloud'
+                            ? 'text-success'
+                            : 'text-foreground'
                         )}
                       >
                         {v.readRate}%
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                         Falhas
                       </p>
-                      <p className="text-[18px] font-medium text-stone-dark font-data mt-1">
+                      <p className="text-[18px] font-medium text-muted font-data mt-1">
                         {v.failed}
                       </p>
                     </div>
@@ -260,13 +371,44 @@ export function CampaignDetailView({
           )}
 
           {abWinner && (
-            <div className="mt-5">
-              <p className="text-[12px] text-stone-light tracking-tight">
+            <div className="mt-5 space-y-3">
+              <p className="text-[12px] text-foreground/75 tracking-tight">
                 {abWinner.reason}
-                <span className="text-stone-dark ml-2">
+                <span
+                  className={cn(
+                    'ml-2 text-[11px]',
+                    abWinner.confidence === 'high' && 'text-success',
+                    abWinner.confidence === 'medium' && 'text-accent-foreground',
+                    abWinner.confidence === 'low' && 'text-muted'
+                  )}
+                >
                   Confianca: {abWinner.confidence}
                 </span>
               </p>
+              {abWinner.winner && abWinner.confidence === 'high' && !promotedVariant && (
+                <div className="flex items-center gap-3 pt-2 border-t border-border">
+                  <p className="text-[12px] text-foreground tracking-tight flex-1">
+                    Promova a variante {abWinner.winner.toUpperCase()} pra usar como template padrao desta campanha.
+                  </p>
+                  <button
+                    onClick={() => handlePromoteWinner(abWinner.winner as 'a' | 'b')}
+                    disabled={pending}
+                    className="h-9 px-4 bg-success/10 border border-success/30 text-success rounded-md text-[12px] font-medium hover:bg-success/20 transition-colors disabled:opacity-40"
+                  >
+                    Promover variante {abWinner.winner.toUpperCase()}
+                  </button>
+                </div>
+              )}
+              {promotedVariant && (
+                <p className="text-[11px] text-success tracking-tight">
+                  ✓ Variante {promotedVariant.toUpperCase()} promovida. A campanha agora usa esse template em todos os destinatarios.
+                </p>
+              )}
+              {promoteError && (
+                <p className="text-[11px] text-destructive tracking-tight">
+                  {promoteError}
+                </p>
+              )}
             </div>
           )}
         </section>
@@ -276,10 +418,10 @@ export function CampaignDetailView({
         {/* Recipients table */}
         <section>
           <div className="flex items-baseline justify-between mb-5">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
               Destinatarios
             </h2>
-            <div className="flex items-center gap-4 text-[10px] text-stone-dark tracking-tight">
+            <div className="flex items-center gap-4 text-[10px] text-muted tracking-tight">
               {Object.entries(statusGroups)
                 .sort((a, b) => b[1] - a[1])
                 .map(([status, count]) => (
@@ -292,18 +434,18 @@ export function CampaignDetailView({
           </div>
 
           {recipients.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
               Nenhum destinatario ainda
             </p>
           ) : (
             <div>
-              <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 pb-3 border-b border-night-lighter text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+              <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                 <span>Cliente</span>
                 <span>Status</span>
                 <span>Enviada</span>
                 <span>Entregue</span>
               </div>
-              <div className="divide-y divide-night-lighter max-h-[50vh] overflow-y-auto">
+              <div className="divide-y divide-border max-h-[50vh] overflow-y-auto">
                 {recipients.map((r) => {
                   const customer = customerMap[r.customer_id]
                   return (
@@ -312,11 +454,11 @@ export function CampaignDetailView({
                       className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 py-3 items-center"
                     >
                       <div className="min-w-0">
-                        <p className="text-[13px] text-cloud tracking-tight truncate">
+                        <p className="text-[13px] text-foreground tracking-tight truncate">
                           {customer?.name ?? 'Cliente'}
                         </p>
                         {customer?.phone && (
-                          <p className="text-[10px] font-data text-stone-dark">
+                          <p className="text-[10px] font-data text-muted">
                             {customer.phone}
                           </p>
                         )}
@@ -324,25 +466,25 @@ export function CampaignDetailView({
                       <span
                         className={cn(
                           'text-[11px] tracking-tight',
-                          r.status === 'delivered' && 'text-cloud',
-                          r.status === 'read' && 'text-leaf',
-                          r.status === 'sent' && 'text-stone-light',
-                          r.status === 'failed' && 'text-primary',
-                          r.status === 'opted_out' && 'text-warm',
-                          (r.status === 'queued' || r.status === 'pending' || r.status === 'sending') && 'text-stone-dark'
+                          r.status === 'delivered' && 'text-foreground',
+                          r.status === 'read' && 'text-success font-semibold',
+                          r.status === 'sent' && 'text-foreground/75',
+                          r.status === 'failed' && 'text-destructive font-semibold',
+                          r.status === 'opted_out' && 'text-accent-foreground',
+                          (r.status === 'queued' || r.status === 'pending' || r.status === 'sending') && 'text-muted'
                         )}
                       >
                         {RECIPIENT_STATUS_LABEL[r.status]}
                         {r.failure_reason && (
-                          <span className="text-[9px] text-stone-dark block truncate">
+                          <span className="text-[9px] text-muted block truncate">
                             {r.failure_reason}
                           </span>
                         )}
                       </span>
-                      <span className="text-[10px] font-data text-stone-dark">
+                      <span className="text-[10px] font-data text-muted">
                         {r.sent_at ? formatTime(r.sent_at) : '—'}
                       </span>
-                      <span className="text-[10px] font-data text-stone-dark">
+                      <span className="text-[10px] font-data text-muted">
                         {r.delivered_at
                           ? formatTime(r.delivered_at)
                           : r.read_at
@@ -359,11 +501,11 @@ export function CampaignDetailView({
 
         {/* Event log */}
         <aside>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
             Historico
           </h2>
           {events.length === 0 ? (
-            <p className="text-[12px] text-stone tracking-tight">
+            <p className="text-[12px] text-muted tracking-tight">
               Nenhum evento registrado
             </p>
           ) : (
@@ -376,18 +518,18 @@ export function CampaignDetailView({
                       ev.event_type === 'error'
                         ? 'bg-primary'
                         : ev.event_type === 'completed'
-                          ? 'bg-leaf'
+                          ? 'bg-success'
                           : 'bg-stone-dark'
                     )}
                   />
-                  <p className="text-[10px] font-data text-stone-dark tracking-tight">
+                  <p className="text-[10px] font-data text-muted tracking-tight">
                     {formatTime(ev.created_at)}
                   </p>
-                  <p className="text-[12px] text-cloud tracking-tight leading-snug mt-0.5">
+                  <p className="text-[12px] text-foreground tracking-tight leading-snug mt-0.5">
                     {ev.event_type}
                   </p>
                   {ev.data && Object.keys(ev.data).length > 0 && (
-                    <p className="text-[10px] text-stone-dark tracking-tight mt-0.5 truncate">
+                    <p className="text-[10px] text-muted tracking-tight mt-0.5 truncate">
                       {JSON.stringify(ev.data).slice(0, 100)}
                     </p>
                   )}
@@ -412,13 +554,13 @@ function Metric({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
         {label}
       </p>
       <p
         className={cn(
           'text-[22px] font-medium tracking-[-0.03em] leading-none font-data mt-3',
-          tone === 'primary' ? 'text-primary' : 'text-cloud'
+          tone === 'primary' ? 'text-primary' : 'text-foreground'
         )}
       >
         {value}

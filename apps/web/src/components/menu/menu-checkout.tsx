@@ -105,6 +105,8 @@ export function MenuCheckout({
       scheduledTime:
         orderType === 'pickup' ? scheduledTime : undefined,
       notes: notes.trim() || undefined,
+      clientSessionId:
+        window.sessionStorage.getItem(`txoko:menu_session:${slug}`) ?? undefined,
     }
 
     try {

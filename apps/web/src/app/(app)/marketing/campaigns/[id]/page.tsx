@@ -54,6 +54,25 @@ export default async function CampaignDetailPage({
     }
   }
 
+  // Tracking de links + receita atribuida
+  const [{ data: trackedLinks }, { data: revenue }] = await Promise.all([
+    supabase
+      .from('tracked_links')
+      .select(
+        'id, short_code, target_url, label, clicks_count, unique_clicks, first_click_at, last_click_at'
+      )
+      .eq('campaign_id', id)
+      .order('clicks_count', { ascending: false })
+      .limit(50),
+    supabase
+      .from('campaign_revenue')
+      .select(
+        'total_clicks, unique_clicks, tracked_links_count, orders_attributed, revenue_attributed, recipients_delivered'
+      )
+      .eq('campaign_id', id)
+      .maybeSingle(),
+  ])
+
   return (
     <CampaignDetailView
       campaign={campaign as unknown as Campaign}
@@ -65,6 +84,24 @@ export default async function CampaignDetailPage({
         created_at: string
       }>}
       customerMap={customerMap}
+      trackedLinks={(trackedLinks ?? []) as unknown as Array<{
+        id: string
+        short_code: string
+        target_url: string
+        label: string | null
+        clicks_count: number
+        unique_clicks: number
+        last_click_at: string | null
+      }>}
+      revenue={
+        (revenue ?? null) as {
+          total_clicks: number
+          unique_clicks: number
+          recipients_delivered: number
+          orders_attributed: number
+          revenue_attributed: number
+        } | null
+      }
     />
   )
 }

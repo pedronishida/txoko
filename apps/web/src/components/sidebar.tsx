@@ -16,6 +16,7 @@ import {
   Users,
   Settings,
   ChevronLeft,
+  ChevronRight,
   Monitor,
   ChefHat,
   Sparkles,
@@ -137,80 +138,78 @@ export function Sidebar({ collapsed, onToggle, restaurantId }: SidebarProps) {
   }, {})
 
   return (
-    <aside
-      className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-bg border-r border-night-lighter flex flex-col transition-[width] duration-200 ease-out',
-        collapsed ? 'w-[60px]' : 'w-[220px]'
-      )}
-    >
+    <aside className="group island flex flex-col p-2 gap-1.5 overflow-visible relative">
+      {/* Toggle flutuante de recolher */}
+      <button
+        onClick={onToggle}
+        className="absolute z-20 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-bg-elevated border border-border flex items-center justify-center text-foreground/80 hover:bg-surface-hover"
+        style={{ top: '20px', right: '-12px', boxShadow: '0 2px 6px rgba(15,14,12,0.08)' }}
+        aria-label={collapsed ? 'Expandir' : 'Recolher'}
+      >
+        {collapsed ? (
+          <ChevronRight size={13} strokeWidth={2} />
+        ) : (
+          <ChevronLeft size={13} strokeWidth={2} />
+        )}
+      </button>
+
       {/* Brand */}
-      <div
+      <Link
+        href="/home"
         className={cn(
-          'flex items-center h-16 px-5',
+          'flex items-center gap-2 px-2 pt-1 pb-2',
           collapsed && 'justify-center px-0'
         )}
       >
-        <Link href="/home" className="flex items-center gap-2.5">
-          <Logo size={22} />
-          {!collapsed && (
-            <span className="text-[14px] font-semibold tracking-[-0.02em] text-cloud">
-              Txoko
-            </span>
-          )}
-        </Link>
-      </div>
+        <Logo size={20} />
+        {!collapsed && (
+          <span className="text-[14px] font-semibold tracking-tight">Txoko</span>
+        )}
+      </Link>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto no-scrollbar py-2 px-2">
+      <nav className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-px">
         {(Object.keys(groups) as NavItem['group'][]).map((group, groupIdx) => (
-          <div key={group} className={cn(groupIdx > 0 && 'mt-6')}>
+          <div key={group} className={cn(groupIdx > 0 && 'mt-3')}>
             {!collapsed && (
-              <div className="px-3 pb-1.5">
-                <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+              <div className="px-2.5 pb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
                   {GROUP_LABEL[group]}
                 </span>
               </div>
             )}
-            <div className="space-y-px">
+            <div className="flex flex-col gap-px">
               {groups[group]!.map((item) => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== '/home' && pathname.startsWith(item.href))
-                const isInbox = item.href === '/inbox'
-                const badge = isInbox && inboxUnread > 0 ? inboxUnread : 0
+                const badge =
+                  item.href === '/inbox' && inboxUnread > 0 ? inboxUnread : 0
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'group relative flex items-center gap-3 h-8 rounded-md transition-colors',
-                      collapsed ? 'justify-center px-0' : 'px-3',
+                      'relative flex items-center gap-2.5 rounded-md text-[13px] transition-colors',
+                      collapsed ? 'justify-center px-0 py-1.5' : 'px-2.5 py-1.5',
                       isActive
-                        ? 'bg-night-light text-cloud'
-                        : 'text-stone-light hover:text-cloud hover:bg-night-light/50'
+                        ? 'bg-primary-soft text-foreground font-semibold'
+                        : 'text-foreground/75 font-medium hover:bg-surface-hover hover:text-foreground'
                     )}
                     title={collapsed ? item.name : undefined}
                   >
-                    <div className="relative shrink-0">
-                      <item.icon
-                        size={15}
-                        strokeWidth={isActive ? 2 : 1.75}
-                        className={cn(
-                          isActive ? 'text-cloud' : 'text-stone'
-                        )}
-                      />
+                    <span className="relative flex-shrink-0">
+                      <item.icon size={14.5} strokeWidth={isActive ? 2 : 1.85} />
                       {badge > 0 && collapsed && (
-                        <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+                        <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-destructive" />
                       )}
-                    </div>
+                    </span>
                     {!collapsed && (
                       <>
-                        <span className="text-[13px] tracking-tight flex-1">
-                          {item.name}
-                        </span>
+                        <span className="flex-1 truncate">{item.name}</span>
                         {badge > 0 && (
-                          <span className="text-[10px] font-data font-medium text-primary">
+                          <span className="bg-accent text-foreground text-[9.5px] font-bold px-1.5 py-0.5 rounded-sm tabular-nums">
                             {badge > 99 ? '99+' : badge}
                           </span>
                         )}
@@ -223,30 +222,6 @@ export function Sidebar({ collapsed, onToggle, restaurantId }: SidebarProps) {
           </div>
         ))}
       </nav>
-
-      {/* Collapse toggle */}
-      <div className="p-2 border-t border-night-lighter">
-        <button
-          onClick={onToggle}
-          className={cn(
-            'flex items-center h-8 w-full rounded-md text-stone hover:text-cloud hover:bg-night-light/50 transition-colors',
-            collapsed ? 'justify-center px-0' : 'gap-3 px-3'
-          )}
-          aria-label={collapsed ? 'Expandir' : 'Recolher'}
-        >
-          <ChevronLeft
-            size={14}
-            strokeWidth={1.75}
-            className={cn(
-              'transition-transform duration-200',
-              collapsed && 'rotate-180'
-            )}
-          />
-          {!collapsed && (
-            <span className="text-[12px] tracking-tight">Recolher</span>
-          )}
-        </button>
-      </div>
     </aside>
   )
 }

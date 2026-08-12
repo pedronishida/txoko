@@ -19,7 +19,7 @@ export function TabBar({ tabs, active, onChange, className }: TabBarProps) {
   return (
     <div
       className={cn(
-        'flex gap-5 pb-3 border-b border-night-lighter overflow-x-auto scrollbar-none',
+        'flex gap-5 pb-3 border-b border-border overflow-x-auto scrollbar-none',
         className
       )}
     >
@@ -31,8 +31,8 @@ export function TabBar({ tabs, active, onChange, className }: TabBarProps) {
           className={cn(
             'relative text-[12px] tracking-tight whitespace-nowrap pb-3 -mb-3 transition-colors',
             active === tab.key
-              ? 'text-cloud font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-leaf after:rounded-full'
-              : 'text-stone hover:text-cloud/70'
+              ? 'text-foreground font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-success after:rounded-full'
+              : 'text-muted hover:text-foreground/70'
           )}
         >
           {tab.label}
@@ -40,7 +40,7 @@ export function TabBar({ tabs, active, onChange, className }: TabBarProps) {
             <span
               className={cn(
                 'ml-1.5 text-[10px] tabular-nums',
-                active === tab.key ? 'text-stone' : 'text-stone/60'
+                active === tab.key ? 'text-muted' : 'text-muted/60'
               )}
             >
               {tab.count}

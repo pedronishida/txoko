@@ -101,7 +101,7 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
   if (loading) {
     return (
       <div className="py-8 flex items-center justify-center">
-        <Loader2 size={16} className="text-stone animate-spin" />
+        <Loader2 size={16} className="text-muted animate-spin" />
       </div>
     )
   }
@@ -114,7 +114,7 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
       {/* Cabecalho da secao */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-[14px] font-medium text-cloud tracking-tight">iFood</h3>
+          <h3 className="text-[14px] font-medium text-foreground tracking-tight">iFood</h3>
           {integration && (
             <button
               onClick={handleToggle}
@@ -122,30 +122,30 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
               className={cn(
                 'h-7 px-3 text-[11px] font-medium rounded-md transition-colors disabled:opacity-40 tracking-tight',
                 integration.enabled
-                  ? 'bg-leaf/10 text-leaf hover:bg-leaf/20'
-                  : 'bg-night-lighter text-stone-light hover:text-cloud'
+                  ? 'bg-success/10 text-success hover:bg-success/20'
+                  : 'bg-muted-subtle text-foreground/75 hover:text-foreground'
               )}
             >
               {integration.enabled ? 'Ativo' : 'Inativo'}
             </button>
           )}
         </div>
-        <p className="text-[12px] text-stone tracking-tight">
+        <p className="text-[12px] text-muted tracking-tight">
           Receba pedidos do iFood diretamente no Txoko via polling ou webhook push.
         </p>
       </div>
 
       {/* Erros e sucesso */}
       {error && (
-        <div className="px-3.5 py-2.5 bg-primary/5 border border-primary/20 rounded-md text-[12px] text-primary flex items-center justify-between tracking-tight">
+        <div className="px-3.5 py-2.5 bg-destructive/5 border border-destructive/20 rounded-md text-[12px] text-destructive flex items-center justify-between tracking-tight">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-3 text-primary/60 hover:text-primary">
+          <button onClick={() => setError(null)} className="ml-3 text-destructive/60 hover:text-destructive">
             <X size={12} />
           </button>
         </div>
       )}
       {success && (
-        <div className="px-3.5 py-2.5 bg-leaf/5 border border-leaf/20 rounded-md text-[12px] text-leaf flex items-center gap-2 tracking-tight">
+        <div className="px-3.5 py-2.5 bg-success/5 border border-success/20 rounded-md text-[12px] text-success flex items-center gap-2 tracking-tight">
           <Check size={12} />
           <span>{success}</span>
         </div>
@@ -154,7 +154,7 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
       {/* Credenciais */}
       <section>
         <div className="mb-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
             Credenciais
           </span>
         </div>
@@ -184,7 +184,7 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
             <button
               onClick={handleSave}
               disabled={pending || !merchantId}
-              className="h-8 px-3.5 bg-night-lighter text-cloud text-[12px] font-medium rounded-md hover:bg-night-lighter/70 transition-colors disabled:opacity-40 tracking-tight"
+              className="h-8 px-3.5 bg-muted-subtle text-foreground text-[12px] font-medium rounded-md hover:bg-muted-subtle/70 transition-colors disabled:opacity-40 tracking-tight"
             >
               {pending ? 'Salvando' : 'Salvar credenciais'}
             </button>
@@ -192,7 +192,7 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
               <button
                 onClick={handleTest}
                 disabled={pending}
-                className="h-8 px-3.5 text-stone-light text-[12px] font-medium rounded-md hover:text-cloud hover:bg-night-lighter transition-colors disabled:opacity-40 tracking-tight"
+                className="h-8 px-3.5 text-foreground/75 text-[12px] font-medium rounded-md hover:text-foreground hover:bg-muted-subtle transition-colors disabled:opacity-40 tracking-tight"
               >
                 Testar conexao
               </button>
@@ -207,7 +207,7 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
           className={cn(
             'px-3.5 py-2.5 rounded-md text-[12px] tracking-tight border',
             testResult.ok
-              ? 'bg-leaf/5 border-leaf/20 text-leaf'
+              ? 'bg-success/5 border-success/20 text-success'
               : 'bg-primary/5 border-primary/20 text-primary'
           )}
         >
@@ -228,26 +228,26 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
       {integration && (
         <section>
           <div className="mb-3">
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
               Polling
             </span>
           </div>
           <div className="max-w-xl space-y-2.5">
-            <p className="text-[12px] text-stone tracking-tight">
+            <p className="text-[12px] text-muted tracking-tight">
               Configure um scheduler externo para chamar a URL abaixo a cada 30 segundos:
             </p>
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-night border border-night-lighter rounded-md">
-              <code className="flex-1 text-[11px] font-mono text-cloud truncate">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-night border border-border rounded-md">
+              <code className="flex-1 text-[11px] font-mono text-foreground truncate">
                 GET {pollUrl}
               </code>
             </div>
             {integration.last_polled_at && (
-              <p className="text-[10px] text-stone-dark tracking-tight">
+              <p className="text-[10px] text-muted tracking-tight">
                 Ultimo polling: {new Date(integration.last_polled_at).toLocaleString('pt-BR')}
               </p>
             )}
             {integration.last_order_id && (
-              <p className="text-[10px] text-stone-dark tracking-tight">
+              <p className="text-[10px] text-muted tracking-tight">
                 Ultimo pedido iFood: <span className="font-mono">{integration.last_order_id}</span>
               </p>
             )}
@@ -259,18 +259,18 @@ export function IfoodPanel({ baseUrl }: { baseUrl: string }) {
       {integration && (
         <section>
           <div className="mb-3">
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
               Produtos
             </span>
           </div>
           <a
             href="/configuracoes/canais/ifood-produtos"
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 bg-night-lighter text-cloud text-[12px] font-medium rounded-md hover:bg-night-lighter/70 transition-colors tracking-tight"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 bg-muted-subtle text-foreground text-[12px] font-medium rounded-md hover:bg-muted-subtle/70 transition-colors tracking-tight"
           >
             Gerenciar mapeamento de produtos
             <ChevronRight size={12} />
           </a>
-          <p className="mt-2 text-[11px] text-stone-dark tracking-tight">
+          <p className="mt-2 text-[11px] text-muted tracking-tight">
             Associe os SKUs do iFood aos produtos do Txoko. Sem mapeamento, produtos sao
             criados automaticamente.
           </p>
@@ -300,7 +300,7 @@ function IfoodField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-1.5">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1.5">
         {label}
       </label>
       <input
@@ -308,10 +308,10 @@ function IfoodField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 px-3 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors font-mono"
+        className="w-full h-9 px-3 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors font-mono"
       />
       {hint && (
-        <p className="mt-1 text-[10px] text-stone-dark tracking-tight">{hint}</p>
+        <p className="mt-1 text-[10px] text-muted tracking-tight">{hint}</p>
       )}
     </div>
   )

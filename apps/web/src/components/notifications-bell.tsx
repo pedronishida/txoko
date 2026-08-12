@@ -18,6 +18,10 @@ const TYPE_LABEL: Record<NotificationRow['type'], string> = {
   sale_finalized: 'Venda',
   new_order: 'Pedido',
   system: 'Sistema',
+  campaign_milestone: 'Campanha',
+  vip_just_messaged: 'VIP',
+  ai_escalated: 'IA',
+  optout_spike: 'Opt-out',
 }
 
 type Props = {
@@ -109,7 +113,7 @@ export function NotificationsBell({ restaurantId }: Props) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+        className="relative w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
         title="Notificacoes"
         aria-label="Notificacoes"
       >
@@ -125,15 +129,15 @@ export function NotificationsBell({ restaurantId }: Props) {
             className="fixed inset-0 z-30"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute top-full right-0 mt-1.5 w-96 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-40">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-night-lighter">
-              <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <div className="island-popup absolute top-full right-0 mt-1.5 w-96 overflow-hidden z-40">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                 Notificacoes
               </h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAll}
-                  className="text-[11px] text-stone-light hover:text-cloud tracking-tight transition-colors"
+                  className="text-[11px] text-foreground/75 hover:text-foreground tracking-tight transition-colors"
                 >
                   Marcar todas como lidas
                 </button>
@@ -142,7 +146,7 @@ export function NotificationsBell({ restaurantId }: Props) {
 
             <div className="max-h-[70vh] overflow-y-auto">
               {items.length === 0 && (
-                <p className="px-4 py-12 text-[12px] text-stone text-center tracking-tight">
+                <p className="px-4 py-12 text-[12px] text-muted text-center tracking-tight">
                   Nenhuma notificacao ainda
                 </p>
               )}
@@ -151,23 +155,23 @@ export function NotificationsBell({ restaurantId }: Props) {
                 const content = (
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3 mb-0.5">
-                      <span className="text-[10px] uppercase tracking-[0.06em] text-stone-dark font-medium">
+                      <span className="text-[10px] uppercase tracking-[0.06em] text-muted font-medium">
                         {TYPE_LABEL[n.type]}
                       </span>
-                      <span className="text-[10px] font-data text-stone-dark shrink-0">
+                      <span className="text-[10px] font-data text-muted shrink-0">
                         {relativeTime(n.created_at)}
                       </span>
                     </div>
                     <p
                       className={cn(
                         'text-[13px] tracking-tight leading-snug',
-                        isUnread ? 'text-cloud font-medium' : 'text-stone-light'
+                        isUnread ? 'text-foreground font-medium' : 'text-foreground/75'
                       )}
                     >
                       {n.title}
                     </p>
                     {n.body && (
-                      <p className="text-[11px] text-stone mt-0.5 line-clamp-2 tracking-tight">
+                      <p className="text-[11px] text-muted mt-0.5 line-clamp-2 tracking-tight">
                         {n.body}
                       </p>
                     )}
@@ -175,7 +179,7 @@ export function NotificationsBell({ restaurantId }: Props) {
                 )
 
                 const itemClasses = cn(
-                  'relative flex items-start gap-3 px-4 py-3 hover:bg-night-lighter transition-colors border-b border-night-lighter/50 last:border-b-0 text-left w-full'
+                  'relative flex items-start gap-3 px-4 py-3 hover:bg-muted-subtle transition-colors border-b border-border/50 last:border-b-0 text-left w-full'
                 )
                 const unreadDot = isUnread && (
                   <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-primary" />

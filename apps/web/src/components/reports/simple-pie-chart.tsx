@@ -9,14 +9,14 @@ export type PieSlice = {
 }
 
 const DEFAULT_COLORS = [
-  '#4ADE80',
+  '#1B3FCB',
+  '#F2C94C',
+  '#D63A37',
+  '#16A34A',
+  '#6B8AE8',
+  '#8C8885',
+  '#0F0E0C',
   '#F59E0B',
-  '#60A5FA',
-  '#F472B6',
-  '#A78BFA',
-  '#34D399',
-  '#FB923C',
-  '#38BDF8',
 ]
 
 type SimplePieChartProps = {
@@ -54,7 +54,7 @@ export function SimplePieChart({
   const total = data.reduce((s, d) => s + d.value, 0)
   if (total === 0) {
     return (
-      <p className="text-[12px] text-stone tracking-tight text-center py-4">Sem dados</p>
+      <p className="text-[12px] text-muted tracking-tight text-center py-4">Sem dados</p>
     )
   }
 
@@ -109,10 +109,10 @@ export function SimplePieChart({
                 className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: s.color }}
               />
-              <span className="text-[11px] text-stone-light tracking-tight truncate">
+              <span className="text-[11px] text-foreground tracking-tight truncate">
                 {s.label}
               </span>
-              <span className="text-[11px] font-data text-stone-dark ml-auto pl-2 shrink-0">
+              <span className="text-[11px] font-data text-muted ml-auto pl-2 shrink-0">
                 {Math.round((s.value / total) * 100)}%
               </span>
             </div>

@@ -75,6 +75,36 @@ export default async function MenuPage({
     }
   }
 
+  // Attribution params (campaign links / short links)
+  const recipientId =
+    typeof resolvedSearchParams.c === 'string' ? resolvedSearchParams.c : null
+  const customerId =
+    typeof resolvedSearchParams.cu === 'string' ? resolvedSearchParams.cu : null
+  const source =
+    typeof resolvedSearchParams.s === 'string' ? resolvedSearchParams.s : null
+  const utm = {
+    source:
+      typeof resolvedSearchParams.utm_source === 'string'
+        ? resolvedSearchParams.utm_source
+        : null,
+    medium:
+      typeof resolvedSearchParams.utm_medium === 'string'
+        ? resolvedSearchParams.utm_medium
+        : null,
+    campaign:
+      typeof resolvedSearchParams.utm_campaign === 'string'
+        ? resolvedSearchParams.utm_campaign
+        : null,
+    content:
+      typeof resolvedSearchParams.utm_content === 'string'
+        ? resolvedSearchParams.utm_content
+        : null,
+    term:
+      typeof resolvedSearchParams.utm_term === 'string'
+        ? resolvedSearchParams.utm_term
+        : null,
+  }
+
   return (
     <MenuPageContent
       restaurantName={restaurant.name as string}
@@ -88,6 +118,10 @@ export default async function MenuPage({
           'id' | 'rating' | 'comment' | 'sentiment' | 'created_at'
         >[]
       }
+      recipientId={recipientId}
+      customerId={customerId}
+      source={source}
+      utm={utm}
     />
   )
 }

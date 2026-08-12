@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, ChevronDown, LogOut } from 'lucide-react'
+import { Check, ChevronDown, CircleHelp, LogOut, Search, Sparkles } from 'lucide-react'
 import { logoutAction } from '@/app/(auth)/actions'
 import { switchRestaurant, type Membership } from '@/lib/server/restaurant'
+import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationsBell } from '@/components/notifications-bell'
 import { cn } from '@/lib/utils'
@@ -46,101 +47,127 @@ export function Header({ user, memberships, activeRestaurantId }: Props) {
   }
 
   return (
-    <header className="h-14 border-b border-night-lighter flex items-center justify-between px-6 bg-bg/80 backdrop-blur-sm sticky top-0 z-30">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        {active && (
-          <div className="relative">
-            <button
-              onClick={() => setOpen(!open)}
-              disabled={memberships.length < 2}
-              className={cn(
-                'flex items-center gap-2 h-8 text-[12px] tracking-tight rounded-md transition-colors',
-                memberships.length < 2
-                  ? 'text-cloud cursor-default'
-                  : 'text-stone-light hover:text-cloud hover:bg-night-light px-2 -ml-2'
-              )}
-            >
-              <span className="font-medium text-cloud truncate max-w-[200px]">
-                {active.name}
-              </span>
-              {memberships.length > 1 && (
-                <ChevronDown
-                  size={12}
-                  strokeWidth={1.75}
-                  className={cn(
-                    'text-stone-dark transition-transform duration-200',
-                    open && 'rotate-180'
-                  )}
-                />
-              )}
-            </button>
-            {open && memberships.length > 1 && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setOpen(false)}
-                />
-                <div className="absolute top-full left-0 mt-1.5 w-64 bg-night-light border border-night-lighter rounded-lg overflow-hidden z-40">
-                  <div className="px-3.5 py-2 border-b border-night-lighter">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
-                      Restaurantes
-                    </p>
-                  </div>
-                  {memberships.map((m) => (
-                    <button
-                      key={m.restaurant_id}
-                      onClick={() => handleSwitch(m.restaurant_id)}
-                      disabled={pending}
-                      className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-night-lighter transition-colors disabled:opacity-50"
-                    >
-                      <div className="text-left min-w-0">
-                        <p className="text-[12px] text-cloud truncate tracking-tight">
-                          {m.name}
-                        </p>
-                        <p className="text-[10px] text-stone-dark capitalize tracking-tight">
-                          {m.role}
-                        </p>
-                      </div>
-                      {m.restaurant_id === activeRestaurantId && (
-                        <Check
-                          size={12}
-                          strokeWidth={2}
-                          className="text-cloud shrink-0"
-                        />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        <button
-          onClick={openCommandPalette}
-          className="group flex items-center gap-2.5 h-8 px-0 text-[12px] text-stone-dark hover:text-stone-light transition-colors tracking-tight"
-        >
-          <span>Buscar</span>
-          <kbd className="inline-flex items-center gap-0.5 px-1.5 h-[18px] rounded text-[10px] font-data text-stone-dark border border-night-lighter">
-            ⌘K
-          </kbd>
-        </button>
+    <header className="bg-bg-elevated border-b border-border flex items-center px-4 gap-3 h-12 relative z-30">
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 h-full pr-3 border-r border-border">
+        <Logo size={20} />
+        <span className="text-[14px] font-semibold tracking-tight hidden sm:inline">
+          Txoko
+        </span>
       </div>
 
+      {active && (
+        <div className="relative">
+          <button
+            onClick={() => setOpen(!open)}
+            disabled={memberships.length < 2}
+            className={cn(
+              'flex items-center gap-1.5 h-7 text-[12.5px] font-semibold rounded-md transition-colors',
+              memberships.length < 2
+                ? 'text-foreground cursor-default'
+                : 'text-foreground hover:text-primary px-2 -ml-2 hover:bg-surface-hover'
+            )}
+          >
+            <span className="truncate max-w-[200px]">
+              {active.name}
+            </span>
+            {memberships.length > 1 && (
+              <ChevronDown
+                size={11}
+                strokeWidth={1.6}
+                className={cn(
+                  'text-muted transition-transform duration-200',
+                  open && 'rotate-180'
+                )}
+              />
+            )}
+          </button>
+          {open && memberships.length > 1 && (
+            <>
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setOpen(false)}
+              />
+              <div className="island-popup absolute top-full left-0 mt-1.5 w-64 overflow-hidden z-40">
+                <div className="px-3.5 py-2 border-b border-border">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
+                    Restaurantes
+                  </p>
+                </div>
+                {memberships.map((m) => (
+                  <button
+                    key={m.restaurant_id}
+                    onClick={() => handleSwitch(m.restaurant_id)}
+                    disabled={pending}
+                    className="w-full flex items-center justify-between px-3.5 py-2 hover:bg-surface-hover transition-colors disabled:opacity-50"
+                  >
+                    <div className="text-left min-w-0">
+                      <p className="text-[12px] text-foreground truncate font-medium">
+                        {m.name}
+                      </p>
+                      <p className="text-[10px] text-muted capitalize">
+                        {m.role}
+                      </p>
+                    </div>
+                    {m.restaurant_id === activeRestaurantId && (
+                      <Check
+                        size={12}
+                        strokeWidth={2}
+                        className="text-primary shrink-0"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Busca global */}
+      <button
+        onClick={openCommandPalette}
+        className="flex items-center gap-2 h-7 flex-1 max-w-[400px] px-2.5 rounded-md text-muted bg-muted-subtle border border-border hover:bg-surface-hover transition-colors"
+      >
+        <Search size={11} strokeWidth={1.6} className="flex-shrink-0" />
+        <span className="flex-1 text-[12.5px] truncate text-left">
+          Pesquisar pedido, mesa, cliente…
+        </span>
+        <kbd className="text-[10px] font-data px-1.5 py-0.5 rounded bg-bg-elevated border border-border">
+          ⌘K
+        </kbd>
+      </button>
+
+      <div className="flex-1" />
+
       <div className="flex items-center gap-1">
+        <button
+          className="flex items-center gap-1.5 h-7 px-2 rounded-md text-[12px] font-medium hover:bg-surface-hover transition-colors"
+          aria-label="Agente IA"
+        >
+          <Sparkles size={13} strokeWidth={1.8} className="text-primary" />
+          <span className="text-primary font-semibold">Agente IA</span>
+        </button>
+        <button
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-surface-hover transition-colors"
+          aria-label="Ajuda"
+        >
+          <CircleHelp size={14} strokeWidth={1.6} className="text-foreground/75" />
+        </button>
         <ThemeToggle />
         {activeRestaurantId && (
           <NotificationsBell restaurantId={activeRestaurantId} />
         )}
-        <div className="flex items-center gap-2.5 pl-3 ml-1 border-l border-night-lighter h-8">
-          <div className="w-6 h-6 rounded-full bg-night-lighter flex items-center justify-center text-[10px] font-medium text-cloud">
+        <div className="w-px h-[18px] bg-border mx-1" />
+        <div className="flex items-center gap-2.5 h-8">
+          <div className="w-7 h-7 rounded-full bg-primary-soft border border-border flex items-center justify-center text-[11px] font-semibold text-primary">
             {initial}
           </div>
           <div className="hidden sm:flex flex-col justify-center leading-none">
-            <p className="text-[12px] font-medium text-cloud tracking-tight">
+            <p className="text-[12px] font-semibold text-foreground">
               {shortEmail}
             </p>
-            <p className="text-[10px] text-stone-dark tracking-tight capitalize mt-0.5">
+            <p className="text-[10px] text-muted capitalize mt-0.5">
               {active?.role ?? 'membro'}
             </p>
           </div>
@@ -148,7 +175,7 @@ export function Header({ user, memberships, activeRestaurantId }: Props) {
             <button
               type="submit"
               title="Sair"
-              className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors ml-1"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-destructive hover:bg-surface-hover transition-colors"
               aria-label="Sair"
             >
               <LogOut size={13} strokeWidth={1.75} />

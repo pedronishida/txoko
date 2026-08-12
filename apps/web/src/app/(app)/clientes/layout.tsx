@@ -6,6 +6,7 @@ import { TabBar } from '@/components/tab-bar'
 
 const TABS = [
   { key: '/clientes', label: 'Clientes' },
+  { key: '/clientes/insights', label: 'Insights' },
   { key: '/clientes/fidelidade', label: 'Fidelidade' },
 ]
 

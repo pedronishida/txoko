@@ -25,9 +25,9 @@ function ClassBadge({ cls }: { cls: 'A' | 'B' | 'C' }) {
     <span
       className={cn(
         'inline-flex items-center justify-center w-6 h-5 rounded text-[10px] font-medium font-data',
-        cls === 'A' && 'bg-leaf/20 text-leaf',
-        cls === 'B' && 'bg-warm/20 text-warm',
-        cls === 'C' && 'bg-stone-dark/30 text-stone-light'
+        cls === 'A' && 'bg-success/20 text-success',
+        cls === 'B' && 'bg-accent/20 text-accent-foreground',
+        cls === 'C' && 'bg-stone-dark/30 text-foreground/75'
       )}
     >
       {cls}
@@ -48,9 +48,9 @@ const COLUMNS: ColumnDef<ProductABC>[] = [
     label: 'Produto',
     render: (row) => (
       <div>
-        <span className="text-cloud tracking-tight">{row.name}</span>
+        <span className="text-foreground tracking-tight">{row.name}</span>
         {row.category && row.category !== '-' && (
-          <span className="block text-[10px] text-stone-dark mt-0.5">{row.category}</span>
+          <span className="block text-[10px] text-muted mt-0.5">{row.category}</span>
         )}
       </div>
     ),
@@ -65,13 +65,13 @@ const COLUMNS: ColumnDef<ProductABC>[] = [
     key: 'revenue',
     label: 'Receita',
     align: 'right',
-    render: (row) => <span className="font-data text-cloud">{formatCurrency(row.revenue)}</span>,
+    render: (row) => <span className="font-data text-foreground">{formatCurrency(row.revenue)}</span>,
   },
   {
     key: 'cmv',
     label: 'CMV',
     align: 'right',
-    render: (row) => <span className="font-data text-stone-dark">{formatCurrency(row.cmv)}</span>,
+    render: (row) => <span className="font-data text-muted">{formatCurrency(row.cmv)}</span>,
   },
   {
     key: 'marginPct',
@@ -82,10 +82,10 @@ const COLUMNS: ColumnDef<ProductABC>[] = [
         className={cn(
           'font-data',
           row.marginPct >= 60
-            ? 'text-leaf'
+            ? 'text-success'
             : row.marginPct >= 30
-            ? 'text-warm'
-            : 'text-coral'
+            ? 'text-accent-foreground'
+            : 'text-destructive'
         )}
       >
         {row.marginPct.toFixed(1)}%
@@ -97,7 +97,7 @@ const COLUMNS: ColumnDef<ProductABC>[] = [
     label: '% Acum.',
     align: 'right',
     render: (row) => (
-      <span className="font-data text-stone-dark">{row.cumulativePct.toFixed(1)}%</span>
+      <span className="font-data text-muted">{row.cumulativePct.toFixed(1)}%</span>
     ),
   },
 ]
@@ -175,10 +175,10 @@ export function ProdutosRelatorioView({
       {/* Pareto chart */}
       {paretoData.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-2">
             Curva de Pareto — Receita acumulada por produto
           </h2>
-          <p className="text-[11px] text-stone-dark mb-4">
+          <p className="text-[11px] text-muted mb-4">
             Eixo: produtos ordenados por receita (esq → dir). Barras = receita individual. Linha = acumulado %.
           </p>
           <SimpleBarChart
@@ -187,10 +187,10 @@ export function ProdutosRelatorioView({
             formatValue={formatCurrency}
           />
           {/* Cumulative % line approximation as text */}
-          <div className="flex justify-between text-[10px] font-data text-stone-dark mt-2 px-1">
+          <div className="flex justify-between text-[10px] font-data text-muted mt-2 px-1">
             <span>0%</span>
-            <span className="text-leaf">Classe A ≤ 80%</span>
-            <span className="text-warm">B ≤ 95%</span>
+            <span className="text-success">Classe A ≤ 80%</span>
+            <span className="text-accent-foreground">B ≤ 95%</span>
             <span>100%</span>
           </div>
         </section>
@@ -198,7 +198,7 @@ export function ProdutosRelatorioView({
 
       {/* ABC Table */}
       <section>
-        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
           Analise ABC — Todos os produtos
         </h2>
         <ReportTable
@@ -214,20 +214,20 @@ export function ProdutosRelatorioView({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {lowMarginHighVol.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-1">
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-1">
                 Alta Volume, Baixa Margem
               </h2>
-              <p className="text-[11px] text-stone-dark mb-4">
+              <p className="text-[11px] text-muted mb-4">
                 Produtos com alto giro mas margem abaixo de 30% — revisar custo ou preco.
               </p>
-              <div className="divide-y divide-night-lighter">
+              <div className="divide-y divide-border">
                 {lowMarginHighVol.map((p) => (
                   <div key={p.id} className="py-2.5 flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <span className="text-[12px] text-cloud tracking-tight block truncate">{p.name}</span>
-                      <span className="text-[10px] text-stone-dark">{p.qty} vendas</span>
+                      <span className="text-[12px] text-foreground tracking-tight block truncate">{p.name}</span>
+                      <span className="text-[10px] text-muted">{p.qty} vendas</span>
                     </div>
-                    <span className="text-[12px] font-data text-coral shrink-0">
+                    <span className="text-[12px] font-data text-destructive shrink-0">
                       {p.marginPct.toFixed(1)}%
                     </span>
                   </div>
@@ -238,20 +238,20 @@ export function ProdutosRelatorioView({
 
           {highMarginLowVol.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-1">
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-1">
                 Alta Margem, Baixo Volume
               </h2>
-              <p className="text-[11px] text-stone-dark mb-4">
+              <p className="text-[11px] text-muted mb-4">
                 Oportunidade de upsell — margem acima de 60% mas poucas vendas.
               </p>
-              <div className="divide-y divide-night-lighter">
+              <div className="divide-y divide-border">
                 {highMarginLowVol.map((p) => (
                   <div key={p.id} className="py-2.5 flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <span className="text-[12px] text-cloud tracking-tight block truncate">{p.name}</span>
-                      <span className="text-[10px] text-stone-dark">{p.qty} vendas</span>
+                      <span className="text-[12px] text-foreground tracking-tight block truncate">{p.name}</span>
+                      <span className="text-[10px] text-muted">{p.qty} vendas</span>
                     </div>
-                    <span className="text-[12px] font-data text-leaf shrink-0">
+                    <span className="text-[12px] font-data text-success shrink-0">
                       {p.marginPct.toFixed(1)}%
                     </span>
                   </div>
@@ -265,10 +265,10 @@ export function ProdutosRelatorioView({
       {/* Slow movers */}
       {slowMovers.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-1">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-1">
             Baixo Giro — Menos de 5 vendas no periodo
           </h2>
-          <p className="text-[11px] text-stone-dark mb-4">
+          <p className="text-[11px] text-muted mb-4">
             {slowMovers.length} produto(s) com poucas vendas. Considere remover do cardapio ou promover.
           </p>
           <ReportTable
@@ -278,7 +278,7 @@ export function ProdutosRelatorioView({
                 key: 'qty',
                 label: 'Vendas',
                 align: 'right',
-                render: (row) => <span className="font-data text-coral">{row.qty}</span>,
+                render: (row) => <span className="font-data text-destructive">{row.qty}</span>,
               },
               {
                 key: 'revenue',

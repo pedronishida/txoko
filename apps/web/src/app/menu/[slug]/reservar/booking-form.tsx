@@ -105,46 +105,46 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
       <div className="min-h-screen bg-bg flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="flex justify-center mb-5">
-            <CheckCircle2 size={56} className="text-leaf" strokeWidth={1.5} />
+            <CheckCircle2 size={56} className="text-success" strokeWidth={1.5} />
           </div>
-          <h1 className="text-[22px] font-semibold text-cloud mb-2">
+          <h1 className="text-[22px] font-semibold text-foreground mb-2">
             Reserva solicitada!
           </h1>
-          <p className="text-stone text-[14px] mb-6">
+          <p className="text-muted text-[14px] mb-6">
             Voce recebera confirmacao em breve.
           </p>
 
-          <div className="bg-night-light border border-night-lighter rounded-xl p-5 text-left space-y-3 mb-6">
+          <div className="bg-surface border border-border rounded-xl p-5 text-left space-y-3 mb-6">
             <div className="flex items-center gap-3">
-              <CalendarDays size={16} className="text-leaf shrink-0" />
+              <CalendarDays size={16} className="text-success shrink-0" />
               <div>
-                <p className="text-[11px] text-stone uppercase tracking-wide">Data e hora</p>
-                <p className="text-cloud text-[13px] font-medium capitalize">
+                <p className="text-[11px] text-muted uppercase tracking-wide">Data e hora</p>
+                <p className="text-foreground text-[13px] font-medium capitalize">
                   {format(parseISO(successInfo.scheduled_for), "EEEE, d 'de' MMMM 'as' HH:mm", { locale: ptBR })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Users size={16} className="text-leaf shrink-0" />
+              <Users size={16} className="text-success shrink-0" />
               <div>
-                <p className="text-[11px] text-stone uppercase tracking-wide">Pessoas</p>
-                <p className="text-cloud text-[13px] font-medium">
+                <p className="text-[11px] text-muted uppercase tracking-wide">Pessoas</p>
+                <p className="text-foreground text-[13px] font-medium">
                   {successInfo.guest_count} {successInfo.guest_count === 1 ? 'pessoa' : 'pessoas'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <CalendarDays size={16} className="text-leaf shrink-0" />
+              <CalendarDays size={16} className="text-success shrink-0" />
               <div>
-                <p className="text-[11px] text-stone uppercase tracking-wide">Restaurante</p>
-                <p className="text-cloud text-[13px] font-medium">{successInfo.restaurantName}</p>
+                <p className="text-[11px] text-muted uppercase tracking-wide">Restaurante</p>
+                <p className="text-foreground text-[13px] font-medium">{successInfo.restaurantName}</p>
               </div>
             </div>
           </div>
 
           <Link
             href={`/menu/${slug}`}
-            className="inline-flex items-center gap-2 text-stone hover:text-cloud text-[13px] transition-colors"
+            className="inline-flex items-center gap-2 text-muted hover:text-foreground text-[13px] transition-colors"
           >
             <ArrowLeft size={14} />
             Voltar ao cardapio
@@ -157,16 +157,16 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-bg/80 backdrop-blur border-b border-night-lighter px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-10 bg-bg/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <Link
           href={`/menu/${slug}`}
-          className="text-stone hover:text-cloud transition-colors p-1 -ml-1"
+          className="text-muted hover:text-foreground transition-colors p-1 -ml-1"
         >
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-[14px] font-semibold text-cloud">Fazer reserva</h1>
-          <p className="text-[11px] text-stone">{restaurantName}</p>
+          <h1 className="text-[14px] font-semibold text-foreground">Fazer reserva</h1>
+          <p className="text-[11px] text-muted">{restaurantName}</p>
         </div>
       </header>
 
@@ -174,12 +174,12 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
 
         {/* Guest info */}
         <div className="space-y-3">
-          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-stone">
+          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted">
             Seus dados
           </h2>
 
           <div>
-            <label className="block text-[11px] text-stone mb-1">Nome completo</label>
+            <label className="block text-[11px] text-muted mb-1">Nome completo</label>
             <input
               type="text"
               required
@@ -187,37 +187,37 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
               value={form.guest_name}
               onChange={(e) => setForm((f) => ({ ...f, guest_name: e.target.value }))}
               placeholder="Seu nome"
-              className="w-full bg-night-light border border-night-lighter rounded-xl px-4 py-3 text-[14px] text-cloud placeholder:text-stone outline-none focus:border-leaf/50 transition-colors"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-[14px] text-foreground placeholder:text-muted outline-none focus:border-success/50 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] text-stone mb-1">Telefone (WhatsApp)</label>
+            <label className="block text-[11px] text-muted mb-1">Telefone (WhatsApp)</label>
             <input
               type="tel"
               required
               value={form.guest_phone}
               onChange={(e) => setForm((f) => ({ ...f, guest_phone: e.target.value }))}
               placeholder="(11) 99999-9999"
-              className="w-full bg-night-light border border-night-lighter rounded-xl px-4 py-3 text-[14px] text-cloud placeholder:text-stone outline-none focus:border-leaf/50 transition-colors"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-[14px] text-foreground placeholder:text-muted outline-none focus:border-success/50 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] text-stone mb-1">E-mail (opcional)</label>
+            <label className="block text-[11px] text-muted mb-1">E-mail (opcional)</label>
             <input
               type="email"
               value={form.guest_email}
               onChange={(e) => setForm((f) => ({ ...f, guest_email: e.target.value }))}
               placeholder="seu@email.com"
-              className="w-full bg-night-light border border-night-lighter rounded-xl px-4 py-3 text-[14px] text-cloud placeholder:text-stone outline-none focus:border-leaf/50 transition-colors"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-[14px] text-foreground placeholder:text-muted outline-none focus:border-success/50 transition-colors"
             />
           </div>
         </div>
 
         {/* Guest count */}
         <div>
-          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-stone mb-3">
+          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted mb-3">
             Numero de pessoas
           </h2>
           <div className="flex gap-2 flex-wrap">
@@ -229,22 +229,22 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
                 className={cn(
                   'w-12 h-12 rounded-xl text-[14px] font-medium border transition-colors',
                   form.guest_count === n
-                    ? 'bg-leaf text-night border-leaf'
-                    : 'bg-night-light border-night-lighter text-stone hover:text-cloud'
+                    ? 'bg-success text-success-foreground border-success'
+                    : 'bg-surface border-border text-muted hover:text-foreground'
                 )}
               >
                 {n}
               </button>
             ))}
           </div>
-          <p className="text-stone text-[11px] mt-1.5">
+          <p className="text-muted text-[11px] mt-1.5">
             Para grupos maiores, entre em contato diretamente.
           </p>
         </div>
 
         {/* Date */}
         <div>
-          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-stone mb-3">
+          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted mb-3">
             Data
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -259,8 +259,8 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
                   className={cn(
                     'shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border transition-colors min-w-[54px]',
                     isSelected
-                      ? 'bg-leaf text-night border-leaf'
-                      : 'bg-night-light border-night-lighter text-stone hover:text-cloud'
+                      ? 'bg-success text-success-foreground border-success'
+                      : 'bg-surface border-border text-muted hover:text-foreground'
                   )}
                 >
                   <span className="text-[10px] uppercase font-medium capitalize">
@@ -275,7 +275,7 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
 
         {/* Time */}
         <div>
-          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-stone mb-3">
+          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted mb-3">
             Horario
           </h2>
           <div className="grid grid-cols-4 gap-2">
@@ -287,8 +287,8 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
                 className={cn(
                   'py-2.5 rounded-xl text-[13px] font-medium border transition-colors',
                   form.selected_time === slot
-                    ? 'bg-leaf text-night border-leaf'
-                    : 'bg-night-light border-night-lighter text-stone hover:text-cloud'
+                    ? 'bg-success text-success-foreground border-success'
+                    : 'bg-surface border-border text-muted hover:text-foreground'
                 )}
               >
                 {slot}
@@ -299,7 +299,7 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
 
         {/* Special requests */}
         <div>
-          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-stone mb-3">
+          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted mb-3">
             Pedidos especiais (opcional)
           </h2>
           <textarea
@@ -307,12 +307,12 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
             onChange={(e) => setForm((f) => ({ ...f, special_requests: e.target.value }))}
             rows={3}
             placeholder="Aniversario, restricoes alimentares, necessidades especiais..."
-            className="w-full bg-night-light border border-night-lighter rounded-xl px-4 py-3 text-[14px] text-cloud placeholder:text-stone outline-none focus:border-leaf/50 transition-colors resize-none"
+            className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-[14px] text-foreground placeholder:text-muted outline-none focus:border-success/50 transition-colors resize-none"
           />
         </div>
 
         {formError && (
-          <p className="text-coral text-[13px] bg-coral/10 border border-coral/20 rounded-xl px-4 py-3">
+          <p className="text-destructive text-[13px] bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
             {formError}
           </p>
         )}
@@ -320,12 +320,12 @@ export function PublicBookingForm({ restaurantName, slug }: Props) {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-4 bg-leaf text-night font-semibold text-[15px] rounded-xl hover:bg-leaf/90 transition-colors disabled:opacity-50"
+          className="w-full py-4 bg-success text-success-foreground font-semibold text-[15px] rounded-xl hover:bg-success/90 transition-colors disabled:opacity-50"
         >
           {submitting ? 'Enviando...' : 'Solicitar reserva'}
         </button>
 
-        <p className="text-center text-stone text-[11px]">
+        <p className="text-center text-muted text-[11px]">
           Voce recebera confirmacao por WhatsApp em breve.
         </p>
       </form>

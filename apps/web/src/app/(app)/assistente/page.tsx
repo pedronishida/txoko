@@ -96,8 +96,8 @@ export default function AssistentePage() {
   function renderContent(content: string) {
     return content.split('\n').map((line, i) => {
       const rendered = line
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-cloud">$1</strong>')
-        .replace(/^- /, '<span class="text-stone-dark mr-1.5">·</span>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>')
+        .replace(/^- /, '<span class="text-muted mr-1.5">·</span>')
       return (
         <p
           key={i}
@@ -132,7 +132,7 @@ export default function AssistentePage() {
                   {showAuthor && (
                     <p
                       className={cn(
-                        'text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2',
+                        'text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2',
                         isUser && 'text-right'
                       )}
                     >
@@ -140,19 +140,19 @@ export default function AssistentePage() {
                     </p>
                   )}
                   {isUser ? (
-                    <div className="inline-block rounded-lg px-3.5 py-2.5 bg-cloud text-night">
+                    <div className="inline-block rounded-lg px-3.5 py-2.5 bg-primary text-primary-foreground">
                       <p className="text-[13px] tracking-tight leading-relaxed">
                         {msg.content}
                       </p>
                     </div>
                   ) : (
-                    <div className="text-stone-light space-y-1">
+                    <div className="text-foreground/75 space-y-1">
                       {renderContent(msg.content)}
                     </div>
                   )}
                   <p
                     className={cn(
-                      'text-[10px] font-data text-stone-dark mt-1.5',
+                      'text-[10px] font-data text-muted mt-1.5',
                       isUser && 'text-right'
                     )}
                   >
@@ -165,7 +165,7 @@ export default function AssistentePage() {
 
           {typing && (
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2">
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2">
                 Assistente
               </p>
               <div className="flex items-center gap-1">
@@ -193,7 +193,7 @@ export default function AssistentePage() {
         </div>
       </div>
 
-      <div className="border-t border-night-lighter px-8 py-5">
+      <div className="border-t border-border px-8 py-5">
         <div className="max-w-2xl mx-auto">
           {messages.length <= 2 && (
             <div className="flex flex-wrap gap-x-4 gap-y-2 mb-5">
@@ -201,7 +201,7 @@ export default function AssistentePage() {
                 <button
                   key={suggestion}
                   onClick={() => handleSend(suggestion)}
-                  className="text-[11px] text-stone-dark hover:text-cloud transition-colors tracking-tight"
+                  className="text-[11px] text-muted hover:text-foreground transition-colors tracking-tight"
                 >
                   {suggestion}
                 </button>
@@ -217,12 +217,12 @@ export default function AssistentePage() {
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
               placeholder="Pergunte ao assistente"
               disabled={typing}
-              className="flex-1 h-10 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight disabled:opacity-50"
+              className="flex-1 h-10 bg-transparent border-0 text-[13px] text-foreground placeholder:text-muted focus:outline-none tracking-tight disabled:opacity-50"
             />
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || typing}
-              className="w-8 h-8 flex items-center justify-center bg-cloud text-night rounded-md hover:bg-cloud-dark disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground rounded-md hover:bg-primary-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Enviar"
             >
               <Send size={13} strokeWidth={2} />

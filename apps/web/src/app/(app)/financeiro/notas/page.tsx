@@ -41,11 +41,11 @@ export default async function NotasPage() {
   return (
     <div className="max-w-3xl">
       {/* Status banner */}
-      <div className="px-4 py-3 border border-warm/20 bg-warm/5 rounded-md mb-10">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-warm mb-1">
+      <div className="px-4 py-3 border border-accent/20 bg-accent/5 rounded-md mb-10">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-accent-foreground mb-1">
           Integracao fiscal em desenvolvimento
         </p>
-        <p className="text-[12px] text-stone-light tracking-tight leading-relaxed">
+        <p className="text-[12px] text-foreground/75 tracking-tight leading-relaxed">
           O Txoko ainda nao emite NFC-e/NF-e automaticamente. A emissao fiscal
           exige homologacao com a SEFAZ, certificado digital A1, inscricao
           estadual e regime tributario configurado — etapas que serao entregues
@@ -54,54 +54,54 @@ export default async function NotasPage() {
       </div>
 
       {/* KPI band */}
-      <section className="grid grid-cols-3 gap-x-10 pb-8 mb-10 border-b border-night-lighter">
+      <section className="grid grid-cols-3 gap-x-10 pb-8 mb-10 border-b border-border">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
             Pedidos elegiveis
           </p>
-          <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
+          <p className="text-[28px] font-medium text-foreground tracking-[-0.03em] leading-none font-data mt-3">
             {invoiceableCount}
           </p>
-          <p className="text-[11px] text-stone-dark tracking-tight mt-2">
+          <p className="text-[11px] text-muted tracking-tight mt-2">
             Fechados no mes atual
           </p>
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
             Faturamento mensal
           </p>
-          <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data mt-3">
+          <p className="text-[28px] font-medium text-foreground tracking-[-0.03em] leading-none font-data mt-3">
             {formatCurrency(invoiceableTotal)}
           </p>
-          <p className="text-[11px] text-stone-dark tracking-tight mt-2">
+          <p className="text-[11px] text-muted tracking-tight mt-2">
             Base de calculo para emissao
           </p>
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
             Notas emitidas
           </p>
-          <p className="text-[28px] font-medium text-stone-dark tracking-[-0.03em] leading-none font-data mt-3">
+          <p className="text-[28px] font-medium text-muted tracking-[-0.03em] leading-none font-data mt-3">
             0
           </p>
-          <p className="text-[11px] text-stone-dark tracking-tight mt-2">
+          <p className="text-[11px] text-muted tracking-tight mt-2">
             Aguardando habilitacao SEFAZ
           </p>
         </div>
       </section>
 
       {/* Features */}
-      <section className="mb-10 pb-10 border-b border-night-lighter">
-        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+      <section className="mb-10 pb-10 border-b border-border">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
           O que sera entregue
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-10">
           {features.map((f) => (
             <div
               key={f}
-              className="flex items-baseline gap-2.5 text-[12px] text-stone-light tracking-tight"
+              className="flex items-baseline gap-2.5 text-[12px] text-foreground/75 tracking-tight"
             >
-              <span className="text-stone-dark font-data">·</span>
+              <span className="text-muted font-data">·</span>
               {f}
             </div>
           ))}
@@ -110,16 +110,16 @@ export default async function NotasPage() {
 
       {/* Prerequisites */}
       <section>
-        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-5">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-5">
           Prerequisitos para ligar
         </h2>
-        <ol className="space-y-3 text-[12px] text-stone-light tracking-tight leading-relaxed list-decimal list-inside marker:text-stone-dark marker:font-data">
+        <ol className="space-y-3 text-[12px] text-foreground/75 tracking-tight leading-relaxed list-decimal list-inside marker:text-muted marker:font-data">
           <li>
             Cadastrar razao social, CNPJ, inscricao estadual e regime
             tributario em{' '}
             <a
               href="/configuracoes"
-              className="text-stone-light hover:text-cloud transition-colors underline underline-offset-2"
+              className="text-foreground/75 hover:text-foreground transition-colors underline underline-offset-2"
             >
               Configuracoes
             </a>

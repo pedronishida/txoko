@@ -40,7 +40,7 @@ export function Heatmap({
           <tr>
             <th className="w-10" />
             {colLabels.map((col, i) => (
-              <th key={i} className="font-data text-stone-dark font-normal pb-1 min-w-[28px]">
+              <th key={i} className="font-data text-muted font-normal pb-1 min-w-[28px]">
                 {col}
               </th>
             ))}
@@ -49,7 +49,7 @@ export function Heatmap({
         <tbody>
           {data.map((row, ri) => (
             <tr key={ri}>
-              <td className="text-stone-dark text-right pr-2 font-medium whitespace-nowrap">
+              <td className="text-muted text-right pr-2 font-medium whitespace-nowrap">
                 {rowLabels[ri]}
               </td>
               {row.map((val, ci) => {

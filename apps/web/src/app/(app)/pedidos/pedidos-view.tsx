@@ -22,7 +22,10 @@ import { closeOrderWithPayment } from '@/lib/server/payments'
 import type { PaymentMethod } from '@txoko/shared'
 
 type TypeFilter = 'all' | OrderType
-type StatusFilter = 'all' | OrderStatus
+type StatusFilter = 'active' | 'completed' | 'cancelled' | 'all'
+
+const ACTIVE_STATUSES: OrderStatus[] = ['open', 'preparing', 'ready']
+const COMPLETED_STATUSES: OrderStatus[] = ['delivered', 'closed']
 
 const TYPE_TABS: { key: TypeFilter; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -86,7 +89,7 @@ export function PedidosView({
   const [orders, setOrders] = useState(initialOrders)
   const [items, setItems] = useState(initialItems)
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [showCheckout, setShowCheckout] = useState(false)
   const [checkoutMethod, setCheckoutMethod] = useState<PaymentMethod>('pix')
@@ -175,7 +178,9 @@ export function PedidosView({
   const filtered = useMemo(() => {
     return orders.filter((o) => {
       if (typeFilter !== 'all' && o.type !== typeFilter) return false
-      if (statusFilter !== 'all' && o.status !== statusFilter) return false
+      if (statusFilter === 'active' && !ACTIVE_STATUSES.includes(o.status)) return false
+      if (statusFilter === 'completed' && !COMPLETED_STATUSES.includes(o.status)) return false
+      if (statusFilter === 'cancelled' && o.status !== 'cancelled') return false
       return true
     })
   }, [orders, typeFilter, statusFilter])
@@ -183,10 +188,9 @@ export function PedidosView({
   const counts = useMemo(
     () => ({
       all: orders.length,
-      open: orders.filter((o) => o.status === 'open').length,
-      preparing: orders.filter((o) => o.status === 'preparing').length,
-      ready: orders.filter((o) => o.status === 'ready').length,
-      delivered: orders.filter((o) => o.status === 'delivered').length,
+      active: orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length,
+      completed: orders.filter((o) => COMPLETED_STATUSES.includes(o.status)).length,
+      cancelled: orders.filter((o) => o.status === 'cancelled').length,
     }),
     [orders]
   )
@@ -246,11 +250,10 @@ export function PedidosView({
   }
 
   const STATUS_FILTERS: { key: StatusFilter; label: string; count: number }[] = [
+    { key: 'active', label: 'Em andamento', count: counts.active },
+    { key: 'completed', label: 'Concluidos', count: counts.completed },
+    { key: 'cancelled', label: 'Cancelados', count: counts.cancelled },
     { key: 'all', label: 'Todos', count: counts.all },
-    { key: 'open', label: 'Abertos', count: counts.open },
-    { key: 'preparing', label: 'Preparando', count: counts.preparing },
-    { key: 'ready', label: 'Prontos', count: counts.ready },
-    { key: 'delivered', label: 'Entregues', count: counts.delivered },
   ]
 
   return (
@@ -281,7 +284,7 @@ export function PedidosView({
                   onClick={() => setTypeFilter(t.key)}
                   className={cn(
                     'text-[11px] font-medium tracking-tight transition-colors',
-                    active ? 'text-cloud' : 'text-stone-dark hover:text-stone'
+                    active ? 'text-foreground' : 'text-muted hover:text-muted'
                   )}
                 >
                   {t.label}
@@ -294,13 +297,13 @@ export function PedidosView({
 
       <div className="flex min-h-[calc(100vh-14rem)]">
         {/* List */}
-        <section className={cn('flex-1 min-w-0', selectedOrder && 'border-r border-night-lighter')}>
+        <section className={cn('flex-1 min-w-0', selectedOrder && 'border-r border-border')}>
           {filtered.length === 0 ? (
-            <p className="py-16 text-center text-[13px] text-stone tracking-tight">
+            <p className="py-16 text-center text-[13px] text-muted tracking-tight">
               Nenhum pedido encontrado
             </p>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {filtered.map((order) => {
                 const orderItems = itemsByOrder[order.id] ?? []
                 const table = order.table_id
@@ -322,11 +325,11 @@ export function PedidosView({
                     key={order.id}
                     className={cn(
                       'relative group flex items-center gap-4 px-8 py-4 transition-colors',
-                      active ? 'bg-night-light/60' : 'hover:bg-night-light/30'
+                      active ? 'bg-primary-soft' : 'hover:bg-surface-hover'
                     )}
                   >
                     {active && (
-                      <span className="absolute left-0 top-0 bottom-0 w-px bg-cloud" />
+                      <span className="absolute left-0 top-0 bottom-0 w-px bg-primary" />
                     )}
 
                     {/* Clickable main area */}
@@ -334,24 +337,24 @@ export function PedidosView({
                       onClick={() => setSelectedOrderId(order.id)}
                       className="flex items-center gap-4 flex-1 min-w-0 text-left"
                     >
-                      <span className="text-[11px] font-data text-stone-dark w-14 shrink-0">
+                      <span className="text-[11px] font-data text-muted w-14 shrink-0">
                         #{order.id.slice(0, 6)}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-[13px] font-medium text-cloud tracking-tight">
+                          <span className="text-[13px] font-medium text-foreground tracking-tight">
                             {locationLabel}
                           </span>
-                          <span className="text-[11px] text-stone-dark tracking-tight">·</span>
-                          <span className="text-[11px] text-stone tracking-tight">
+                          <span className="text-[11px] text-muted tracking-tight">·</span>
+                          <span className="text-[11px] text-muted tracking-tight">
                             {STATUS_LABEL[order.status] ?? order.status}
                           </span>
-                          <span className="text-[11px] text-stone-dark tracking-tight">·</span>
-                          <span className="text-[11px] text-stone-dark tracking-tight">
+                          <span className="text-[11px] text-muted tracking-tight">·</span>
+                          <span className="text-[11px] text-muted tracking-tight">
                             {SOURCE_LABEL[order.source] ?? order.source}
                           </span>
                         </div>
-                        <p className="text-[11px] text-stone tracking-tight mt-0.5 truncate">
+                        <p className="text-[11px] text-muted tracking-tight mt-0.5 truncate">
                           {orderItems.length}{' '}
                           {orderItems.length === 1 ? 'item' : 'itens'} —{' '}
                           {orderItems
@@ -363,10 +366,10 @@ export function PedidosView({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[13px] font-medium text-cloud font-data tracking-tight">
+                        <span className="text-[13px] font-medium text-foreground font-data tracking-tight">
                           {formatCurrency(order.total)}
                         </span>
-                        <span className="text-[10px] font-data text-stone-dark">
+                        <span className="text-[10px] font-data text-muted">
                           {minutes}m
                         </span>
                       </div>
@@ -378,7 +381,7 @@ export function PedidosView({
                         onClick={() => openEdit(order.id)}
                         disabled={BLOCKED_EDIT_STATUSES.includes(order.status)}
                         title="Editar pedido"
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <Pencil size={12} />
                       </button>
@@ -386,14 +389,14 @@ export function PedidosView({
                         onClick={() => openSplit(order.id)}
                         disabled={isTerminal}
                         title="Dividir conta"
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <SplitSquareVertical size={12} />
                       </button>
                       <button
                         onClick={() => openPrint(order.id)}
                         title="Imprimir recibo"
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
                       >
                         <Printer size={12} />
                       </button>
@@ -401,7 +404,7 @@ export function PedidosView({
                         <button
                           onClick={() => doSetStatus(order.id, 'cancelled')}
                           title="Cancelar pedido"
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-primary hover:bg-primary/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-primary hover:bg-primary/10 transition-colors"
                         >
                           <X size={12} />
                         </button>
@@ -417,13 +420,13 @@ export function PedidosView({
         {/* Detail panel */}
         {selectedOrder && (
           <aside className="w-[360px] flex flex-col">
-            <div className="px-6 py-5 border-b border-night-lighter flex items-start justify-between gap-4">
+            <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[11px] font-data text-stone-dark">
+                  <span className="text-[11px] font-data text-muted">
                     #{selectedOrder.id.slice(0, 6)}
                   </span>
-                  <span className="text-[13px] font-medium text-cloud tracking-tight">
+                  <span className="text-[13px] font-medium text-foreground tracking-tight">
                     {selectedTable
                       ? `Mesa ${selectedTable.number}`
                       : selectedOrder.type === 'delivery'
@@ -434,23 +437,23 @@ export function PedidosView({
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-[11px] text-stone tracking-tight">
+                  <span className="text-[11px] text-muted tracking-tight">
                     {STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status}
                   </span>
-                  <span className="text-[11px] text-stone-dark">·</span>
-                  <span className="text-[11px] text-stone tracking-tight">
+                  <span className="text-[11px] text-muted">·</span>
+                  <span className="text-[11px] text-muted tracking-tight">
                     {SOURCE_LABEL[selectedOrder.source] ?? selectedOrder.source}
                   </span>
-                  <span className="text-[11px] text-stone-dark">·</span>
-                  <span className="text-[11px] font-data text-stone-dark">
+                  <span className="text-[11px] text-muted">·</span>
+                  <span className="text-[11px] font-data text-muted">
                     {getMinutesAgo(selectedOrder.created_at)}m
                   </span>
                 </div>
                 {selectedCustomer && (
-                  <p className="text-[11px] text-stone-light mt-1.5 tracking-tight">
+                  <p className="text-[11px] text-foreground/75 mt-1.5 tracking-tight">
                     {selectedCustomer.name}
                     {selectedCustomer.phone && (
-                      <span className="text-stone-dark font-data">
+                      <span className="text-muted font-data">
                         {' '}
                         · {selectedCustomer.phone}
                       </span>
@@ -463,13 +466,13 @@ export function PedidosView({
                 <button
                   onClick={() => openComanda(selectedOrder.id)}
                   title="Imprimir comanda"
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
                 >
                   <Printer size={13} />
                 </button>
                 <button
                   onClick={() => setSelectedOrderId(null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
                   aria-label="Fechar"
                 >
                   <X size={14} />
@@ -478,20 +481,20 @@ export function PedidosView({
             </div>
 
             {selectedOrder.delivery_address && (
-              <div className="px-6 py-4 border-b border-night-lighter">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-1">
+              <div className="px-6 py-4 border-b border-border">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1">
                   Entrega
                 </p>
-                <p className="text-[12px] text-cloud tracking-tight">
+                <p className="text-[12px] text-foreground tracking-tight">
                   {(selectedOrder.delivery_address as Address).street},{' '}
                   {(selectedOrder.delivery_address as Address).number}
                 </p>
-                <p className="text-[11px] text-stone tracking-tight">
+                <p className="text-[11px] text-muted tracking-tight">
                   {(selectedOrder.delivery_address as Address).neighborhood} ·{' '}
                   {(selectedOrder.delivery_address as Address).city}
                 </p>
                 {selectedOrder.notes && (
-                  <p className="text-[11px] text-warm mt-2 tracking-tight">
+                  <p className="text-[11px] text-accent-foreground mt-2 tracking-tight">
                     {selectedOrder.notes}
                   </p>
                 )}
@@ -500,7 +503,7 @@ export function PedidosView({
 
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                   Itens
                 </p>
                 <div className="space-y-3">
@@ -512,19 +515,19 @@ export function PedidosView({
                         className="flex items-start justify-between gap-3"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-cloud tracking-tight">
-                            <span className="font-data text-stone-dark mr-1.5">
+                          <p className="text-[12px] text-foreground tracking-tight">
+                            <span className="font-data text-muted mr-1.5">
                               {item.quantity}×
                             </span>
                             {product?.name}
                           </p>
                           {item.notes && (
-                            <p className="text-[10px] text-warm mt-0.5 ml-5 tracking-tight">
+                            <p className="text-[10px] text-accent-foreground mt-0.5 ml-5 tracking-tight">
                               {item.notes}
                             </p>
                           )}
                         </div>
-                        <span className="text-[11px] font-data text-stone-dark shrink-0">
+                        <span className="text-[11px] font-data text-muted shrink-0">
                           {formatCurrency(item.total_price)}
                         </span>
                       </div>
@@ -535,7 +538,7 @@ export function PedidosView({
             </div>
 
             {/* Totals */}
-            <div className="px-6 py-4 border-t border-night-lighter space-y-1.5">
+            <div className="px-6 py-4 border-t border-border space-y-1.5">
               <Row label="Subtotal" value={formatCurrency(selectedOrder.subtotal)} />
               {selectedOrder.service_fee > 0 && (
                 <Row
@@ -556,11 +559,11 @@ export function PedidosView({
                   accent
                 />
               )}
-              <div className="pt-2 mt-1 border-t border-night-lighter flex items-baseline justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+              <div className="pt-2 mt-1 border-t border-border flex items-baseline justify-between">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                   Total
                 </span>
-                <span className="text-[16px] font-medium text-cloud font-data tracking-tight">
+                <span className="text-[16px] font-medium text-foreground font-data tracking-tight">
                   {formatCurrency(selectedOrder.total)}
                 </span>
               </div>
@@ -569,7 +572,7 @@ export function PedidosView({
             {/* Actions */}
             {selectedOrder.status !== 'closed' &&
               selectedOrder.status !== 'cancelled' && (
-                <div className="px-6 py-5 border-t border-night-lighter">
+                <div className="px-6 py-5 border-t border-border">
                   {!showCheckout ? (
                     <div className="space-y-2">
                       {/* Edit + Split quick buttons */}
@@ -577,14 +580,14 @@ export function PedidosView({
                         <button
                           onClick={() => openEdit(selectedOrder.id)}
                           disabled={BLOCKED_EDIT_STATUSES.includes(selectedOrder.status)}
-                          className="flex-1 h-8 border border-night-lighter text-[11px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="flex-1 h-8 border border-border text-[11px] text-foreground/75 hover:text-foreground hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Pencil size={11} />
                           Editar
                         </button>
                         <button
                           onClick={() => openSplit(selectedOrder.id)}
-                          className="flex-1 h-8 border border-night-lighter text-[11px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5"
+                          className="flex-1 h-8 border border-border text-[11px] text-foreground/75 hover:text-foreground hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5"
                         >
                           <SplitSquareVertical size={11} />
                           Dividir
@@ -594,7 +597,7 @@ export function PedidosView({
                       {selectedOrder.status === 'open' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'preparing')}
-                          className="w-full h-9 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
                         >
                           Aceitar pedido
                         </button>
@@ -602,7 +605,7 @@ export function PedidosView({
                       {selectedOrder.status === 'preparing' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'ready')}
-                          className="w-full h-9 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
                         >
                           Marcar pronto
                         </button>
@@ -610,7 +613,7 @@ export function PedidosView({
                       {selectedOrder.status === 'ready' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'delivered')}
-                          className="w-full h-9 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
                         >
                           Marcar entregue
                         </button>
@@ -619,7 +622,7 @@ export function PedidosView({
                         selectedOrder.status === 'ready') && (
                         <button
                           onClick={() => setShowCheckout(true)}
-                          className="w-full h-9 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
                         >
                           Fechar conta
                         </button>
@@ -633,7 +636,7 @@ export function PedidosView({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                         Metodo de pagamento
                       </p>
                       <div className="grid grid-cols-4 gap-1">
@@ -646,8 +649,8 @@ export function PedidosView({
                               className={cn(
                                 'h-9 text-[11px] font-medium rounded-md transition-colors tracking-tight',
                                 active
-                                  ? 'bg-cloud text-night'
-                                  : 'text-stone-light hover:text-cloud hover:bg-night-light'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'text-foreground/75 hover:text-foreground hover:bg-surface'
                               )}
                             >
                               {PAYMENT_LABEL[m]}
@@ -658,14 +661,14 @@ export function PedidosView({
                       <div className="flex gap-2">
                         <button
                           onClick={() => setShowCheckout(false)}
-                          className="flex-1 h-9 text-[12px] text-stone-light hover:text-cloud hover:bg-night-light rounded-md transition-colors"
+                          className="flex-1 h-9 text-[12px] text-foreground/75 hover:text-foreground hover:bg-surface rounded-md transition-colors"
                         >
                           Voltar
                         </button>
                         <button
                           onClick={doCheckout}
                           disabled={pending}
-                          className="flex-1 h-9 bg-cloud text-night text-[12px] font-medium rounded-md hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                          className="flex-1 h-9 bg-primary text-primary-foreground text-[12px] font-medium rounded-md hover:bg-primary-hover transition-colors disabled:opacity-40"
                         >
                           {pending
                             ? 'Processando'
@@ -719,9 +722,9 @@ function Row({
 }) {
   return (
     <div className="flex justify-between text-[12px]">
-      <span className="text-stone tracking-tight">{label}</span>
+      <span className="text-muted tracking-tight">{label}</span>
       <span
-        className={cn('font-data', accent ? 'text-primary' : 'text-stone-light')}
+        className={cn('font-data', accent ? 'text-primary' : 'text-foreground/75')}
       >
         {value}
       </span>

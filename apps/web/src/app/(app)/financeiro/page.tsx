@@ -226,7 +226,7 @@ export default async function FinanceiroPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-10">
         {/* Revenue 7 days */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-6">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-6">
             Receita · ultimos 7 dias
           </h2>
           <div className="flex items-end gap-3 h-40">
@@ -247,7 +247,7 @@ export default async function FinanceiroPage() {
                       style={{ height: `${Math.max(height, 2)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-data text-stone-dark capitalize">
+                  <span className="text-[10px] font-data text-muted capitalize">
                     {dayName}
                   </span>
                 </div>
@@ -258,11 +258,11 @@ export default async function FinanceiroPage() {
 
         {/* Payment methods */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-6">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-6">
             Vendas por metodo
           </h2>
           {methodRows.length === 0 ? (
-            <p className="text-[12px] text-stone tracking-tight">
+            <p className="text-[12px] text-muted tracking-tight">
               Nenhum pagamento registrado este mes
             </p>
           ) : (
@@ -270,19 +270,19 @@ export default async function FinanceiroPage() {
               {methodRows.map((item) => (
                 <div key={item.method}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <span className="text-[13px] text-cloud tracking-tight">
+                    <span className="text-[13px] text-foreground tracking-tight">
                       {METHOD_LABELS[item.method] ?? item.method}
                     </span>
                     <div className="flex items-baseline gap-3">
-                      <span className="text-[13px] font-data text-cloud">
+                      <span className="text-[13px] font-data text-foreground">
                         {formatCurrency(item.amount)}
                       </span>
-                      <span className="text-[10px] font-data text-stone-dark w-8 text-right">
+                      <span className="text-[10px] font-data text-muted w-8 text-right">
                         {item.percentage}%
                       </span>
                     </div>
                   </div>
-                  <div className="w-full h-0.5 bg-night-lighter rounded-full overflow-hidden">
+                  <div className="w-full h-0.5 bg-muted-subtle rounded-full overflow-hidden">
                     <div
                       className="h-full bg-stone-light rounded-full transition-all"
                       style={{ width: `${item.percentage}%` }}
@@ -296,22 +296,22 @@ export default async function FinanceiroPage() {
 
         {/* DRE */}
         <section className="lg:col-span-1">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-6">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-6">
             DRE · mes atual
           </h2>
-          <div className="divide-y divide-night-lighter">
+          <div className="divide-y divide-border">
             {dreRows.map((row, i) => (
               <div
                 key={i}
                 className={cn(
                   'py-2.5 flex items-baseline justify-between',
-                  row.highlight && 'bg-night-light/40 -mx-4 px-4'
+                  row.highlight && 'bg-surface/40 -mx-4 px-4'
                 )}
               >
                 <span
                   className={cn(
                     'text-[12px] tracking-tight',
-                    row.bold ? 'text-cloud font-medium' : 'text-stone-light'
+                    row.bold ? 'text-foreground font-medium' : 'text-foreground/75'
                   )}
                   style={{ paddingLeft: `${row.indent * 16}px` }}
                 >
@@ -320,10 +320,10 @@ export default async function FinanceiroPage() {
                 <span
                   className={cn(
                     'text-[12px] font-data',
-                    row.highlight && 'text-cloud font-medium',
-                    !row.highlight && row.value < 0 && 'text-stone-dark',
-                    !row.highlight && row.value >= 0 && row.bold && 'text-cloud',
-                    !row.highlight && row.value >= 0 && !row.bold && 'text-stone-light'
+                    row.highlight && 'text-foreground font-medium',
+                    !row.highlight && row.value < 0 && 'text-muted',
+                    !row.highlight && row.value >= 0 && row.bold && 'text-foreground',
+                    !row.highlight && row.value >= 0 && !row.bold && 'text-foreground/75'
                   )}
                 >
                   {row.value < 0
@@ -333,11 +333,11 @@ export default async function FinanceiroPage() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-stone-dark tracking-tight mt-4">
+          <p className="text-[11px] text-muted tracking-tight mt-4">
             Despesas consolidadas de contas pagas em{' '}
             <a
               href="/financeiro/contas"
-              className="text-stone-light hover:text-cloud transition-colors"
+              className="text-foreground/75 hover:text-foreground transition-colors"
             >
               Contas
             </a>
@@ -347,32 +347,32 @@ export default async function FinanceiroPage() {
 
         {/* Top products */}
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-6">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-6">
             Top produtos · mes atual
           </h2>
           {topProducts.length === 0 ? (
-            <p className="text-[12px] text-stone tracking-tight">
+            <p className="text-[12px] text-muted tracking-tight">
               Nenhuma venda registrada este mes
             </p>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {topProducts.map((product, i) => (
                 <div
                   key={product.id}
                   className="py-3 flex items-baseline gap-4"
                 >
-                  <span className="text-[11px] font-data text-stone-dark w-4">
+                  <span className="text-[11px] font-data text-muted w-4">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-cloud tracking-tight truncate">
+                    <p className="text-[13px] text-foreground tracking-tight truncate">
                       {product.name}
                     </p>
-                    <p className="text-[10px] text-stone-dark tracking-tight mt-0.5 font-data">
+                    <p className="text-[10px] text-muted tracking-tight mt-0.5 font-data">
                       {product.quantity} vendidos
                     </p>
                   </div>
-                  <span className="text-[13px] font-data text-cloud tracking-tight">
+                  <span className="text-[13px] font-data text-foreground tracking-tight">
                     {formatCurrency(product.revenue)}
                   </span>
                 </div>

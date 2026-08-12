@@ -5,9 +5,11 @@ import { PageHeader } from '@/components/page-header'
 import { TabBar } from '@/components/tab-bar'
 
 const TABS = [
+  { key: '/marketing/roi', label: 'ROI' },
   { key: '/marketing', label: 'Campanhas' },
   { key: '/marketing/templates', label: 'Templates' },
   { key: '/marketing/audiences', label: 'Audiencias' },
+  { key: '/marketing/cardapio', label: 'Cardapio' },
 ]
 
 export default function MarketingLayout({

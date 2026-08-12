@@ -278,6 +278,111 @@ export async function launchCampaign(campaignId: string) {
   return { ok: true, recipientCount: eligibleCustomers.length }
 }
 
+export async function createAbTestCampaign(input: {
+  name: string
+  description?: string
+  type: CampaignType
+  channel: CampaignChannel
+  audience_id?: string
+  scheduled_at?: string
+  templateAId: string
+  templateBId: string
+  splitPct: number
+}) {
+  if (!input.name.trim()) return { error: 'Nome obrigatorio' }
+  if (!input.templateAId || !input.templateBId) return { error: 'Selecione 2 templates' }
+  if (input.splitPct < 5 || input.splitPct > 95) {
+    return { error: 'Split deve ficar entre 5% e 95%' }
+  }
+
+  const created = await createCampaign({
+    name: input.name,
+    description: input.description,
+    type: input.type,
+    channel: input.channel,
+    audience_id: input.audience_id,
+    scheduled_at: input.scheduled_at,
+  })
+  if ('error' in created && created.error) return { error: created.error }
+  if (!('campaignId' in created) || !created.campaignId) {
+    return { error: 'Falha ao criar campanha base' }
+  }
+
+  const supabase = await createClient()
+  const campaignId = created.campaignId
+
+  const { data: step, error: stepError } = await supabase
+    .from('campaign_steps')
+    .insert({
+      campaign_id: campaignId,
+      step_order: 1,
+      step_type: 'ab_split',
+      ab_split_pct: input.splitPct,
+      template_id: input.templateAId,
+    })
+    .select('id')
+    .single()
+  if (stepError || !step) return { error: stepError?.message ?? 'Falha ao criar step' }
+
+  const stepId = step.id as string
+  const { error: variantsError } = await supabase.from('campaign_ab_variants').upsert(
+    [
+      {
+        campaign_id: campaignId,
+        step_id: stepId,
+        variant: 'a',
+        template_id: input.templateAId,
+      },
+      {
+        campaign_id: campaignId,
+        step_id: stepId,
+        variant: 'b',
+        template_id: input.templateBId,
+      },
+    ],
+    { onConflict: 'campaign_id,step_id,variant' }
+  )
+  if (variantsError) return { error: variantsError.message }
+
+  revalidatePath('/marketing')
+  revalidatePath(`/marketing/campaigns/${campaignId}`)
+  return { ok: true, campaignId }
+}
+
+export async function promoteAbWinner(input: {
+  campaignId: string
+  variant: 'a' | 'b'
+}) {
+  const supabase = await createClient()
+
+  const { data: variants } = await supabase
+    .from('campaign_ab_variants')
+    .select('variant, template_id, step_id')
+    .eq('campaign_id', input.campaignId)
+  if (!variants || variants.length < 2) return { error: 'Variantes nao encontradas' }
+
+  const winner = variants.find((v) => v.variant === input.variant)
+  if (!winner) return { error: 'Variante vencedora nao encontrada' }
+
+  const stepId = winner.step_id as string
+  await supabase
+    .from('campaign_steps')
+    .update({
+      step_type: 'send_message',
+      template_id: winner.template_id,
+      ab_split_pct: 100,
+    })
+    .eq('id', stepId)
+
+  await supabase
+    .from('campaign_ab_variants')
+    .delete()
+    .eq('campaign_id', input.campaignId)
+
+  revalidatePath(`/marketing/campaigns/${input.campaignId}`)
+  return { ok: true }
+}
+
 export async function setupAbTest(input: {
   campaignId: string
   stepId: string

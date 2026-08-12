@@ -246,16 +246,16 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl"
+        className="bg-surface border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between shrink-0">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <h2 className="text-[14px] font-medium text-foreground tracking-tight">
               {editing ? 'Editar automacao' : 'Nova automacao'}
             </h2>
-            <p className="text-[11px] text-stone mt-0.5 tracking-tight">
+            <p className="text-[11px] text-muted mt-0.5 tracking-tight">
               {step === 1 && 'Passo 1 de 3 — Escolha o gatilho'}
               {step === 2 && 'Passo 2 de 3 — Configure a acao'}
               {step === 3 && 'Passo 3 de 3 — Revise e salve'}
@@ -263,7 +263,7 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
           >
             <X size={14} />
           </button>
@@ -278,10 +278,10 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                   className={cn(
                     'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium transition-colors',
                     step === s
-                      ? 'bg-leaf text-night'
+                      ? 'bg-success text-success-foreground'
                       : step > s
-                        ? 'bg-leaf/30 text-leaf'
-                        : 'bg-night-lighter text-stone'
+                        ? 'bg-success/30 text-success'
+                        : 'bg-muted-subtle text-muted'
                   )}
                 >
                   {step > s ? <Check size={10} /> : s}
@@ -290,7 +290,7 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                   <div
                     className={cn(
                       'flex-1 h-px w-12',
-                      step > s ? 'bg-leaf/40' : 'bg-night-lighter'
+                      step > s ? 'bg-success/40' : 'bg-muted-subtle'
                     )}
                   />
                 )}
@@ -319,15 +319,15 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                     className={cn(
                       'p-4 text-left rounded-lg border transition-all',
                       triggerType === t.type
-                        ? 'border-leaf bg-leaf/5'
-                        : 'border-night-lighter hover:border-stone-dark'
+                        ? 'border-success bg-success/5'
+                        : 'border-border hover:border-stone-dark'
                     )}
                   >
                     <div className="text-xl mb-2">{t.icon}</div>
-                    <div className="text-[12px] font-medium text-cloud tracking-tight mb-1">
+                    <div className="text-[12px] font-medium text-foreground tracking-tight mb-1">
                       {t.label}
                     </div>
-                    <div className="text-[11px] text-stone tracking-tight leading-snug">
+                    <div className="text-[11px] text-muted tracking-tight leading-snug">
                       {t.description}
                     </div>
                   </button>
@@ -336,8 +336,8 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
 
               {/* Config fields for selected trigger */}
               {selectedTrigger && selectedTrigger.configFields.length > 0 && (
-                <div className="mt-4 p-4 bg-night rounded-lg border border-night-lighter space-y-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                <div className="mt-4 p-4 bg-night rounded-lg border border-border space-y-3">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                     Configurar gatilho
                   </p>
                   {selectedTrigger.configFields.map((field) => (
@@ -365,15 +365,15 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                     className={cn(
                       'p-4 text-left rounded-lg border transition-all',
                       actionType === a.type
-                        ? 'border-leaf bg-leaf/5'
-                        : 'border-night-lighter hover:border-stone-dark'
+                        ? 'border-success bg-success/5'
+                        : 'border-border hover:border-stone-dark'
                     )}
                   >
                     <div className="text-xl mb-2">{a.icon}</div>
-                    <div className="text-[12px] font-medium text-cloud tracking-tight mb-1">
+                    <div className="text-[12px] font-medium text-foreground tracking-tight mb-1">
                       {a.label}
                     </div>
-                    <div className="text-[11px] text-stone tracking-tight leading-snug">
+                    <div className="text-[11px] text-muted tracking-tight leading-snug">
                       {a.description}
                     </div>
                   </button>
@@ -382,8 +382,8 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
 
               {/* Config fields for selected action */}
               {selectedAction && selectedAction.configFields.length > 0 && (
-                <div className="mt-4 p-4 bg-night rounded-lg border border-night-lighter space-y-3">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                <div className="mt-4 p-4 bg-night rounded-lg border border-border space-y-3">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                     Configurar acao
                   </p>
                   {selectedAction.configFields.map((field) => (
@@ -403,17 +403,17 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
           {step === 3 && (
             <div className="space-y-5">
               {/* Preview banner */}
-              <div className="p-4 bg-night rounded-lg border border-leaf/20">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+              <div className="p-4 bg-night rounded-lg border border-success/20">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                   Resumo da automacao
                 </p>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-night-lighter rounded-md text-[12px] text-cloud">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted-subtle rounded-md text-[12px] text-foreground">
                     <span>{selectedTrigger?.icon}</span>
                     <span>{selectedTrigger?.label ?? triggerType}</span>
                   </span>
-                  <ChevronRight size={14} className="text-stone shrink-0" />
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-leaf/10 text-leaf rounded-md text-[12px]">
+                  <ChevronRight size={14} className="text-muted shrink-0" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 text-success rounded-md text-[12px]">
                     <span>{selectedAction?.icon}</span>
                     <span>{selectedAction?.label ?? actionType}</span>
                   </span>
@@ -421,11 +421,11 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
 
                 {/* Config summary */}
                 {Object.keys(triggerConfig).length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-night-lighter">
-                    <p className="text-[10px] text-stone tracking-tight mb-1">Gatilho configurado:</p>
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-[10px] text-muted tracking-tight mb-1">Gatilho configurado:</p>
                     {Object.entries(triggerConfig).map(([k, v]) => (
-                      <p key={k} className="text-[11px] text-stone-light font-data">
-                        {k}: <span className="text-cloud">{String(v)}</span>
+                      <p key={k} className="text-[11px] text-foreground/75 font-data">
+                        {k}: <span className="text-foreground">{String(v)}</span>
                       </p>
                     ))}
                   </div>
@@ -434,7 +434,7 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
 
               {/* Name */}
               <div>
-                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Nome da automacao *
                 </label>
                 <input
@@ -443,13 +443,13 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                   onFocus={generateName}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Cupom de aniversario"
-                  className="w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+                  className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Descricao <span className="normal-case font-normal">(opcional)</span>
                 </label>
                 <textarea
@@ -457,15 +457,15 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Descricao curta do que faz essa automacao"
                   rows={2}
-                  className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors resize-none"
+                  className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors resize-none"
                 />
               </div>
 
               {/* Enable toggle */}
-              <div className="flex items-center justify-between py-3 px-4 bg-night rounded-lg border border-night-lighter">
+              <div className="flex items-center justify-between py-3 px-4 bg-night rounded-lg border border-border">
                 <div>
-                  <p className="text-[13px] text-cloud tracking-tight">Ativar imediatamente</p>
-                  <p className="text-[11px] text-stone tracking-tight mt-0.5">
+                  <p className="text-[13px] text-foreground tracking-tight">Ativar imediatamente</p>
+                  <p className="text-[11px] text-muted tracking-tight mt-0.5">
                     A automacao começa a disparar assim que salva
                   </p>
                 </div>
@@ -474,7 +474,7 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                   onClick={() => setEnabledImmediately((v) => !v)}
                   className={cn(
                     'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none',
-                    enabledImmediately ? 'bg-leaf' : 'bg-night-lighter'
+                    enabledImmediately ? 'bg-success' : 'bg-muted-subtle'
                   )}
                 >
                   <span
@@ -490,11 +490,11 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-night-lighter shrink-0 flex items-center gap-3">
+        <div className="px-6 py-4 border-t border-border shrink-0 flex items-center gap-3">
           {step > 1 && (
             <button
               onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
             >
               <ChevronLeft size={13} />
               Voltar
@@ -515,7 +515,7 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
                 setError(null)
                 setStep((s) => (s + 1) as 1 | 2 | 3)
               }}
-              className="inline-flex items-center gap-1.5 h-9 px-4 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors"
+              className="inline-flex items-center gap-1.5 h-9 px-4 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors"
             >
               Proximo
               <ChevronRight size={13} />
@@ -524,7 +524,7 @@ export function AutomationBuilder({ onClose, onSaved, editing }: Props) {
             <button
               onClick={handleSave}
               disabled={pending || !triggerType || !actionType}
-              className="h-9 px-5 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+              className="h-9 px-5 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
             >
               {pending ? 'Salvando...' : editing ? 'Salvar alteracoes' : 'Criar automacao'}
             </button>
@@ -553,14 +553,14 @@ function ConfigFieldInput({
   if (field.type === 'textarea') {
     return (
       <div>
-        <label className="block text-[11px] text-stone-light tracking-tight mb-1.5">
+        <label className="block text-[11px] text-foreground/75 tracking-tight mb-1.5">
           {field.label}
         </label>
         <textarea
           value={stringVal}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2.5 bg-night-light border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors resize-none"
+          className="w-full px-3 py-2.5 bg-surface border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors resize-none"
         />
       </div>
     )
@@ -568,7 +568,7 @@ function ConfigFieldInput({
 
   return (
     <div>
-      <label className="block text-[11px] text-stone-light tracking-tight mb-1.5">
+      <label className="block text-[11px] text-foreground/75 tracking-tight mb-1.5">
         {field.label}
       </label>
       <input
@@ -579,7 +579,7 @@ function ConfigFieldInput({
         onChange={(e) =>
           onChange(field.type === 'number' ? Number(e.target.value) : e.target.value)
         }
-        className="w-full h-9 px-3 bg-night-light border border-night-lighter rounded-md text-[12px] text-cloud focus:outline-none focus:border-stone-dark transition-colors font-data"
+        className="w-full h-9 px-3 bg-surface border border-border rounded-md text-[12px] text-foreground focus:outline-none focus:border-stone-dark transition-colors font-data"
       />
     </div>
   )

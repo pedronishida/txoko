@@ -210,17 +210,17 @@ export default async function HomePage() {
   return (
     <div className="-mx-8 -mt-6">
       {/* Page header */}
-      <header className="px-8 pt-6 pb-5 border-b border-night-lighter">
-        <p className="text-[11px] text-stone-dark tracking-tight uppercase font-medium">
+      <header className="px-8 pt-6 pb-5 border-b border-border">
+        <p className="text-[11px] text-muted tracking-[0.1em] uppercase font-semibold">
           {greeting} — {today}
         </p>
         <div className="flex items-end justify-between mt-3">
-          <h1 className="text-[20px] font-medium tracking-[-0.02em] text-cloud leading-none">
+          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-foreground leading-none">
             {restaurant?.name ?? 'Txoko'}
           </h1>
           <Link
             href="/pdv"
-            className="hidden sm:inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+            className="hidden sm:inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-semibold rounded-md hover:bg-primary-hover transition-colors"
           >
             Abrir PDV
             <span aria-hidden>→</span>
@@ -229,24 +229,24 @@ export default async function HomePage() {
       </header>
 
       {/* KPI band */}
-      <section className="px-8 py-8 border-b border-night-lighter">
+      <section className="px-8 py-8 border-b border-border">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-8">
           {metrics.map((m) => (
             <div key={m.label}>
-              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
                 {m.label}
               </p>
               <div className="flex items-baseline gap-2.5 mt-3">
-                <p className="text-[28px] font-medium text-cloud tracking-[-0.03em] leading-none font-data">
+                <p className="text-[28px] font-semibold text-foreground tracking-[-0.03em] leading-none font-data">
                   {m.value}
                 </p>
                 {m.delta && m.trend && (
                   <span
                     className={cn(
-                      'text-[11px] font-medium tracking-tight',
-                      m.trend === 'up' && 'text-leaf',
-                      m.trend === 'down' && 'text-primary',
-                      m.trend === 'flat' && 'text-stone'
+                      'text-[11px] font-semibold tracking-tight',
+                      m.trend === 'up' && 'text-success',
+                      m.trend === 'down' && 'text-destructive',
+                      m.trend === 'flat' && 'text-muted'
                     )}
                   >
                     {m.delta}
@@ -254,7 +254,7 @@ export default async function HomePage() {
                 )}
               </div>
               {m.caption && (
-                <p className="text-[11px] text-stone-dark mt-2 tracking-tight">
+                <p className="text-[11px] text-muted mt-2 tracking-tight">
                   {m.caption}
                 </p>
               )}
@@ -267,23 +267,23 @@ export default async function HomePage() {
         {/* Recent orders */}
         <section className="lg:col-span-2">
           <div className="flex items-baseline justify-between mb-5">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
               Pedidos recentes
             </h2>
             <Link
               href="/pedidos"
-              className="text-[11px] text-stone-light hover:text-cloud transition-colors tracking-tight"
+              className="text-[11px] text-primary hover:text-primary-hover transition-colors font-medium"
             >
               Ver todos →
             </Link>
           </div>
 
           {recentOrders.length === 0 ? (
-            <p className="py-10 text-[13px] text-stone tracking-tight">
+            <p className="py-10 text-[13px] text-muted">
               Nenhum pedido ainda
             </p>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {recentOrders.map((order) => {
                 const label = order.table_id
                   ? 'Mesa'
@@ -298,22 +298,22 @@ export default async function HomePage() {
                     className="py-3 flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-4 min-w-0">
-                      <span className="text-[11px] font-data text-stone-dark w-14">
+                      <span className="text-[11px] font-data text-muted w-14">
                         #{order.id.slice(0, 6)}
                       </span>
-                      <span className="text-[13px] text-cloud tracking-tight">
+                      <span className="text-[13px] text-foreground">
                         {label}
                       </span>
-                      <span className="text-[11px] text-stone tracking-tight">
+                      <span className="text-[11px] text-muted">
                         ·{' '}
                         {ORDER_STATUS_LABEL[order.status] ?? order.status}
                       </span>
                     </div>
                     <div className="flex items-center gap-5 shrink-0">
-                      <span className="text-[13px] font-medium text-cloud tracking-tight font-data">
+                      <span className="text-[13px] font-semibold text-foreground font-data">
                         {formatCurrency(Number(order.total))}
                       </span>
-                      <span className="text-[11px] font-data text-stone-dark w-10 text-right">
+                      <span className="text-[11px] font-data text-muted w-10 text-right">
                         {relativeTime(order.created_at)}
                       </span>
                     </div>
@@ -329,19 +329,19 @@ export default async function HomePage() {
           {/* Reviews */}
           <section>
             <div className="flex items-baseline justify-between mb-5">
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
                 Ultimas avaliacoes
               </h2>
               <Link
                 href="/avaliacoes"
-                className="text-[11px] text-stone-light hover:text-cloud transition-colors tracking-tight"
+                className="text-[11px] text-primary hover:text-primary-hover transition-colors font-medium"
               >
                 Ver todas →
               </Link>
             </div>
 
             {recentReviews.length === 0 ? (
-              <p className="py-6 text-[12px] text-stone tracking-tight">
+              <p className="py-6 text-[12px] text-muted">
                 Sem avaliacoes ainda
               </p>
             ) : (
@@ -349,10 +349,10 @@ export default async function HomePage() {
                 {recentReviews.map((r) => (
                   <div key={r.id}>
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-[13px] font-medium text-cloud font-data tracking-tight">
+                      <span className="text-[13px] font-semibold text-foreground font-data">
                         {Number(r.rating).toFixed(1)}
                       </span>
-                      <span className="text-[10px] text-stone-dark tracking-tight">
+                      <span className="text-[10px] text-accent-foreground tracking-tight">
                         {Array.from({ length: 5 }, (_, i) =>
                           i < Number(r.rating) ? '★' : '·'
                         ).join('')}
@@ -360,10 +360,10 @@ export default async function HomePage() {
                       {r.sentiment && (
                         <span
                           className={cn(
-                            'text-[10px] tracking-tight ml-auto',
-                            r.sentiment === 'positive' && 'text-leaf',
-                            r.sentiment === 'negative' && 'text-primary',
-                            r.sentiment === 'neutral' && 'text-stone'
+                            'text-[10px] tracking-tight ml-auto font-semibold',
+                            r.sentiment === 'positive' && 'text-success',
+                            r.sentiment === 'negative' && 'text-destructive',
+                            r.sentiment === 'neutral' && 'text-muted'
                           )}
                         >
                           {r.sentiment === 'positive'
@@ -375,7 +375,7 @@ export default async function HomePage() {
                       )}
                     </div>
                     {r.comment && (
-                      <p className="text-[12px] text-stone-light leading-relaxed line-clamp-2 tracking-tight">
+                      <p className="text-[12px] text-foreground/75 leading-relaxed line-clamp-2">
                         {r.comment}
                       </p>
                     )}
@@ -389,10 +389,10 @@ export default async function HomePage() {
           {stockCritical.length > 0 && (
             <section>
               <div className="flex items-baseline justify-between mb-5">
-                <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
+                <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-destructive">
                   Estoque critico
                 </h2>
-                <span className="text-[11px] font-data text-primary">
+                <span className="text-[11px] font-data font-semibold text-destructive bg-destructive-soft px-1.5 py-0.5 rounded">
                   {stockCritical.length}
                 </span>
               </div>
@@ -402,10 +402,10 @@ export default async function HomePage() {
                     key={i.name}
                     className="flex items-baseline justify-between gap-3"
                   >
-                    <span className="text-[12px] text-cloud truncate tracking-tight">
+                    <span className="text-[12px] text-foreground truncate">
                       {i.name}
                     </span>
-                    <span className="text-[11px] font-data text-stone-light shrink-0">
+                    <span className="text-[11px] font-data text-muted shrink-0">
                       {Number(i.current_stock)} / {Number(i.min_stock)} {i.unit}
                     </span>
                   </div>
@@ -413,7 +413,7 @@ export default async function HomePage() {
                 {stockCritical.length > 4 && (
                   <Link
                     href="/estoque"
-                    className="block pt-2 text-[11px] text-primary hover:text-primary/70 tracking-tight transition-colors"
+                    className="block pt-2 text-[11px] text-destructive hover:text-destructive-hover font-medium transition-colors"
                   >
                     +{stockCritical.length - 4} outros itens →
                   </Link>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { MenuHeader } from '@/components/menu/menu-header'
 import { MenuProductCard } from '@/components/menu/menu-product-card'
@@ -18,6 +18,122 @@ type MenuReview = Pick<
   'id' | 'rating' | 'comment' | 'sentiment' | 'created_at'
 >
 
+type MenuUtm = {
+  source: string | null
+  medium: string | null
+  campaign: string | null
+  content: string | null
+  term: string | null
+}
+
+type CartEventItem = {
+  product_id: string
+  name: string
+  qty: number
+  price_cents: number
+}
+
+type TrackEvent =
+  | { type: 'pageview' }
+  | { type: 'cart_update'; items: CartEventItem[] }
+  | { type: 'checkout_started' }
+
+function generateSessionId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 3) | 8).toString(16)
+  })
+}
+
+function getOrCreateSessionId(slug: string): string {
+  const key = `txoko:menu_session:${slug}`
+  try {
+    const existing = window.sessionStorage.getItem(key)
+    if (existing) return existing
+    const id = generateSessionId()
+    window.sessionStorage.setItem(key, id)
+    return id
+  } catch {
+    return generateSessionId()
+  }
+}
+
+type TrackingProps = {
+  slug: string
+  recipientId: string | null
+  customerId: string | null
+  tableId: string | null
+  source: string | null
+  utm: MenuUtm | null
+}
+
+function useMenuTracking(props: TrackingProps) {
+  const [sessionId] = useState(() => getOrCreateSessionId(props.slug))
+  const propsRef = useRef(props)
+  propsRef.current = props
+  const sentPageview = useRef(false)
+  const cartTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastCartJson = useRef('')
+
+  const send = useCallback(
+    async (event: TrackEvent) => {
+      if (!sessionId) return
+      const current = propsRef.current
+      try {
+        await fetch('/api/menu/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: current.slug,
+            client_session_id: sessionId,
+            event,
+            recipient_id: current.recipientId ?? null,
+            customer_id: current.customerId ?? null,
+            table_id: current.tableId ?? null,
+            source: current.source ?? null,
+            utm: current.utm ?? null,
+          }),
+          keepalive: true,
+        })
+      } catch {
+        // tracking nunca quebra o cardapio
+      }
+    },
+    [sessionId]
+  )
+
+  useEffect(() => {
+    if (sentPageview.current) return
+    sentPageview.current = true
+    send({ type: 'pageview' })
+  }, [send])
+
+  return {
+    clientSessionId: sessionId,
+    track: useCallback(
+      (event: TrackEvent) => {
+        send(event)
+      },
+      [send]
+    ),
+    trackCart: useCallback(
+      (items: CartEventItem[]) => {
+        const json = JSON.stringify(items.map((i) => `${i.product_id}:${i.qty}`))
+        if (json === lastCartJson.current) return
+        lastCartJson.current = json
+        if (cartTimer.current) clearTimeout(cartTimer.current)
+        cartTimer.current = setTimeout(() => {
+          send({ type: 'cart_update', items })
+        }, 400)
+      },
+      [send]
+    ),
+  }
+}
+
 type Props = {
   restaurantName: string
   slug: string
@@ -25,6 +141,10 @@ type Props = {
   products: Product[]
   reviews?: MenuReview[]
   tableId?: string | null
+  recipientId?: string | null
+  customerId?: string | null
+  source?: string | null
+  utm?: MenuUtm | null
 }
 
 export function MenuPageContent({
@@ -34,7 +154,19 @@ export function MenuPageContent({
   products,
   reviews = [],
   tableId = null,
+  recipientId = null,
+  customerId = null,
+  source = null,
+  utm = null,
 }: Props) {
+  const tracking = useMenuTracking({
+    slug,
+    recipientId,
+    customerId,
+    tableId,
+    source,
+    utm,
+  })
   const router = useRouter()
   const searchParams = useSearchParams()
   const tableNumber = searchParams.get('mesa')
@@ -48,6 +180,18 @@ export function MenuPageContent({
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const cart = useCart(slug)
+
+  useEffect(() => {
+    if (!cart.hydrated) return
+    tracking.trackCart(
+      cart.items.map((item) => ({
+        product_id: item.productId,
+        name: item.name,
+        qty: item.quantity,
+        price_cents: Math.round((item.price ?? 0) * 100),
+      }))
+    )
+  }, [cart.items, cart.hydrated, tracking])
 
   const activeCategories = categories.filter((c) => c.is_active)
   const activeProducts = products.filter((p) => p.is_active)
@@ -300,6 +444,7 @@ export function MenuPageContent({
           onCheckout={() => {
             setCartOpen(false)
             setCheckoutOpen(true)
+            tracking.track({ type: 'checkout_started' })
           }}
         />
       )}

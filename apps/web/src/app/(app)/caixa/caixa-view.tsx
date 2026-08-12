@@ -336,8 +336,8 @@ export function CaixaView() {
             className={
               'flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium ' +
               (t.kind === 'ok'
-                ? 'bg-leaf/10 text-leaf border border-success/30'
-                : 'bg-coral/10 text-coral border border-destructive/30')
+                ? 'bg-success/10 text-success border border-success/30'
+                : 'bg-destructive/10 text-destructive border border-destructive/30')
             }
           >
             {t.kind === 'ok' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -363,7 +363,7 @@ function SplitBillButton({
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-night-lighter text-xs text-stone hover:text-cloud hover:bg-night-lighter"
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-border text-xs text-muted hover:text-foreground hover:bg-muted-subtle"
       >
         <Users size={12} />
         Dividir
@@ -372,8 +372,8 @@ function SplitBillButton({
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-9 z-40 w-56 rounded-xl border border-night-lighter bg-night-light shadow-lg p-3 space-y-2">
-            <div className="text-[10px] uppercase tracking-wide text-stone font-semibold">
+          <div className="absolute right-0 top-9 z-40 w-56 rounded-xl border border-border bg-surface shadow-lg p-3 space-y-2">
+            <div className="text-[10px] uppercase tracking-wide text-muted font-semibold">
               Dividir em partes iguais
             </div>
             <div className="grid grid-cols-5 gap-1">
@@ -384,13 +384,13 @@ function SplitBillButton({
                     onSplit(n)
                     setOpen(false)
                   }}
-                  className="h-9 rounded-lg border border-night-lighter hover:border-primary hover:bg-primary/10 text-sm font-mono"
+                  className="h-9 rounded-lg border border-border hover:border-primary hover:bg-primary/10 text-sm font-mono"
                 >
                   {n}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-stone">
+            <p className="text-[10px] text-muted">
               Cada um paga R$ {formatBrl(total / 2)}+ (dividido por 2)
             </p>
           </div>
@@ -416,12 +416,12 @@ function TrocoModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-xl bg-night-light border border-night-lighter shadow-2xl p-8 text-center"
+        className="w-full max-w-md rounded-xl bg-surface border border-border shadow-2xl p-8 text-center"
       >
-        <CheckCircle2 size={48} className="text-leaf mx-auto mb-4" />
-        <div className="text-sm text-stone">Comanda fechada — R$ {total.toFixed(2).replace('.', ',')}</div>
-        <div className="mt-6 text-xs uppercase tracking-wide text-stone font-semibold">Troco</div>
-        <div className="mt-1 text-5xl font-mono font-bold text-leaf">
+        <CheckCircle2 size={48} className="text-success mx-auto mb-4" />
+        <div className="text-sm text-muted">Comanda fechada — R$ {total.toFixed(2).replace('.', ',')}</div>
+        <div className="mt-6 text-xs uppercase tracking-wide text-muted font-semibold">Troco</div>
+        <div className="mt-1 text-5xl font-mono font-bold text-success">
           R$ {troco.toFixed(2).replace('.', ',')}
         </div>
         <button
@@ -449,17 +449,17 @@ function ScanBox({
   busy: boolean
 }) {
   return (
-    <div className="mt-8 rounded-xl border border-night-lighter bg-night-light p-10 text-center space-y-6">
-      <div className="w-20 h-20 mx-auto rounded-xl border-2 border-dashed border-night-lighter-strong flex items-center justify-center">
+    <div className="mt-8 rounded-xl border border-border bg-surface p-10 text-center space-y-6">
+      <div className="w-20 h-20 mx-auto rounded-xl border-2 border-dashed border-border-strong flex items-center justify-center">
         {busy ? (
-          <Loader2 size={32} className="text-stone animate-spin" />
+          <Loader2 size={32} className="text-muted animate-spin" />
         ) : (
-          <ScanLine size={40} strokeWidth={1.5} className="text-stone" />
+          <ScanLine size={40} strokeWidth={1.5} className="text-muted" />
         )}
       </div>
       <div>
         <h2 className="text-xl font-semibold">Escaneie o QR da comanda</h2>
-        <p className="text-sm text-stone mt-1">
+        <p className="text-sm text-muted mt-1">
           Use o leitor, camera ou digite o token manualmente
         </p>
       </div>
@@ -470,7 +470,7 @@ function ScanBox({
         onChange={(e) => setBuffer(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Token da comanda (32 hex) — Enter pra buscar"
-        className="w-full max-w-md mx-auto block px-4 h-12 bg-night border border-night-lighter rounded-lg font-mono text-sm focus:outline-none focus:border-primary"
+        className="w-full max-w-md mx-auto block px-4 h-12 bg-night border border-border rounded-lg font-mono text-sm focus:outline-none focus:border-primary"
         autoComplete="off"
         spellCheck={false}
         disabled={busy}
@@ -543,23 +543,23 @@ function OrderPanel({
   return (
     <div className="mt-8 space-y-4">
       {/* Header da comanda */}
-      <div className="rounded-xl border border-night-lighter bg-night-light p-6 flex items-center justify-between">
+      <div className="rounded-xl border border-border bg-surface p-6 flex items-center justify-between">
         <div>
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-xs text-stone hover:text-cloud mb-1"
+            className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground mb-1"
           >
             <ArrowLeft size={12} />
             Voltar
           </button>
-          <div className="text-sm text-stone">Comanda</div>
+          <div className="text-sm text-muted">Comanda</div>
           <div className="text-3xl font-bold font-mono">
             #{String(order.card_number).padStart(3, '0')}
           </div>
-          <div className="text-xs text-stone mt-1">{modeLabel}</div>
+          <div className="text-xs text-muted mt-1">{modeLabel}</div>
         </div>
         <div className="text-right">
-          <div className="text-sm text-stone">Total</div>
+          <div className="text-sm text-muted">Total</div>
           <div className="text-4xl font-mono font-bold">
             R$ {order.total.toFixed(2).replace('.', ',')}
           </div>
@@ -567,30 +567,30 @@ function OrderPanel({
       </div>
 
       {/* Items */}
-      <div className="rounded-xl border border-night-lighter bg-night-light overflow-hidden">
-        <div className="px-5 py-3 border-b border-night-lighter">
-          <div className="text-xs uppercase tracking-wide text-stone font-semibold">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <div className="px-5 py-3 border-b border-border">
+          <div className="text-xs uppercase tracking-wide text-muted font-semibold">
             {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
           </div>
         </div>
-        <ul className="divide-y divide-night-lighter">
+        <ul className="divide-y divide-border">
           {order.items.map((item) => (
             <li key={item.id} className="px-5 py-3 flex items-center gap-3">
               <div
                 className={
                   'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ' +
-                  (item.weight_grams != null ? 'bg-warm/10' : 'bg-primary/10')
+                  (item.weight_grams != null ? 'bg-accent/10' : 'bg-primary/10')
                 }
               >
                 {item.weight_grams != null ? (
-                  <Scale size={16} className="text-warm" />
+                  <Scale size={16} className="text-accent-foreground" />
                 ) : (
                   <Package size={16} className="text-primary" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{item.product_name}</div>
-                <div className="text-xs text-stone font-mono">
+                <div className="text-xs text-muted font-mono">
                   {item.weight_grams != null
                     ? `${(item.weight_grams / 1000).toFixed(3).replace('.', ',')} kg × R$ ${item.unit_price.toFixed(2).replace('.', ',')}/kg`
                     : `${item.quantity} × R$ ${item.unit_price.toFixed(2).replace('.', ',')}`}
@@ -602,7 +602,7 @@ function OrderPanel({
               <button
                 onClick={() => onCancelItem(item.id)}
                 disabled={cancellingItem}
-                className="shrink-0 w-8 h-8 rounded-md text-stone hover:text-coral hover:bg-coral/10 disabled:opacity-50 flex items-center justify-center"
+                className="shrink-0 w-8 h-8 rounded-md text-muted hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 flex items-center justify-center"
                 title={
                   item.weight_grams == null && item.quantity > 1
                     ? 'Decrementar 1'
@@ -615,19 +615,19 @@ function OrderPanel({
           ))}
         </ul>
         {(order.discount > 0 || order.service_fee > 0) && (
-          <div className="px-5 py-3 border-t border-night-lighter text-sm space-y-1">
-            <div className="flex justify-between text-stone">
+          <div className="px-5 py-3 border-t border-border text-sm space-y-1">
+            <div className="flex justify-between text-muted">
               <span>Subtotal</span>
               <span className="font-mono">R$ {order.subtotal.toFixed(2).replace('.', ',')}</span>
             </div>
             {order.service_fee > 0 && (
-              <div className="flex justify-between text-stone">
+              <div className="flex justify-between text-muted">
                 <span>Taxa de servico</span>
                 <span className="font-mono">+ R$ {order.service_fee.toFixed(2).replace('.', ',')}</span>
               </div>
             )}
             {order.discount > 0 && (
-              <div className="flex justify-between text-stone">
+              <div className="flex justify-between text-muted">
                 <span>Desconto</span>
                 <span className="font-mono">- R$ {order.discount.toFixed(2).replace('.', ',')}</span>
               </div>
@@ -637,12 +637,12 @@ function OrderPanel({
       </div>
 
       {/* Adicionar produto (doce/bala/chocolate do caixa) */}
-      <div className="rounded-xl border border-night-lighter bg-night-light p-5">
+      <div className="rounded-xl border border-border bg-surface p-5">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-xs uppercase tracking-wide text-stone font-semibold">
+          <div className="text-xs uppercase tracking-wide text-muted font-semibold">
             Adicionar produto
           </div>
-          {addingItem && <Loader2 size={14} className="animate-spin text-stone" />}
+          {addingItem && <Loader2 size={14} className="animate-spin text-muted" />}
         </div>
         <input
           ref={inputRef}
@@ -651,20 +651,20 @@ function OrderPanel({
           onChange={(e) => setBuffer(e.target.value)}
           onKeyDown={onInputKeyDown}
           placeholder="Escaneie ou digite o codigo de barras + Enter"
-          className="w-full px-4 h-11 bg-night border border-night-lighter rounded-lg font-mono text-sm focus:outline-none focus:border-primary"
+          className="w-full px-4 h-11 bg-night border border-border rounded-lg font-mono text-sm focus:outline-none focus:border-primary"
           autoComplete="off"
           spellCheck={false}
           disabled={addingItem}
         />
-        <p className="mt-2 text-xs text-stone">
+        <p className="mt-2 text-xs text-muted">
           Itens aqui viram parte da mesma comanda antes do fechamento.
         </p>
       </div>
 
       {/* Formas de pagamento (split) */}
-      <div className="rounded-xl border border-night-lighter bg-night-light p-5 space-y-3">
+      <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-xs uppercase tracking-wide text-stone font-semibold">
+          <div className="text-xs uppercase tracking-wide text-muted font-semibold">
             Formas de pagamento
           </div>
           <div className="flex items-center gap-3">
@@ -673,10 +673,10 @@ function OrderPanel({
               className={
                 'text-xs font-medium ' +
                 (Math.abs(diff) < 0.01
-                  ? 'text-leaf'
+                  ? 'text-success'
                   : diff > 0
-                  ? 'text-warm'
-                  : 'text-coral')
+                  ? 'text-accent-foreground'
+                  : 'text-destructive')
               }
             >
               {Math.abs(diff) < 0.01
@@ -695,7 +695,7 @@ function OrderPanel({
             return (
               <li
                 key={line.id}
-                className="rounded-xl border border-night-lighter bg-night p-3 space-y-2"
+                className="rounded-xl border border-border bg-night p-3 space-y-2"
               >
                 <div className="flex items-center gap-2">
                   {/* Selector metodo compacto */}
@@ -708,7 +708,7 @@ function OrderPanel({
                           'flex items-center gap-1 px-2 h-9 rounded-lg border text-xs font-medium transition-colors ' +
                           (line.method === pm.key
                             ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-night-lighter text-stone hover:bg-night-lighter')
+                            : 'border-border text-muted hover:bg-muted-subtle')
                         }
                         title={pm.label}
                       >
@@ -719,8 +719,8 @@ function OrderPanel({
                   </div>
 
                   {/* Valor */}
-                  <div className="flex-1 flex items-center gap-1.5 bg-night-light rounded-lg border border-night-lighter px-3 h-9">
-                    <span className="text-xs text-stone">R$</span>
+                  <div className="flex-1 flex items-center gap-1.5 bg-surface rounded-lg border border-border px-3 h-9">
+                    <span className="text-xs text-muted">R$</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -739,7 +739,7 @@ function OrderPanel({
                   {lines.length > 1 && (
                     <button
                       onClick={() => removeLine(line.id)}
-                      className="shrink-0 w-9 h-9 rounded-lg text-stone hover:text-coral hover:bg-coral/10 flex items-center justify-center"
+                      className="shrink-0 w-9 h-9 rounded-lg text-muted hover:text-destructive hover:bg-destructive/10 flex items-center justify-center"
                       title="Remover"
                     >
                       <Trash2 size={15} />
@@ -749,12 +749,12 @@ function OrderPanel({
 
                 {/* Feedback por linha */}
                 {isCash && lineCalc && lineCalc.troco > 0 && (
-                  <p className="text-[11px] text-leaf font-medium">
+                  <p className="text-[11px] text-success font-medium">
                     ✓ Aplica R$ {formatBrl(lineCalc.applied)} + troco R$ {formatBrl(lineCalc.troco)}
                   </p>
                 )}
                 {isCash && lineCalc && lineCalc.amount > 0 && lineCalc.troco === 0 && lineCalc.applied > 0 && (
-                  <p className="text-[11px] text-stone">
+                  <p className="text-[11px] text-muted">
                     ✓ Aplica R$ {formatBrl(lineCalc.applied)} (sem troco)
                   </p>
                 )}
@@ -766,7 +766,7 @@ function OrderPanel({
         {lines.length < 4 && (
           <button
             onClick={addLine}
-            className="w-full flex items-center justify-center gap-2 h-10 rounded-lg border border-dashed border-night-lighter text-sm text-stone hover:text-primary hover:border-primary"
+            className="w-full flex items-center justify-center gap-2 h-10 rounded-lg border border-dashed border-border text-sm text-muted hover:text-primary hover:border-primary"
           >
             <Plus size={14} />
             Adicionar forma de pagamento
@@ -774,15 +774,15 @@ function OrderPanel({
         )}
 
         {calc.troco > 0.01 && (
-          <div className="pt-3 border-t border-night-lighter flex items-center justify-between text-sm">
-            <span className="text-stone">Troco total a devolver</span>
-            <span className="font-mono font-semibold text-leaf">
+          <div className="pt-3 border-t border-border flex items-center justify-between text-sm">
+            <span className="text-muted">Troco total a devolver</span>
+            <span className="font-mono font-semibold text-success">
               R$ {formatBrl(calc.troco)}
             </span>
           </div>
         )}
         {calc.error && (
-          <p className="text-xs text-coral">{calc.error}</p>
+          <p className="text-xs text-destructive">{calc.error}</p>
         )}
       </div>
 
@@ -790,7 +790,7 @@ function OrderPanel({
       <button
         onClick={onReceive}
         disabled={!canSubmit}
-        className="w-full h-14 rounded-xl bg-leaf text-white font-semibold text-lg hover:bg-leaf-dark disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full h-14 rounded-xl bg-success text-white font-semibold text-lg hover:bg-success disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {busy ? (
           <>

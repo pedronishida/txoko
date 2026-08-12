@@ -13,10 +13,10 @@ export default function LoginPage() {
   return (
     <div>
       <header className="mb-10">
-        <h1 className="text-[28px] font-medium tracking-[-0.03em] text-cloud leading-none">
+        <h1 className="text-[28px] font-medium tracking-[-0.03em] text-foreground leading-none">
           {mode === 'login' ? 'Entrar' : 'Criar conta'}
         </h1>
-        <p className="text-[13px] text-stone mt-3 tracking-tight">
+        <p className="text-[13px] text-muted mt-3 tracking-tight">
           {mode === 'login'
             ? 'Acesse seu painel com e-mail e senha'
             : 'Crie sua conta e comece a gerenciar o restaurante'}
@@ -27,7 +27,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2"
+            className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2"
           >
             E-mail
           </label>
@@ -37,14 +37,14 @@ export default function LoginPage() {
             type="email"
             required
             placeholder="voce@restaurante.com"
-            className="w-full h-11 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark transition-colors"
+            className="w-full h-11 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
           />
         </div>
 
         <div>
           <label
             htmlFor="password"
-            className="block text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-2"
+            className="block text-[10px] font-medium uppercase tracking-[0.08em] text-muted mb-2"
           >
             Senha
           </label>
@@ -55,7 +55,7 @@ export default function LoginPage() {
             required
             minLength={6}
             placeholder="Minimo 6 caracteres"
-            className="w-full h-11 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark transition-colors"
+            className="w-full h-11 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full h-11 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors disabled:opacity-40"
+          className="w-full h-11 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors disabled:opacity-40"
         >
           {pending
             ? mode === 'login'
@@ -80,13 +80,13 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-night-lighter text-center">
-        <p className="text-[12px] text-stone tracking-tight">
+      <div className="mt-8 pt-6 border-t border-border text-center">
+        <p className="text-[12px] text-muted tracking-tight">
           {mode === 'login' ? 'Nao tem conta?' : 'Ja tem conta?'}{' '}
           <button
             type="button"
             onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="text-cloud hover:text-cloud-dark transition-colors"
+            className="text-foreground hover:text-foreground/75 transition-colors"
           >
             {mode === 'login' ? 'Criar conta' : 'Entrar'}
           </button>

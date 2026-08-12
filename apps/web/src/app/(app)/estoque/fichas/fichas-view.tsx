@@ -66,6 +66,8 @@ const UNITS = ['g', 'kg', 'ml', 'L', 'un', 'cx', 'fardo']
 
 const YIELD_UNITS = ['porcao', 'unidade', 'kg', 'L', 'porcoes']
 
+type FichaFilter = 'all' | 'with_recipe' | 'no_recipe' | 'high_cmv'
+
 // Unit conversion to canonical (for cost estimation when user picks g but ingredient is kg)
 function toBaseUnit(qty: number, unit: string, baseUnit: string): number {
   if (unit === baseUnit) return qty
@@ -80,10 +82,10 @@ function toBaseUnit(qty: number, unit: string, baseUnit: string): number {
 // CMV coloring
 // ----------------------------------------------------------------
 function cmvColor(cmvPct: number) {
-  if (cmvPct <= 0) return 'text-stone'
-  if (cmvPct < 30) return 'text-leaf'
-  if (cmvPct < 40) return 'text-warm'
-  return 'text-coral'
+  if (cmvPct <= 0) return 'text-muted'
+  if (cmvPct < 30) return 'text-success'
+  if (cmvPct < 40) return 'text-accent-foreground'
+  return 'text-destructive'
 }
 
 // ----------------------------------------------------------------
@@ -96,6 +98,7 @@ export function FichasView({
   recipeIngredients,
 }: Props) {
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<FichaFilter>('all')
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -169,10 +172,29 @@ export function FichasView({
 
   // ------- filtered list -------
   const filtered = useMemo(() => {
-    if (!search) return fichas
-    const q = search.toLowerCase()
-    return fichas.filter((f) => f.product.name.toLowerCase().includes(q))
-  }, [fichas, search])
+    return fichas.filter((f) => {
+      if (search) {
+        const q = search.toLowerCase()
+        if (!f.product.name.toLowerCase().includes(q)) return false
+      }
+      const hasRecipe = f.rows.length > 0
+      if (filter === 'with_recipe' && !hasRecipe) return false
+      if (filter === 'no_recipe' && hasRecipe) return false
+      if (filter === 'high_cmv' && (!hasRecipe || f.cmvPct <= 40)) return false
+      return true
+    })
+  }, [fichas, search, filter])
+
+  // ------- filter counts -------
+  const filterCounts = useMemo(
+    () => ({
+      all: fichas.length,
+      with_recipe: fichas.filter((f) => f.rows.length > 0).length,
+      no_recipe: fichas.filter((f) => f.rows.length === 0).length,
+      high_cmv: fichas.filter((f) => f.rows.length > 0 && f.cmvPct > 40).length,
+    }),
+    [fichas]
+  )
 
   // ------- draft cost (real-time in editor) -------
   const draftCost = useMemo(() => {
@@ -327,20 +349,64 @@ export function FichasView({
         columns={4}
       />
 
-      {/* Search */}
-      <div className="flex items-center gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Buscar produto"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 h-9 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
-        />
+      {/* Search + filters (sticky) */}
+      <div className="sticky top-0 z-10 -mx-8 px-8 pt-2 pb-4 mb-6 bg-night/95 backdrop-blur supports-[backdrop-filter]:bg-night/85 border-b border-border">
+        <div className="flex items-center gap-3 mb-3">
+          <input
+            type="search"
+            placeholder="Buscar produto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 h-9 px-3.5 bg-muted-subtle/40 border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
+          />
+          {(search || filter !== 'all') && (
+            <button
+              onClick={() => {
+                setSearch('')
+                setFilter('all')
+              }}
+              className="text-[11px] text-foreground/75 hover:text-foreground tracking-tight transition-colors px-2"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              { key: 'all', label: 'Todos', count: filterCounts.all },
+              { key: 'with_recipe', label: 'Com ficha', count: filterCounts.with_recipe },
+              { key: 'no_recipe', label: 'Sem ficha', count: filterCounts.no_recipe },
+              { key: 'high_cmv', label: 'CMV > 40%', count: filterCounts.high_cmv },
+            ] as { key: FichaFilter; label: string; count: number }[]
+          ).map((chip) => (
+            <button
+              key={chip.key}
+              onClick={() => setFilter(chip.key)}
+              className={cn(
+                'px-3 py-1 rounded-md text-[11px] font-medium tracking-tight transition-colors',
+                filter === chip.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border text-foreground/75 hover:text-foreground hover:border-stone'
+              )}
+            >
+              {chip.label}
+              <span
+                className={cn(
+                  'ml-1.5 text-[10px] font-data',
+                  filter === chip.key ? 'text-foreground/60' : 'text-muted'
+                )}
+              >
+                {chip.count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Warning: no ingredients */}
       {ingredients.length === 0 && (
-        <div className="mb-6 px-3.5 py-2.5 bg-warm/5 border border-warm/20 rounded-md text-[12px] text-warm tracking-tight">
+        <div className="mb-6 px-3.5 py-2.5 bg-accent/5 border border-accent/20 rounded-md text-[12px] text-accent-foreground tracking-tight">
           Nenhum insumo cadastrado. Cadastre insumos na aba Insumos antes de criar fichas
           tecnicas.
         </div>
@@ -348,7 +414,7 @@ export function FichasView({
 
       {/* Table header */}
       {products.length > 0 && (
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_0.7fr_auto] gap-4 pb-3 border-b border-night-lighter text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_0.7fr_auto] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
           <span>Produto</span>
           <span className="text-right">Custo (CMV)</span>
           <span className="text-right">Preco</span>
@@ -360,11 +426,11 @@ export function FichasView({
 
       {/* Table rows */}
       {filtered.length === 0 ? (
-        <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+        <p className="py-12 text-center text-[13px] text-muted tracking-tight">
           Nenhum produto ativo
         </p>
       ) : (
-        <div className="divide-y divide-night-lighter">
+        <div className="divide-y divide-border">
           {filtered.map((ficha) => {
             const hasRecipe = ficha.rows.length > 0
             return (
@@ -375,11 +441,11 @@ export function FichasView({
                 {/* Product name */}
                 <div className="flex items-center gap-2 min-w-0">
                   {hasRecipe ? (
-                    <CheckCircle2 size={13} className="text-leaf shrink-0" />
+                    <CheckCircle2 size={13} className="text-success shrink-0" />
                   ) : (
-                    <span className="w-3.5 h-3.5 rounded-full border border-night-lighter shrink-0" />
+                    <span className="w-3.5 h-3.5 rounded-full border border-border shrink-0" />
                   )}
-                  <span className="text-[13px] text-cloud tracking-tight truncate">
+                  <span className="text-[13px] text-foreground tracking-tight truncate">
                     {ficha.product.name}
                   </span>
                 </div>
@@ -392,12 +458,12 @@ export function FichasView({
                       <span className="text-[10px] ml-1">({ficha.cmvPct.toFixed(1)}%)</span>
                     </span>
                   ) : (
-                    <span className="text-[12px] text-stone-dark">—</span>
+                    <span className="text-[12px] text-muted">—</span>
                   )}
                 </div>
 
                 {/* Price */}
-                <span className="text-[12px] text-stone-light font-data text-right">
+                <span className="text-[12px] text-foreground/75 font-data text-right">
                   {formatCurrency(ficha.price)}
                 </span>
 
@@ -407,19 +473,19 @@ export function FichasView({
                     <span
                       className={cn(
                         'text-[12px] font-data',
-                        ficha.marginPct >= 60 ? 'text-leaf' : 'text-warm'
+                        ficha.marginPct >= 60 ? 'text-success' : 'text-accent-foreground'
                       )}
                     >
                       {ficha.marginPct.toFixed(1)}%
                     </span>
                   ) : (
-                    <span className="text-[12px] text-stone-dark">—</span>
+                    <span className="text-[12px] text-muted">—</span>
                   )}
                 </div>
 
                 {/* Ingredient count */}
                 <div className="text-center">
-                  <span className="text-[11px] text-stone-dark font-data">
+                  <span className="text-[11px] text-muted font-data">
                     {hasRecipe ? ficha.rows.length : '—'}
                   </span>
                 </div>
@@ -431,8 +497,8 @@ export function FichasView({
                     className={cn(
                       'h-7 px-3 text-[11px] font-medium rounded-md transition-colors tracking-tight',
                       hasRecipe
-                        ? 'text-stone-light hover:text-cloud hover:bg-night-light'
-                        : 'text-leaf hover:text-leaf/80 hover:bg-leaf/5 border border-leaf/20'
+                        ? 'text-foreground/75 hover:text-foreground hover:bg-surface'
+                        : 'text-success hover:text-success/80 hover:bg-success/5 border border-success/20'
                     )}
                   >
                     {hasRecipe ? 'Editar' : '+ Criar ficha'}
@@ -440,7 +506,7 @@ export function FichasView({
                   {hasRecipe && (
                     <button
                       onClick={() => handleDelete(ficha.product.id)}
-                      className="w-7 h-7 flex items-center justify-center text-stone-dark hover:text-coral rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                      className="w-7 h-7 flex items-center justify-center text-muted hover:text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-all"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -461,28 +527,28 @@ export function FichasView({
           onClick={closeEditor}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+            className="bg-surface border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-6 py-5 border-b border-night-lighter flex items-start justify-between shrink-0">
+            <div className="px-6 py-5 border-b border-border flex items-start justify-between shrink-0">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                   Ficha tecnica
                 </p>
-                <h2 className="text-[15px] font-medium text-cloud tracking-tight mt-0.5">
+                <h2 className="text-[15px] font-medium text-foreground tracking-tight mt-0.5">
                   {editingProduct.name}
                 </h2>
-                <p className="text-[11px] text-stone-dark tracking-tight mt-1">
+                <p className="text-[11px] text-muted tracking-tight mt-1">
                   Preco de venda:{' '}
-                  <span className="font-data text-stone-light">
+                  <span className="font-data text-foreground/75">
                     {formatCurrency(editingPrice)}
                   </span>
                 </p>
               </div>
               <button
                 onClick={closeEditor}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -491,19 +557,19 @@ export function FichasView({
             {/* Scrollable body */}
             <div className="overflow-y-auto flex-1 p-6 space-y-6">
               {error && (
-                <div className="px-3 py-2 bg-coral/5 border border-coral/20 rounded-md text-[12px] text-coral tracking-tight">
+                <div className="px-3 py-2 bg-destructive/5 border border-destructive/20 rounded-md text-[12px] text-destructive tracking-tight">
                   {error}
                 </div>
               )}
 
               {/* Yield + Prep time */}
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                   Rendimento e preparo
                 </p>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[10px] text-stone mb-1.5">Rendimento</label>
+                    <label className="block text-[10px] text-muted mb-1.5">Rendimento</label>
                     <input
                       type="number"
                       min="0.001"
@@ -515,18 +581,18 @@ export function FichasView({
                           yield_quantity: parseFloat(e.target.value) || 1,
                         }))
                       }
-                      className="w-full h-9 px-3 bg-night border border-night-lighter rounded-md text-[13px] text-cloud font-data focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-full h-9 px-3 bg-night border border-border rounded-md text-[13px] text-foreground font-data focus:outline-none focus:border-stone-dark transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-stone mb-1.5">Unidade</label>
+                    <label className="block text-[10px] text-muted mb-1.5">Unidade</label>
                     <div className="relative">
                       <select
                         value={draftMeta.yield_unit}
                         onChange={(e) =>
                           setDraftMeta((d) => ({ ...d, yield_unit: e.target.value }))
                         }
-                        className="w-full h-9 px-3 pr-8 bg-night border border-night-lighter rounded-md text-[13px] text-cloud focus:outline-none focus:border-stone-dark transition-colors appearance-none"
+                        className="w-full h-9 px-3 pr-8 bg-night border border-border rounded-md text-[13px] text-foreground focus:outline-none focus:border-stone-dark transition-colors appearance-none"
                       >
                         {YIELD_UNITS.map((u) => (
                           <option key={u} value={u}>
@@ -536,12 +602,12 @@ export function FichasView({
                       </select>
                       <ChevronDown
                         size={12}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone pointer-events-none"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] text-stone mb-1.5">
+                    <label className="block text-[10px] text-muted mb-1.5">
                       Tempo de preparo (min)
                     </label>
                     <input
@@ -556,7 +622,7 @@ export function FichasView({
                           prep_time_minutes: e.target.value,
                         }))
                       }
-                      className="w-full h-9 px-3 bg-night border border-night-lighter rounded-md text-[13px] text-cloud font-data focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-full h-9 px-3 bg-night border border-border rounded-md text-[13px] text-foreground font-data focus:outline-none focus:border-stone-dark transition-colors"
                     />
                   </div>
                 </div>
@@ -564,13 +630,13 @@ export function FichasView({
 
               {/* Ingredients */}
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                   Ingredientes
                 </p>
 
                 {draftRows.length > 0 && (
                   <div className="mb-2">
-                    <div className="grid grid-cols-[2fr_1fr_0.8fr_0.7fr_auto] gap-2 mb-2 text-[10px] text-stone-dark uppercase tracking-[0.05em]">
+                    <div className="grid grid-cols-[2fr_1fr_0.8fr_0.7fr_auto] gap-2 mb-2 text-[10px] text-muted uppercase tracking-[0.05em]">
                       <span>Ingrediente</span>
                       <span>Qtd + Un</span>
                       <span>Perda %</span>
@@ -602,10 +668,10 @@ export function FichasView({
                                   updateDraftRow(i, { ingredient_id: e.target.value })
                                 }
                                 className={cn(
-                                  'w-full h-9 px-2.5 pr-7 bg-night border rounded-md text-[12px] text-cloud focus:outline-none transition-colors appearance-none',
+                                  'w-full h-9 px-2.5 pr-7 bg-night border rounded-md text-[12px] text-foreground focus:outline-none transition-colors appearance-none',
                                   isLowStock
-                                    ? 'border-warm/40'
-                                    : 'border-night-lighter focus:border-stone-dark'
+                                    ? 'border-accent/40'
+                                    : 'border-border focus:border-stone-dark'
                                 )}
                               >
                                 {ingredients.map((ing) => (
@@ -619,7 +685,7 @@ export function FichasView({
                               </select>
                               <ChevronDown
                                 size={11}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone pointer-events-none"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
                               />
                             </div>
 
@@ -635,7 +701,7 @@ export function FichasView({
                                     quantity: parseFloat(e.target.value) || 0,
                                   })
                                 }
-                                className="w-16 h-9 px-2 bg-night border border-night-lighter rounded-md text-[12px] text-cloud font-data focus:outline-none focus:border-stone-dark transition-colors text-right"
+                                className="w-16 h-9 px-2 bg-night border border-border rounded-md text-[12px] text-foreground font-data focus:outline-none focus:border-stone-dark transition-colors text-right"
                               />
                               <div className="relative flex-1">
                                 <select
@@ -643,7 +709,7 @@ export function FichasView({
                                   onChange={(e) =>
                                     updateDraftRow(i, { unit: e.target.value })
                                   }
-                                  className="w-full h-9 px-1.5 pr-6 bg-night border border-night-lighter rounded-md text-[11px] text-cloud focus:outline-none focus:border-stone-dark transition-colors appearance-none"
+                                  className="w-full h-9 px-1.5 pr-6 bg-night border border-border rounded-md text-[11px] text-foreground focus:outline-none focus:border-stone-dark transition-colors appearance-none"
                                 >
                                   {UNITS.map((u) => (
                                     <option key={u} value={u}>
@@ -653,7 +719,7 @@ export function FichasView({
                                 </select>
                                 <ChevronDown
                                   size={10}
-                                  className="absolute right-1 top-1/2 -translate-y-1/2 text-stone pointer-events-none"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
                                 />
                               </div>
                             </div>
@@ -671,7 +737,7 @@ export function FichasView({
                                     waste_percent: parseFloat(e.target.value) || 0,
                                   })
                                 }
-                                className="w-full h-9 px-2 bg-night border border-night-lighter rounded-md text-[12px] text-cloud font-data focus:outline-none focus:border-stone-dark transition-colors text-right"
+                                className="w-full h-9 px-2 bg-night border border-border rounded-md text-[12px] text-foreground font-data focus:outline-none focus:border-stone-dark transition-colors text-right"
                               />
                             </div>
 
@@ -679,25 +745,25 @@ export function FichasView({
                             <div className="text-right">
                               {rowCost !== null ? (
                                 <div>
-                                  <span className="text-[11px] text-stone-light font-data">
+                                  <span className="text-[11px] text-foreground/75 font-data">
                                     {formatCurrency(rowCost)}
                                   </span>
                                   {isLowStock && (
                                     <AlertTriangle
                                       size={10}
-                                      className="inline ml-1 text-warm"
+                                      className="inline ml-1 text-accent-foreground"
                                     />
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-[11px] text-stone-dark">—</span>
+                                <span className="text-[11px] text-muted">—</span>
                               )}
                             </div>
 
                             {/* Remove */}
                             <button
                               onClick={() => removeDraftRow(i)}
-                              className="w-7 h-7 flex items-center justify-center text-stone-dark hover:text-coral rounded-md hover:bg-night-lighter transition-colors"
+                              className="w-7 h-7 flex items-center justify-center text-muted hover:text-destructive rounded-md hover:bg-muted-subtle transition-colors"
                             >
                               <X size={12} />
                             </button>
@@ -711,7 +777,7 @@ export function FichasView({
                 <button
                   onClick={addDraftRow}
                   disabled={draftRows.length >= ingredients.length || ingredients.length === 0}
-                  className="w-full h-9 flex items-center justify-center gap-1.5 text-[11px] text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors disabled:opacity-40 tracking-tight border border-dashed border-night-lighter mt-2"
+                  className="w-full h-9 flex items-center justify-center gap-1.5 text-[11px] text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors disabled:opacity-40 tracking-tight border border-dashed border-border mt-2"
                 >
                   <Plus size={12} strokeWidth={2} /> Adicionar ingrediente
                 </button>
@@ -719,9 +785,9 @@ export function FichasView({
 
               {/* Instructions */}
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Instrucoes de preparo{' '}
-                  <span className="normal-case font-normal text-stone">(opcional)</span>
+                  <span className="normal-case font-normal text-muted">(opcional)</span>
                 </p>
                 <textarea
                   rows={3}
@@ -730,35 +796,35 @@ export function FichasView({
                   onChange={(e) =>
                     setDraftMeta((d) => ({ ...d, instructions: e.target.value }))
                   }
-                  className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors resize-none"
+                  className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors resize-none"
                 />
               </div>
 
               {/* CMV panel */}
               {draftRows.length > 0 && (
-                <div className="bg-night rounded-lg border border-night-lighter p-4 space-y-2">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-3">
+                <div className="bg-night rounded-lg border border-border p-4 space-y-2">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                     Calculo em tempo real
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] text-stone">Custo total</p>
-                      <p className="text-[16px] font-data font-medium text-cloud mt-0.5">
+                      <p className="text-[10px] text-muted">Custo total</p>
+                      <p className="text-[16px] font-data font-medium text-foreground mt-0.5">
                         {formatCurrency(draftCost)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone">Preco de venda</p>
-                      <p className="text-[16px] font-data font-medium text-cloud mt-0.5">
+                      <p className="text-[10px] text-muted">Preco de venda</p>
+                      <p className="text-[16px] font-data font-medium text-foreground mt-0.5">
                         {formatCurrency(editingPrice)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone">Margem bruta</p>
+                      <p className="text-[10px] text-muted">Margem bruta</p>
                       <p
                         className={cn(
                           'text-[16px] font-data font-medium mt-0.5',
-                          draftMargin >= 0 ? 'text-leaf' : 'text-coral'
+                          draftMargin >= 0 ? 'text-success' : 'text-destructive'
                         )}
                       >
                         {formatCurrency(draftMargin)}{' '}
@@ -766,7 +832,7 @@ export function FichasView({
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone">CMV (food cost)</p>
+                      <p className="text-[10px] text-muted">CMV (food cost)</p>
                       <p
                         className={cn(
                           'text-[16px] font-data font-medium mt-0.5',
@@ -777,20 +843,20 @@ export function FichasView({
                         {draftCmvPct > 40 && (
                           <AlertTriangle
                             size={12}
-                            className="inline ml-1.5 text-coral"
+                            className="inline ml-1.5 text-destructive"
                           />
                         )}
                       </p>
                     </div>
                   </div>
                   {draftCmvPct > 40 && (
-                    <p className="text-[11px] text-coral/80 mt-2 tracking-tight">
+                    <p className="text-[11px] text-destructive/80 mt-2 tracking-tight">
                       CMV acima de 40% — verifique custos dos ingredientes ou ajuste o
                       preco de venda.
                     </p>
                   )}
                   {draftCmvPct > 0 && draftCmvPct < 30 && (
-                    <p className="text-[11px] text-leaf/70 mt-2 tracking-tight">
+                    <p className="text-[11px] text-success/70 mt-2 tracking-tight">
                       CMV saudavel — abaixo de 30%.
                     </p>
                   )}
@@ -799,17 +865,17 @@ export function FichasView({
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-night-lighter shrink-0 flex gap-3">
+            <div className="px-6 py-4 border-t border-border shrink-0 flex gap-3">
               <button
                 onClick={closeEditor}
-                className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={pending}
-                className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud/90 transition-colors disabled:opacity-40"
+                className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
               >
                 {pending ? 'Salvando...' : 'Salvar ficha'}
               </button>

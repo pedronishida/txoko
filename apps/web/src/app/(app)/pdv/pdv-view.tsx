@@ -174,12 +174,12 @@ export function PdvView({ products, categories, tables, customers }: Props) {
 
   return (
     <>
-    <div className="flex h-[calc(100vh-8rem)] -mx-8 -mt-6 border-t border-night-lighter">
+    <div className="flex h-[calc(100vh-8rem)] -mx-8 -mt-6 border-t border-border">
       {/* Catalog */}
-      <section className="flex-1 flex flex-col min-w-0 border-r border-night-lighter">
+      <section className="flex-1 flex flex-col min-w-0 border-r border-border">
         {/* Header row */}
         <div className="px-8 pt-5 pb-3 flex items-center justify-between gap-6">
-          <h1 className="text-[20px] font-medium tracking-[-0.02em] text-cloud leading-none shrink-0">
+          <h1 className="text-[20px] font-medium tracking-[-0.02em] text-foreground leading-none shrink-0">
             PDV
           </h1>
           <TabBar
@@ -197,7 +197,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
             placeholder="Buscar produto"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
+            className="w-full h-9 bg-transparent border-0 text-[13px] text-foreground placeholder:text-muted focus:outline-none tracking-tight"
           />
         </div>
 
@@ -217,7 +217,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="group text-left transition-all hover:bg-night-light/40 rounded-lg overflow-hidden"
+                className="group text-left transition-all hover:bg-surface/40 rounded-lg overflow-hidden"
               >
                 {product.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -228,18 +228,18 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                     className="w-full aspect-[4/3] object-cover rounded-lg"
                   />
                 ) : (
-                  <div className="w-full aspect-[4/3] rounded-lg bg-night-lighter" />
+                  <div className="w-full aspect-[4/3] rounded-lg bg-muted-subtle" />
                 )}
                 <div className="pt-2.5 pb-2 px-0.5">
-                  <p className="text-[12px] font-medium text-cloud tracking-tight line-clamp-1">
+                  <p className="text-[12px] font-medium text-foreground tracking-tight line-clamp-1">
                     {product.name}
                   </p>
                   <div className="flex items-baseline justify-between mt-1">
-                    <span className="text-[12px] font-medium text-cloud font-data">
+                    <span className="text-[12px] font-medium text-foreground font-data">
                       {formatCurrency(product.price)}
                     </span>
                     {product.description && (
-                      <span className="text-[10px] text-stone-dark tracking-tight truncate ml-2">
+                      <span className="text-[10px] text-muted tracking-tight truncate ml-2">
                         {product.description}
                       </span>
                     )}
@@ -249,7 +249,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
             ))}
           </div>
           {filteredProducts.length === 0 && (
-            <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
               Nenhum produto encontrado
             </p>
           )}
@@ -258,11 +258,11 @@ export function PdvView({ products, categories, tables, customers }: Props) {
 
       {/* Cart */}
       <aside className="w-[340px] flex flex-col">
-        <div className="px-6 py-5 border-b border-night-lighter flex items-baseline justify-between">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+        <div className="px-6 py-5 border-b border-border flex items-baseline justify-between">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
             Pedido
             {cart.length > 0 && (
-              <span className="ml-2 text-stone-light">
+              <span className="ml-2 text-foreground/75">
                 {cart.reduce((s, i) => s + i.quantity, 0)}
               </span>
             )}
@@ -270,7 +270,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
           {cart.length > 0 && (
             <button
               onClick={clearCart}
-              className="text-[11px] text-stone hover:text-cloud transition-colors tracking-tight"
+              className="text-[11px] text-muted hover:text-foreground transition-colors tracking-tight"
             >
               Limpar
             </button>
@@ -278,14 +278,14 @@ export function PdvView({ products, categories, tables, customers }: Props) {
         </div>
 
         {orderType === 'dine_in' && (
-          <div className="px-6 py-3 border-b border-night-lighter">
-            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-1.5">
+          <div className="px-6 py-3 border-b border-border">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1.5">
               Mesa
             </label>
             <select
               value={selectedTable || ''}
               onChange={(e) => setSelectedTable(e.target.value || null)}
-              className="w-full h-8 bg-transparent text-[12px] text-cloud focus:outline-none tracking-tight"
+              className="w-full h-8 bg-transparent text-[12px] text-foreground focus:outline-none tracking-tight"
             >
               <option value="">Selecionar</option>
               {availableTables.map((t) => (
@@ -297,18 +297,18 @@ export function PdvView({ products, categories, tables, customers }: Props) {
           </div>
         )}
 
-        <div className="px-6 py-3 border-b border-night-lighter relative">
-          <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-1.5">
+        <div className="px-6 py-3 border-b border-border relative">
+          <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1.5">
             Cliente
           </label>
           {selectedCustomer ? (
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <p className="text-[12px] text-cloud tracking-tight truncate">
+                <p className="text-[12px] text-foreground tracking-tight truncate">
                   {selectedCustomer.name}
                 </p>
                 {selectedCustomer.phone && (
-                  <p className="text-[10px] text-stone-dark font-data truncate">
+                  <p className="text-[10px] text-muted font-data truncate">
                     {selectedCustomer.phone}
                   </p>
                 )}
@@ -318,7 +318,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                   setSelectedCustomer(null)
                   setCustomerQuery('')
                 }}
-                className="w-5 h-5 flex items-center justify-center text-stone hover:text-cloud shrink-0"
+                className="w-5 h-5 flex items-center justify-center text-muted hover:text-foreground shrink-0"
               >
                 <X size={12} />
               </button>
@@ -335,10 +335,10 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                 }}
                 onFocus={() => setShowCustomerPicker(true)}
                 onBlur={() => setTimeout(() => setShowCustomerPicker(false), 150)}
-                className="w-full h-6 bg-transparent text-[12px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
+                className="w-full h-6 bg-transparent text-[12px] text-foreground placeholder:text-muted focus:outline-none tracking-tight"
               />
               {showCustomerPicker && customerMatches.length > 0 && (
-                <div className="absolute left-6 right-6 top-full mt-1 bg-night-light border border-night-lighter rounded-md max-h-48 overflow-y-auto z-10">
+                <div className="absolute left-6 right-6 top-full mt-1 bg-surface border border-border rounded-md max-h-48 overflow-y-auto z-10">
                   {customerMatches.map((c) => (
                     <button
                       key={c.id}
@@ -348,13 +348,13 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                         setCustomerQuery('')
                         setShowCustomerPicker(false)
                       }}
-                      className="w-full px-3.5 py-2 text-left hover:bg-night-lighter border-b border-night-lighter/50 last:border-0 transition-colors"
+                      className="w-full px-3.5 py-2 text-left hover:bg-muted-subtle border-b border-border/50 last:border-0 transition-colors"
                     >
-                      <p className="text-[12px] text-cloud truncate tracking-tight">
+                      <p className="text-[12px] text-foreground truncate tracking-tight">
                         {c.name}
                       </p>
                       {c.phone && (
-                        <p className="text-[10px] text-stone-dark font-data truncate">
+                        <p className="text-[10px] text-muted font-data truncate">
                           {c.phone}
                         </p>
                       )}
@@ -369,24 +369,24 @@ export function PdvView({ products, categories, tables, customers }: Props) {
         <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center px-6">
-              <p className="text-[13px] text-stone tracking-tight">
+              <p className="text-[13px] text-muted tracking-tight">
                 Carrinho vazio
               </p>
-              <p className="text-[11px] text-stone-dark tracking-tight mt-1">
+              <p className="text-[11px] text-muted tracking-tight mt-1">
                 Selecione produtos
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-night-lighter">
+            <div className="divide-y divide-border">
               {cart.map((item) => (
                 <div key={item.product.id} className="px-6 py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-[12px] text-cloud tracking-tight flex-1 line-clamp-1">
+                    <p className="text-[12px] text-foreground tracking-tight flex-1 line-clamp-1">
                       {item.product.name}
                     </p>
                     <button
                       onClick={() => updateQty(item.product.id, 0)}
-                      className="text-[10px] text-stone-dark hover:text-primary transition-colors tracking-tight shrink-0"
+                      className="text-[10px] text-muted hover:text-primary transition-colors tracking-tight shrink-0"
                     >
                       remover
                     </button>
@@ -395,21 +395,21 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQty(item.product.id, item.quantity - 1)}
-                        className="w-5 h-5 flex items-center justify-center rounded text-stone-light hover:text-cloud hover:bg-night-light transition-colors"
+                        className="w-5 h-5 flex items-center justify-center rounded text-foreground/75 hover:text-foreground hover:bg-surface transition-colors"
                       >
                         <Minus size={11} strokeWidth={2} />
                       </button>
-                      <span className="text-[12px] font-data text-cloud w-5 text-center">
+                      <span className="text-[12px] font-data text-foreground w-5 text-center">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQty(item.product.id, item.quantity + 1)}
-                        className="w-5 h-5 flex items-center justify-center rounded text-stone-light hover:text-cloud hover:bg-night-light transition-colors"
+                        className="w-5 h-5 flex items-center justify-center rounded text-foreground/75 hover:text-foreground hover:bg-surface transition-colors"
                       >
                         <Plus size={11} strokeWidth={2} />
                       </button>
                     </div>
-                    <span className="text-[12px] font-medium text-cloud font-data">
+                    <span className="text-[12px] font-medium text-foreground font-data">
                       {formatCurrency(item.product.price * item.quantity)}
                     </span>
                   </div>
@@ -420,7 +420,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
         </div>
 
         {cart.length > 0 && (
-          <div className="border-t border-night-lighter">
+          <div className="border-t border-border">
             <div className="px-6 py-4 space-y-1.5">
               <Row label="Subtotal" value={formatCurrency(subtotal)} />
               {serviceFee > 0 && (
@@ -432,12 +432,12 @@ export function PdvView({ products, categories, tables, customers }: Props) {
               {deliveryFee > 0 && (
                 <Row label="Taxa de entrega" value={formatCurrency(deliveryFee)} />
               )}
-              <div className="pt-2 mt-2 border-t border-night-lighter">
+              <div className="pt-2 mt-2 border-t border-border">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                     Total
                   </span>
-                  <span className="text-[18px] font-medium text-cloud font-data tracking-tight">
+                  <span className="text-[18px] font-medium text-foreground font-data tracking-tight">
                     {formatCurrency(total)}
                   </span>
                 </div>
@@ -454,7 +454,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
               <div className="px-6 pb-5">
                 <button
                   onClick={() => setShowPayment(true)}
-                  className="w-full h-10 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+                  className="w-full h-10 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
                 >
                   Finalizar pedido
                 </button>
@@ -462,7 +462,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
             ) : (
               <div className="px-6 pb-5 space-y-3">
                 <div>
-                  <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+                  <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                     Pagamento
                   </label>
                   <div className="grid grid-cols-4 gap-1">
@@ -475,8 +475,8 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                           className={cn(
                             'h-9 text-[11px] font-medium rounded-md transition-colors tracking-tight',
                             active
-                              ? 'bg-cloud text-night'
-                              : 'text-stone-light hover:text-cloud hover:bg-night-light'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-foreground/75 hover:text-foreground hover:bg-surface'
                           )}
                         >
                           {PAYMENT_LABELS[method]}
@@ -488,14 +488,14 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowPayment(false)}
-                    className="flex-1 h-10 text-[13px] font-medium text-stone-light hover:text-cloud rounded-md hover:bg-night-light transition-colors"
+                    className="flex-1 h-10 text-[13px] font-medium text-foreground/75 hover:text-foreground rounded-md hover:bg-surface transition-colors"
                   >
                     Voltar
                   </button>
                   <button
                     onClick={handleFinalize}
                     disabled={pending}
-                    className="flex-1 h-10 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                    className="flex-1 h-10 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors disabled:opacity-40"
                   >
                     {pending ? 'Enviando' : 'Confirmar'}
                   </button>
@@ -510,14 +510,14 @@ export function PdvView({ products, categories, tables, customers }: Props) {
     {/* Order success modal */}
     {successOrderId && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div className="w-full max-w-sm bg-night border border-night-lighter rounded-xl p-6 shadow-2xl text-center">
-          <div className="w-10 h-10 rounded-full bg-leaf/20 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-5 h-5 text-leaf" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-full max-w-sm bg-night border border-border rounded-xl p-6 shadow-2xl text-center">
+          <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h3 className="text-[15px] font-medium text-cloud tracking-tight">Pedido criado!</h3>
-          <p className="text-[12px] text-stone mt-1 tracking-tight">
+          <h3 className="text-[15px] font-medium text-foreground tracking-tight">Pedido criado!</h3>
+          <p className="text-[12px] text-muted mt-1 tracking-tight">
             #{successOrderId.slice(0, 8)}
           </p>
           <div className="flex flex-col gap-2 mt-6">
@@ -526,7 +526,7 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                 window.open(`/pedidos/${successOrderId}/comanda`, '_blank')
                 setSuccessOrderId(null)
               }}
-              className="w-full h-9 border border-night-lighter text-[12px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-2"
+              className="w-full h-9 border border-border text-[12px] text-foreground/75 hover:text-foreground hover:border-stone rounded-md transition-colors flex items-center justify-center gap-2"
             >
               <Printer size={13} />
               Imprimir comanda
@@ -536,14 +536,14 @@ export function PdvView({ products, categories, tables, customers }: Props) {
                 window.open(`/pedidos/${successOrderId}/imprimir`, '_blank')
                 setSuccessOrderId(null)
               }}
-              className="w-full h-9 border border-night-lighter text-[12px] text-stone-light hover:text-cloud hover:border-stone rounded-md transition-colors flex items-center justify-center gap-2"
+              className="w-full h-9 border border-border text-[12px] text-foreground/75 hover:text-foreground hover:border-stone rounded-md transition-colors flex items-center justify-center gap-2"
             >
               <Printer size={13} />
               Imprimir recibo
             </button>
             <button
               onClick={() => setSuccessOrderId(null)}
-              className="w-full h-9 bg-cloud text-night text-[12px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+              className="w-full h-9 bg-primary text-primary-foreground text-[12px] font-medium rounded-md hover:bg-primary-hover transition-colors"
             >
               Continuar
             </button>
@@ -558,8 +558,8 @@ export function PdvView({ products, categories, tables, customers }: Props) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between text-[12px]">
-      <span className="text-stone tracking-tight">{label}</span>
-      <span className="text-stone-light font-data">{value}</span>
+      <span className="text-muted tracking-tight">{label}</span>
+      <span className="text-foreground/75 font-data">{value}</span>
     </div>
   )
 }

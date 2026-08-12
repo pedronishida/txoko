@@ -120,6 +120,34 @@ export class ZapiClient {
     })
   }
 
+  async updateWebhookMessageStatus(webhookUrl: string) {
+    return this.request<{ value: boolean }>('update-webhook-message-status', {
+      method: 'PUT',
+      body: { value: webhookUrl },
+    })
+  }
+
+  async updateWebhookDelivery(webhookUrl: string) {
+    return this.request<{ value: boolean }>('update-webhook-delivery', {
+      method: 'PUT',
+      body: { value: webhookUrl },
+    })
+  }
+
+  async updateWebhookConnected(webhookUrl: string) {
+    return this.request<{ value: boolean }>('update-webhook-connected', {
+      method: 'PUT',
+      body: { value: webhookUrl },
+    })
+  }
+
+  async updateWebhookDisconnected(webhookUrl: string) {
+    return this.request<{ value: boolean }>('update-webhook-disconnected', {
+      method: 'PUT',
+      body: { value: webhookUrl },
+    })
+  }
+
   // -----------------------------------------------------------
   // Chat / message actions
   // -----------------------------------------------------------
@@ -324,6 +352,65 @@ export class ZapiClient {
     return this.request<{ exists: boolean; phone: string; lid?: string }>(
       `phone-exists/${phone}`
     )
+  }
+
+  // -----------------------------------------------------------
+  // Groups
+  // -----------------------------------------------------------
+  async getGroupMetadata(groupId: string) {
+    return this.request<unknown>(`group-metadata/${encodeURIComponent(groupId)}`)
+  }
+
+  async listGroups(page = 1, pageSize = 50) {
+    return this.request<unknown>(`groups?page=${page}&pageSize=${pageSize}`)
+  }
+
+  async getGroupInviteLink(groupId: string) {
+    return this.request<unknown>(`group-invitation-link/${encodeURIComponent(groupId)}`)
+  }
+
+  async createGroup(input: { groupName: string; phones: string[]; autoInvite?: boolean }) {
+    return this.request<unknown>('create-group', {
+      body: { ...input, autoInvite: input.autoInvite ?? true },
+    })
+  }
+
+  async addGroupParticipants(groupId: string, phones: string[]) {
+    return this.request<unknown>('add-participant', { body: { groupId, phones } })
+  }
+
+  async removeGroupParticipants(groupId: string, phones: string[]) {
+    return this.request<unknown>('remove-participant', { body: { groupId, phones } })
+  }
+
+  async promoteGroupAdmin(groupId: string, phones: string[]) {
+    return this.request<unknown>('add-admin', { body: { groupId, phones } })
+  }
+
+  async demoteGroupAdmin(groupId: string, phones: string[]) {
+    return this.request<unknown>('remove-admin', { body: { groupId, phones } })
+  }
+
+  async leaveGroup(groupId: string) {
+    return this.request<unknown>('leave-group', { body: { groupId } })
+  }
+
+  async updateGroupName(groupId: string, groupName: string) {
+    return this.request<unknown>('update-group-name', { body: { groupId, groupName } })
+  }
+
+  async updateGroupDescription(groupId: string, groupDescription: string) {
+    return this.request<unknown>('update-group-description', {
+      body: { groupId, groupDescription },
+    })
+  }
+
+  async updateGroupSettings(input: Record<string, unknown>) {
+    return this.request<unknown>('group-update-settings', { body: input })
+  }
+
+  async sendGroupMention(input: Record<string, unknown>) {
+    return this.request<unknown>('group-mention', { body: input })
   }
 }
 

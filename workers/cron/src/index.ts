@@ -31,9 +31,14 @@ export default {
       tasks.push(callEndpoint(env, '/api/cron/ifood-poll'))
     }
 
-    // Top of every hour (minute 0): automations scheduler
+    // Top of every hour (minute 0): automations scheduler + health/insight checks
     if (minute === 0) {
       tasks.push(callEndpoint(env, '/api/cron/automations'))
+      tasks.push(callEndpoint(env, '/api/cron/attribute-orders'))
+      tasks.push(callEndpoint(env, '/api/cron/zapi-health'))
+      tasks.push(callEndpoint(env, '/api/cron/optout-spike'))
+      tasks.push(callEndpoint(env, '/api/cron/admin-briefings'))
+      tasks.push(callEndpoint(env, '/api/cron/admin-anomalies'))
     }
 
     // 9 AM UTC daily: daily checks (birthdays, inactive customers, etc.)

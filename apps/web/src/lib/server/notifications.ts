@@ -6,12 +6,22 @@ import { getActiveRestaurantId } from '@/lib/server/restaurant'
 
 export type NotificationRow = {
   id: string
-  type: 'stock_low' | 'negative_review' | 'sale_finalized' | 'new_order' | 'system'
+  type:
+    | 'stock_low'
+    | 'negative_review'
+    | 'sale_finalized'
+    | 'new_order'
+    | 'system'
+    | 'campaign_milestone'
+    | 'vip_just_messaged'
+    | 'ai_escalated'
+    | 'optout_spike'
   title: string
   body: string | null
   href: string | null
   read_at: string | null
   created_at: string
+  severity: 'info' | 'warning' | 'critical' | null
 }
 
 export async function listNotifications(limit = 15): Promise<NotificationRow[]> {
@@ -20,7 +30,7 @@ export async function listNotifications(limit = 15): Promise<NotificationRow[]> 
     const restaurantId = await getActiveRestaurantId()
     const { data } = await supabase
       .from('notifications')
-      .select('id, type, title, body, href, read_at, created_at')
+      .select('id, type, title, body, href, read_at, created_at, severity')
       .eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false })
       .limit(limit)

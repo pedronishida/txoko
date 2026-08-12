@@ -90,7 +90,7 @@ export function CaixaView({
   return (
     <div>
       {/* KPI band */}
-      <section className="grid grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-6 pb-8 mb-10 border-b border-night-lighter">
+      <section className="grid grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-6 pb-8 mb-10 border-b border-border">
         <Metric label="Vendas do dia" value={formatCurrency(totalSales)} />
         <Metric label="Suprimento" value={formatCurrency(0)} tone="stone" />
         <Metric label="Sangrias" value={formatCurrency(0)} tone="stone" />
@@ -101,29 +101,29 @@ export function CaixaView({
       {/* Sales by method */}
       <section className="mb-10">
         <div className="flex items-baseline justify-between mb-5">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
             Vendas por metodo
           </h2>
-          <span className="flex items-center gap-1.5 text-[10px] text-leaf tracking-tight">
+          <span className="flex items-center gap-1.5 text-[10px] text-success tracking-tight">
             <span className="relative flex">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-leaf opacity-60 animate-ping" />
-              <span className="relative inline-flex rounded-full h-1 w-1 bg-leaf" />
+              <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping" />
+              <span className="relative inline-flex rounded-full h-1 w-1 bg-success" />
             </span>
             atualiza em tempo real
           </span>
         </div>
         {Object.keys(salesByMethod).length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-stone tracking-tight">
+          <p className="py-8 text-center text-[13px] text-muted tracking-tight">
             Nenhum pagamento registrado hoje
           </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-8 gap-y-5">
             {Object.entries(salesByMethod).map(([method, amount]) => (
               <div key={method}>
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                   {METHOD_LABEL[method] || method}
                 </p>
-                <p className="text-[18px] font-medium text-cloud font-data tracking-tight mt-2">
+                <p className="text-[18px] font-medium text-foreground font-data tracking-tight mt-2">
                   {formatCurrency(amount)}
                 </p>
               </div>
@@ -135,20 +135,20 @@ export function CaixaView({
       {/* Movements */}
       <section className="mb-8">
         <div className="flex items-baseline justify-between mb-5">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
             Movimentacoes do dia
           </h2>
-          <span className="text-[11px] font-data text-stone-dark">
+          <span className="text-[11px] font-data text-muted">
             {payments.length}{' '}
             {payments.length === 1 ? 'registro' : 'registros'}
           </span>
         </div>
         {payments.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-stone tracking-tight">
+          <p className="py-8 text-center text-[13px] text-muted tracking-tight">
             Nenhuma movimentacao registrada
           </p>
         ) : (
-          <div className="divide-y divide-night-lighter">
+          <div className="divide-y divide-border">
             {payments.map((m) => {
               const time = new Date(m.created_at).toLocaleTimeString('pt-BR', {
                 hour: '2-digit',
@@ -159,24 +159,24 @@ export function CaixaView({
                   key={m.id}
                   className="py-3 flex items-baseline gap-4"
                 >
-                  <span className="text-[11px] font-data text-stone-dark w-12 shrink-0">
+                  <span className="text-[11px] font-data text-muted w-12 shrink-0">
                     {time}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-cloud tracking-tight truncate">
+                    <p className="text-[13px] text-foreground tracking-tight truncate">
                       Pagamento pedido #{m.order_id.slice(0, 6)}
                     </p>
-                    <p className="text-[11px] text-stone-dark tracking-tight mt-0.5">
+                    <p className="text-[11px] text-muted tracking-tight mt-0.5">
                       {METHOD_LABEL[m.method] ?? m.method}
                       {m.status !== 'approved' && (
-                        <span className="text-warm capitalize"> · {m.status}</span>
+                        <span className="text-accent-foreground capitalize"> · {m.status}</span>
                       )}
                     </p>
                   </div>
                   <span
                     className={cn(
                       'text-[13px] font-data shrink-0',
-                      m.status === 'approved' ? 'text-cloud' : 'text-stone'
+                      m.status === 'approved' ? 'text-foreground' : 'text-muted'
                     )}
                   >
                     +{formatCurrency(Number(m.amount))}
@@ -204,15 +204,15 @@ function Metric({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
         {label}
       </p>
       <p
         className={cn(
           'text-[22px] font-medium tracking-[-0.03em] leading-none font-data mt-3',
-          tone === 'neutral' && 'text-cloud',
-          tone === 'leaf' && 'text-cloud',
-          tone === 'stone' && 'text-stone-dark'
+          tone === 'neutral' && 'text-foreground',
+          tone === 'leaf' && 'text-foreground',
+          tone === 'stone' && 'text-muted'
         )}
       >
         {value}

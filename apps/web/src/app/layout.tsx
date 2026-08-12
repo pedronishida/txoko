@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
-import { Rubik, JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { PWARegister } from '@/components/pwa-register'
 import './globals.css'
 
-const rubik = Rubik({
+const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-rubik',
+  variable: '--font-inter',
   display: 'swap',
 })
 
@@ -88,7 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${rubik.variable} ${jetBrainsMono.variable}`}
+      className={`${inter.variable} ${jetBrainsMono.variable}`}
       suppressHydrationWarning
     >
       <head>

@@ -13,31 +13,31 @@
 
 :root {
   /* Base */
-  --bg: #FFFFFF;
-  --bg-elevated: #FAFAFA;
-  --surface: #F6F6F5;
-  --surface-hover: #EFEEEC;
-  --border: #E8E6E3;
-  --border-strong: #D4D1CD;
+  --bg: #F6F4EE;
+  --bg-elevated: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-hover: #EDEAE3;
+  --border: #E8E4DA;
+  --border-strong: #D8D5CB;
 
   /* Texto */
-  --foreground: #0F0F0F;
+  --foreground: #0F0E0C;
   --foreground-muted: #4A4744;
-  --muted: #8C8885;
-  --muted-soft: #B8B4B0;
-  --muted-subtle: #E8E6E3;
+  --muted: #6B6862;
+  --muted-soft: #8C8885;
+  --muted-subtle: #EDEAE3;
 
-  /* Brand — iFood red */
-  --primary: #EA1D2C;
-  --primary-hover: #C71525;
-  --primary-soft: #FFE8EA;
-  --primary-muted: #FFF0F1;
+  /* Brand */
+  --primary: #1B3FCB;
+  --primary-hover: #1632A8;
+  --primary-soft: #E8EDFA;
+  --primary-muted: #F0F3FC;
 
-  /* Accent — 99 yellow */
-  --accent: #FFC700;
-  --accent-hover: #E6B300;
-  --accent-soft: #FFF4CC;
-  --accent-muted: #FFFAE6;
+  /* Accent */
+  --accent: #F2C94C;
+  --accent-hover: #E6B838;
+  --accent-soft: #FCF0CC;
+  --accent-muted: #FEF8DD;
 
   /* Success */
   --success: #16A34A;
@@ -48,15 +48,19 @@
   --warning-soft: #FEF3C7;
 
   /* Destructive */
-  --destructive: #DC2626;
-  --destructive-hover: #B91C1C;
-  --destructive-soft: #FEE2E2;
+  --destructive: #D63A37;
+  --destructive-hover: #B82E2B;
+  --destructive-soft: #FDEDEC;
 
   /* Foreground sobre cores fortes */
   --primary-foreground: #FFFFFF;
-  --accent-foreground: #1A1400;
+  --accent-foreground: #0F0E0C;
   --success-foreground: #FFFFFF;
   --destructive-foreground: #FFFFFF;
+
+  /* Sombras */
+  --shadow-island: 0 4px 6px -4px #00000014, 0 0 0 1px #0F0E0C0A;
+  --shadow-popup: 0 16px 40px -8px #0F0E0C1F, 0 4px 8px 0 #0F0E0C0A;
 }
 
 /* Forca tema light em um subtree (usado no menu publico) */
@@ -68,52 +72,52 @@
   --surface-hover: #EFEEEC;
   --border: #E8E6E3;
   --border-strong: #D4D1CD;
-  --foreground: #0F0F0F;
+  --foreground: #0F0E0C;
   --foreground-muted: #4A4744;
-  --muted: #8C8885;
-  --muted-soft: #B8B4B0;
+  --muted: #6B6862;
+  --muted-soft: #8C8885;
   --muted-subtle: #E8E6E3;
-  --primary: #EA1D2C;
-  --primary-hover: #C71525;
-  --primary-soft: #FFE8EA;
-  --primary-muted: #FFF0F1;
-  --accent: #FFC700;
-  --accent-hover: #E6B300;
-  --accent-soft: #FFF4CC;
+  --primary: #1B3FCB;
+  --primary-hover: #1632A8;
+  --primary-soft: #E8EDFA;
+  --primary-muted: #F0F3FC;
+  --accent: #F2C94C;
+  --accent-hover: #E6B838;
+  --accent-soft: #FCF0CC;
   --success: #16A34A;
   --success-soft: #DCFCE7;
   --warning: #F59E0B;
   --warning-soft: #FEF3C7;
-  --destructive: #DC2626;
-  --destructive-hover: #B91C1C;
-  --destructive-soft: #FEE2E2;
+  --destructive: #D63A37;
+  --destructive-hover: #B82E2B;
+  --destructive-soft: #FDEDEC;
   --primary-foreground: #FFFFFF;
-  --accent-foreground: #1A1400;
+  --accent-foreground: #0F0E0C;
 }
 
 .dark {
-  --bg: #0B0B0B;
-  --bg-elevated: #141414;
-  --surface: #1A1A1A;
-  --surface-hover: #242424;
-  --border: #262626;
-  --border-strong: #363636;
+  --bg: #14121E;
+  --bg-elevated: #1D1A2B;
+  --surface: #1D1A2B;
+  --surface-hover: #252235;
+  --border: #2E2A3F;
+  --border-strong: #3D3A52;
 
-  --foreground: #FAFAFA;
-  --foreground-muted: #D4D4D4;
-  --muted: #A3A3A3;
-  --muted-soft: #737373;
-  --muted-subtle: #404040;
+  --foreground: #F0EEF8;
+  --foreground-muted: #C2BFD0;
+  --muted: #7A7890;
+  --muted-soft: #5F5D75;
+  --muted-subtle: #2E2A3F;
 
-  --primary: #FF3346;
-  --primary-hover: #FF5260;
-  --primary-soft: #2D0A0D;
-  --primary-muted: #1F0709;
+  --primary: #6B8AE8;
+  --primary-hover: #88A0EE;
+  --primary-soft: #1F2540;
+  --primary-muted: #16192E;
 
-  --accent: #FFD23F;
-  --accent-hover: #FFDB5C;
-  --accent-soft: #2A2208;
-  --accent-muted: #1C1706;
+  --accent: #F2C94C;
+  --accent-hover: #FFD66B;
+  --accent-soft: #2D2614;
+  --accent-muted: #1F1B0E;
 
   --success: #22C55E;
   --success-soft: #0A2013;
@@ -121,14 +125,17 @@
   --warning: #FBBF24;
   --warning-soft: #2A1F08;
 
-  --destructive: #EF4444;
+  --destructive: #EF5350;
   --destructive-hover: #F87171;
   --destructive-soft: #2A0A0A;
 
   --primary-foreground: #FFFFFF;
-  --accent-foreground: #1A1400;
+  --accent-foreground: #0F0E0C;
   --success-foreground: #FFFFFF;
   --destructive-foreground: #FFFFFF;
+
+  --shadow-island: 0 4px 6px -4px #0006, 0 0 0 1px #FFFFFF0A;
+  --shadow-popup: 0 16px 40px -8px #0009, 0 4px 8px 0 #0003;
 }
 
 /* =============================================================
@@ -188,14 +195,14 @@
   --color-coral-dark: var(--destructive-hover);
   --color-coral-light: var(--destructive-soft);
 
-  --font-sans: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', Menlo, monospace;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.25rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
 }
 
 /* =============================================================
@@ -219,6 +226,7 @@
     background-color: var(--bg);
     color: var(--foreground);
     font-family: var(--font-sans);
+    letter-spacing: -0.005em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -230,19 +238,18 @@
 
   /* Scrollbar polido */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--border-strong);
-    border-radius: 999px;
-    border: 2px solid var(--bg);
+    background: #e0dcc8;
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-soft);
+    background: #c8c3b0;
   }
 }
 
@@ -253,11 +260,87 @@
     letter-spacing: -0.01em;
   }
 
+  /* Anel de foco padrao — so aparece em navegacao por teclado */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
     scrollbar-width: none;
+  }
+
+  /* ========== Scrollbar fina (main do shell) ========== */
+
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #d8d5cb transparent;
+  }
+  .thin-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thin-scroll::-webkit-scrollbar-thumb {
+    background: #e0dcc8;
+    border-radius: 9999px;
+  }
+  .thin-scroll::-webkit-scrollbar-thumb:hover {
+    background: #c8c3b0;
+  }
+
+  /* ========== Islands ========== */
+
+  .island {
+    background-color: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-island);
+  }
+  .island-popup {
+    background-color: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popup);
+  }
+
+  /* ========== Micro-interacoes ========== */
+
+  .hover-lift {
+    transition:
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 8px 16px -8px #0000001f,
+      0 0 0 1px #0f0e0c0f;
+  }
+  .hover-lift:active {
+    transition-duration: 80ms;
+    transform: translateY(0);
+  }
+
+  .press-scale {
+    transition: transform 0.12s ease-out;
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hover-lift,
+    .press-scale {
+      transition: none !important;
+    }
+    .hover-lift:active,
+    .hover-lift:hover,
+    .press-scale:active {
+      transform: none !important;
+    }
   }
 
   /* ========== Animacoes de entrada ========== */

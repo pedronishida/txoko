@@ -250,18 +250,18 @@ export function ClientesView({ customers }: Props) {
           placeholder="Buscar cliente"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 h-9 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
+          className="flex-1 h-9 bg-transparent border-0 text-[13px] text-foreground placeholder:text-muted focus:outline-none tracking-tight"
         />
         <button
           onClick={() => setShowSegmentBuilder(true)}
-          className="inline-flex items-center gap-2 h-9 px-3.5 border border-night-lighter text-stone-light text-[13px] font-medium rounded-md hover:text-cloud hover:border-stone-dark transition-colors shrink-0"
+          className="inline-flex items-center gap-2 h-9 px-3.5 border border-border text-foreground/75 text-[13px] font-medium rounded-md hover:text-foreground hover:border-stone-dark transition-colors shrink-0"
         >
           <BookmarkPlus size={14} strokeWidth={2} />
           Nova segmentacao
         </button>
         <button
           onClick={() => openForm(null)}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors shrink-0"
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors shrink-0"
         >
           <Plus size={14} strokeWidth={2} />
           Novo cliente
@@ -278,21 +278,21 @@ export function ClientesView({ customers }: Props) {
 
       {/* Bulk action bar */}
       {checkedCount > 0 && (
-        <div className="mb-4 flex items-center gap-3 px-4 py-2.5 bg-night-light border border-night-lighter rounded-lg">
-          <span className="text-[12px] text-cloud font-data tracking-tight shrink-0">
+        <div className="mb-4 flex items-center gap-3 px-4 py-2.5 bg-surface border border-border rounded-lg">
+          <span className="text-[12px] text-foreground font-data tracking-tight shrink-0">
             {checkedCount} {checkedCount === 1 ? 'cliente' : 'clientes'} selecionado{checkedCount === 1 ? '' : 's'}
           </span>
-          <span className="w-px h-4 bg-night-lighter" />
+          <span className="w-px h-4 bg-muted-subtle" />
           <button
             onClick={() => setShowBulkWhatsapp(true)}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors tracking-tight"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors tracking-tight"
           >
             <MessageSquare size={11} />
             Enviar WhatsApp
           </button>
           <button
             onClick={() => setShowBulkTag(true)}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors tracking-tight"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors tracking-tight"
           >
             <BookmarkPlus size={11} />
             Adicionar tag
@@ -300,21 +300,21 @@ export function ClientesView({ customers }: Props) {
           <button
             onClick={handleExportCsv}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors tracking-tight disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors tracking-tight disabled:opacity-40"
           >
             <Download size={11} />
             Exportar CSV
           </button>
           <button
             onClick={handleCreateCampaign}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors tracking-tight"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors tracking-tight"
           >
             <Megaphone size={11} />
             Criar campanha
           </button>
           <button
             onClick={() => setChecked(new Set())}
-            className="ml-auto w-6 h-6 flex items-center justify-center text-stone-dark hover:text-cloud rounded-md hover:bg-night-lighter transition-colors"
+            className="ml-auto w-6 h-6 flex items-center justify-center text-muted hover:text-foreground rounded-md hover:bg-muted-subtle transition-colors"
           >
             <X size={11} />
           </button>
@@ -333,7 +333,7 @@ export function ClientesView({ customers }: Props) {
       <div className="flex gap-8">
         {/* Table */}
         <section className="flex-1 min-w-0">
-          <div className="grid grid-cols-[1.5rem_2fr_1.2fr_1fr_0.7fr_0.7fr_0.8fr_auto] gap-4 pb-3 border-b border-night-lighter text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+          <div className="grid grid-cols-[1.5rem_2fr_1.2fr_1fr_0.7fr_0.7fr_0.8fr_auto] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
             <span>
               <input
                 type="checkbox"
@@ -350,9 +350,9 @@ export function ClientesView({ customers }: Props) {
             <span>Segmento</span>
             <span></span>
           </div>
-          <div className="divide-y divide-night-lighter">
+          <div className="divide-y divide-border">
             {filtered.length === 0 ? (
-              <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+              <p className="py-12 text-center text-[13px] text-muted tracking-tight">
                 Nenhum cliente encontrado
               </p>
             ) : (
@@ -366,8 +366,8 @@ export function ClientesView({ customers }: Props) {
                     key={c.id}
                     className={cn(
                       'group grid grid-cols-[1.5rem_2fr_1.2fr_1fr_0.7fr_0.7fr_0.8fr_auto] gap-4 py-3 items-center cursor-pointer transition-colors',
-                      active && 'bg-night-light/60',
-                      isChecked && 'bg-night-lighter/20'
+                      active && 'bg-primary-soft',
+                      isChecked && 'bg-muted-subtle/20'
                     )}
                     onClick={() =>
                       setSelectedId(c.id === selectedId ? null : c.id)
@@ -388,35 +388,35 @@ export function ClientesView({ customers }: Props) {
                       />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[13px] text-cloud tracking-tight truncate">
+                      <p className="text-[13px] text-foreground tracking-tight truncate">
                         {c.name}
                       </p>
-                      <p className="text-[10px] text-stone-dark tracking-tight mt-0.5">
+                      <p className="text-[10px] text-muted tracking-tight mt-0.5">
                         {days !== null ? `${days}d atras` : 'Sem visita'}
                       </p>
                     </div>
-                    <div className="min-w-0 text-[11px] text-stone tracking-tight">
+                    <div className="min-w-0 text-[11px] text-muted tracking-tight">
                       {c.phone && (
                         <p className="truncate font-data">{c.phone}</p>
                       )}
                       {c.email && <p className="truncate">{c.email}</p>}
                     </div>
-                    <span className="text-[12px] font-data text-cloud text-right">
+                    <span className="text-[12px] font-data text-foreground text-right">
                       {formatCurrency(c.total_spent)}
                     </span>
-                    <span className="text-[12px] font-data text-stone-light text-right">
+                    <span className="text-[12px] font-data text-foreground/75 text-right">
                       {c.total_orders}
                     </span>
-                    <span className="text-[12px] font-data text-stone-light text-right">
+                    <span className="text-[12px] font-data text-foreground/75 text-right">
                       {c.loyalty_points}
                     </span>
                     <span
                       className={cn(
                         'text-[11px] tracking-tight',
-                        seg === 'vip' && 'text-warm',
-                        seg === 'frequent' && 'text-leaf',
-                        seg === 'new' && 'text-cloud',
-                        seg === 'inactive' && 'text-stone-dark'
+                        seg === 'vip' && 'text-accent-foreground',
+                        seg === 'frequent' && 'text-success',
+                        seg === 'new' && 'text-foreground',
+                        seg === 'inactive' && 'text-muted'
                       )}
                     >
                       {SEGMENT_LABEL[seg]}
@@ -427,7 +427,7 @@ export function ClientesView({ customers }: Props) {
                           e.stopPropagation()
                           openForm(c)
                         }}
-                        className="text-[10px] text-stone-light hover:text-cloud tracking-tight"
+                        className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight"
                       >
                         editar
                       </button>
@@ -436,7 +436,7 @@ export function ClientesView({ customers }: Props) {
                           e.stopPropagation()
                           handleDelete(c.id)
                         }}
-                        className="text-[10px] text-stone-dark hover:text-primary tracking-tight"
+                        className="text-[10px] text-muted hover:text-primary tracking-tight"
                       >
                         remover
                       </button>
@@ -453,23 +453,23 @@ export function ClientesView({ customers }: Props) {
           <aside className="w-[300px] shrink-0">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-dark">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                   {SEGMENT_LABEL[getSegment(selected)]}
                 </p>
-                <h3 className="text-[16px] font-medium text-cloud tracking-tight mt-1.5 leading-tight">
+                <h3 className="text-[16px] font-medium text-foreground tracking-tight mt-1.5 leading-tight">
                   {selected.name}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedId(null)}
-                className="w-6 h-6 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
                 aria-label="Fechar"
               >
                 <X size={12} />
               </button>
             </div>
 
-            <div className="space-y-2.5 pb-5 border-b border-night-lighter">
+            <div className="space-y-2.5 pb-5 border-b border-border">
               {selected.phone && (
                 <PanelRow label="Telefone" value={selected.phone} mono />
               )}
@@ -482,11 +482,11 @@ export function ClientesView({ customers }: Props) {
             </div>
 
             {selected.notes && (
-              <div className="pt-5 pb-5 border-b border-night-lighter">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+              <div className="pt-5 pb-5 border-b border-border">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Observacoes
                 </p>
-                <p className="text-[12px] text-stone-light tracking-tight leading-relaxed">
+                <p className="text-[12px] text-foreground/75 tracking-tight leading-relaxed">
                   {selected.notes.replace(/^\[tags:[^\]]*\]\s*/, '')}
                 </p>
               </div>
@@ -515,30 +515,30 @@ export function ClientesView({ customers }: Props) {
             {/* Scoring */}
             {(selected.engagement_score !== undefined ||
               selected.churn_risk !== undefined) && (
-              <div className="pt-5 mt-5 border-t border-night-lighter space-y-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+              <div className="pt-5 mt-5 border-t border-border space-y-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                   Inteligencia
                 </p>
                 {selected.engagement_score !== undefined && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-stone-dark tracking-tight">
+                    <span className="text-[11px] text-muted tracking-tight">
                       Engagement
                     </span>
                     <div className="flex items-center gap-2">
-                      <div className="w-20 h-1 bg-night-lighter rounded-full overflow-hidden">
+                      <div className="w-20 h-1 bg-muted-subtle rounded-full overflow-hidden">
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
                             selected.engagement_score >= 70
-                              ? 'bg-leaf'
+                              ? 'bg-success'
                               : selected.engagement_score >= 40
-                                ? 'bg-cloud'
+                                ? 'bg-primary'
                                 : 'bg-stone-dark'
                           )}
                           style={{ width: `${selected.engagement_score}%` }}
                         />
                       </div>
-                      <span className="text-[12px] font-data text-cloud w-7 text-right">
+                      <span className="text-[12px] font-data text-foreground w-7 text-right">
                         {selected.engagement_score}
                       </span>
                     </div>
@@ -546,24 +546,24 @@ export function ClientesView({ customers }: Props) {
                 )}
                 {selected.churn_risk !== undefined && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-stone-dark tracking-tight">
+                    <span className="text-[11px] text-muted tracking-tight">
                       Risco de churn
                     </span>
                     <div className="flex items-center gap-2">
-                      <div className="w-20 h-1 bg-night-lighter rounded-full overflow-hidden">
+                      <div className="w-20 h-1 bg-muted-subtle rounded-full overflow-hidden">
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
                             selected.churn_risk >= 70
                               ? 'bg-primary'
                               : selected.churn_risk >= 40
-                                ? 'bg-warm'
+                                ? 'bg-accent'
                                 : 'bg-stone-dark'
                           )}
                           style={{ width: `${selected.churn_risk}%` }}
                         />
                       </div>
-                      <span className="text-[12px] font-data text-cloud w-7 text-right">
+                      <span className="text-[12px] font-data text-foreground w-7 text-right">
                         {selected.churn_risk}
                       </span>
                     </div>
@@ -571,10 +571,10 @@ export function ClientesView({ customers }: Props) {
                 )}
                 {selected.optimal_send_hour != null && (
                   <div className="flex items-baseline justify-between">
-                    <span className="text-[11px] text-stone-dark tracking-tight">
+                    <span className="text-[11px] text-muted tracking-tight">
                       Melhor horario
                     </span>
-                    <span className="text-[12px] font-data text-cloud">
+                    <span className="text-[12px] font-data text-foreground">
                       {selected.optimal_send_hour}:00
                     </span>
                   </div>
@@ -582,13 +582,13 @@ export function ClientesView({ customers }: Props) {
                 {selected.spending_trend !== undefined &&
                   selected.spending_trend !== 0 && (
                     <div className="flex items-baseline justify-between">
-                      <span className="text-[11px] text-stone-dark tracking-tight">
+                      <span className="text-[11px] text-muted tracking-tight">
                         Tendencia de gasto
                       </span>
                       <span
                         className={cn(
                           'text-[12px] font-data',
-                          selected.spending_trend > 0 ? 'text-leaf' : 'text-primary'
+                          selected.spending_trend > 0 ? 'text-success' : 'text-primary'
                         )}
                       >
                         {selected.spending_trend > 0 ? '+' : ''}
@@ -609,16 +609,16 @@ export function ClientesView({ customers }: Props) {
           onClick={() => setShowForm(false)}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-md"
+            className="bg-surface border border-border rounded-xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-              <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-[14px] font-medium text-foreground tracking-tight">
                 {editing ? 'Editar cliente' : 'Novo cliente'}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -664,20 +664,20 @@ export function ClientesView({ customers }: Props) {
                   onChange={(e) => setFormNotes(e.target.value)}
                   rows={2}
                   placeholder="Alergias, preferencias"
-                  className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark resize-none transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark resize-none transition-colors"
                 />
               </Field>
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                  className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={pending}
-                  className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                  className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
                 >
                   {pending ? 'Salvando' : editing ? 'Salvar' : 'Criar'}
                 </button>
@@ -753,41 +753,41 @@ function BulkWhatsappModal({
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-sm"
+        className="bg-surface border border-border rounded-xl w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-          <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h2 className="text-[14px] font-medium text-foreground tracking-tight">
             Enviar WhatsApp
           </h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors">
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors">
             <X size={14} />
           </button>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-[13px] text-stone-light tracking-tight">
+          <p className="text-[13px] text-foreground/75 tracking-tight">
             Enviar mensagem para{' '}
-            <span className="text-cloud font-data">{count}</span> clientes selecionados.
+            <span className="text-foreground font-data">{count}</span> clientes selecionados.
           </p>
           <Field label="ID do template (WhatsApp)">
             <input
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
               placeholder="Cole o ID ou nome do template"
-              className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </Field>
-          <p className="text-[11px] text-stone-dark tracking-tight">
+          <p className="text-[11px] text-muted tracking-tight">
             As mensagens serao enfileiradas e enviadas via WhatsApp Business API
           </p>
           <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 h-9 border border-night-lighter rounded-md text-[12px] text-stone-light hover:text-cloud transition-colors">
+            <button onClick={onClose} className="flex-1 h-9 border border-border rounded-md text-[12px] text-foreground/75 hover:text-foreground transition-colors">
               Cancelar
             </button>
             <button
               onClick={handleSend}
               disabled={pending || !templateId.trim()}
-              className="flex-1 h-9 bg-leaf text-night rounded-md text-[12px] font-medium hover:bg-leaf/90 transition-colors disabled:opacity-40"
+              className="flex-1 h-9 bg-success text-success-foreground rounded-md text-[12px] font-medium hover:bg-success/90 transition-colors disabled:opacity-40"
             >
               {pending ? 'Enfileirando...' : 'Confirmar envio'}
             </button>
@@ -834,21 +834,21 @@ function BulkTagModal({
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-sm"
+        className="bg-surface border border-border rounded-xl w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-          <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h2 className="text-[14px] font-medium text-foreground tracking-tight">
             Adicionar tag
           </h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors">
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors">
             <X size={14} />
           </button>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-[13px] text-stone-light tracking-tight">
+          <p className="text-[13px] text-foreground/75 tracking-tight">
             Adicionar tag para{' '}
-            <span className="text-cloud font-data">{customerIds.length}</span> clientes.
+            <span className="text-foreground font-data">{customerIds.length}</span> clientes.
           </p>
           <Field label="Tag">
             <input
@@ -857,17 +857,17 @@ function BulkTagModal({
               placeholder="Ex: vip, aniversario, promo-verao"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </Field>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 h-9 border border-night-lighter rounded-md text-[12px] text-stone-light hover:text-cloud transition-colors">
+            <button onClick={onClose} className="flex-1 h-9 border border-border rounded-md text-[12px] text-foreground/75 hover:text-foreground transition-colors">
               Cancelar
             </button>
             <button
               onClick={handleAdd}
               disabled={pending || !tag.trim()}
-              className="flex-1 h-9 bg-cloud text-night rounded-md text-[12px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+              className="flex-1 h-9 bg-primary text-primary-foreground rounded-md text-[12px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
             >
               {pending ? 'Adicionando...' : 'Adicionar'}
             </button>
@@ -954,14 +954,14 @@ function SegmentBuilderModal({
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
+        className="bg-surface border border-border rounded-xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between sticky top-0 bg-night-light z-10">
-          <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between sticky top-0 bg-surface z-10">
+          <h2 className="text-[14px] font-medium text-foreground tracking-tight">
             Nova segmentacao
           </h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors">
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors">
             <X size={14} />
           </button>
         </div>
@@ -973,13 +973,13 @@ function SegmentBuilderModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Clientes VIP inativos"
               autoFocus
-              className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
           </Field>
 
           {/* Operator */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
               Logica
             </label>
             <div className="flex gap-2">
@@ -988,8 +988,8 @@ function SegmentBuilderModal({
                 className={cn(
                   'h-8 px-3 rounded-md text-[11px] font-medium transition-colors tracking-tight',
                   operator === 'AND'
-                    ? 'bg-cloud text-night'
-                    : 'border border-night-lighter text-stone-light hover:text-cloud'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border text-foreground/75 hover:text-foreground'
                 )}
               >
                 TODAS as regras (E)
@@ -999,8 +999,8 @@ function SegmentBuilderModal({
                 className={cn(
                   'h-8 px-3 rounded-md text-[11px] font-medium transition-colors tracking-tight',
                   operator === 'OR'
-                    ? 'bg-cloud text-night'
-                    : 'border border-night-lighter text-stone-light hover:text-cloud'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border text-foreground/75 hover:text-foreground'
                 )}
               >
                 QUALQUER regra (OU)
@@ -1011,12 +1011,12 @@ function SegmentBuilderModal({
           {/* Rules */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+              <label className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                 Regras
               </label>
               <button
                 onClick={addRule}
-                className="text-[11px] text-stone-light hover:text-cloud tracking-tight transition-colors"
+                className="text-[11px] text-foreground/75 hover:text-foreground tracking-tight transition-colors"
               >
                 + Adicionar regra
               </button>
@@ -1030,7 +1030,7 @@ function SegmentBuilderModal({
                     <select
                       value={r.field}
                       onChange={(e) => updateRule(i, { field: e.target.value, op: RULE_FIELDS.find((f) => f.value === e.target.value)?.ops[0] ?? 'eq' })}
-                      className="flex-1 h-9 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-cloud focus:outline-none focus:border-stone-dark transition-colors"
+                      className="flex-1 h-9 px-2 bg-night border border-border rounded-md text-[11px] text-foreground focus:outline-none focus:border-stone-dark transition-colors"
                     >
                       {RULE_FIELDS.map((f) => (
                         <option key={f.value} value={f.value}>{f.label}</option>
@@ -1039,7 +1039,7 @@ function SegmentBuilderModal({
                     <select
                       value={r.op}
                       onChange={(e) => updateRule(i, { op: e.target.value })}
-                      className="w-16 h-9 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-cloud font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-16 h-9 px-2 bg-night border border-border rounded-md text-[11px] text-foreground font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
                     >
                       {(fieldDef?.ops ?? ['eq']).map((op) => (
                         <option key={op} value={op}>{OP_LABEL[op]}</option>
@@ -1049,11 +1049,11 @@ function SegmentBuilderModal({
                       type="number"
                       value={r.value}
                       onChange={(e) => updateRule(i, { value: Number(e.target.value) || 0 })}
-                      className="w-24 h-9 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-cloud font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-24 h-9 px-2 bg-night border border-border rounded-md text-[11px] text-foreground font-data text-center focus:outline-none focus:border-stone-dark transition-colors"
                     />
                     <button
                       onClick={() => removeRule(i)}
-                      className="w-7 h-7 flex items-center justify-center text-stone-dark hover:text-primary rounded-md hover:bg-night-lighter transition-colors"
+                      className="w-7 h-7 flex items-center justify-center text-muted hover:text-primary rounded-md hover:bg-muted-subtle transition-colors"
                     >
                       <X size={10} />
                     </button>
@@ -1062,7 +1062,7 @@ function SegmentBuilderModal({
               })}
 
               {rules.length === 0 && (
-                <p className="text-[12px] text-stone-dark tracking-tight py-2">
+                <p className="text-[12px] text-muted tracking-tight py-2">
                   Sem regras — inclui todos os clientes
                 </p>
               )}
@@ -1070,12 +1070,12 @@ function SegmentBuilderModal({
           </div>
 
           {/* Live count */}
-          <div className="border-t border-night-lighter pt-4 flex items-center justify-between">
+          <div className="border-t border-border pt-4 flex items-center justify-between">
             <div>
               {liveCount !== null && (
-                <p className="text-[13px] text-cloud font-data tracking-tight">
+                <p className="text-[13px] text-foreground font-data tracking-tight">
                   {liveCount}{' '}
-                  <span className="text-[11px] text-stone-dark font-sans">
+                  <span className="text-[11px] text-muted font-sans">
                     clientes correspondem
                   </span>
                 </p>
@@ -1084,7 +1084,7 @@ function SegmentBuilderModal({
             <button
               onClick={handleCount}
               disabled={counting || pending}
-              className="h-8 px-3 text-[11px] font-medium text-stone-light hover:text-cloud hover:bg-night-lighter rounded-md transition-colors disabled:opacity-40 tracking-tight"
+              className="h-8 px-3 text-[11px] font-medium text-foreground/75 hover:text-foreground hover:bg-muted-subtle rounded-md transition-colors disabled:opacity-40 tracking-tight"
             >
               {counting ? 'Contando...' : 'Contar clientes'}
             </button>
@@ -1093,14 +1093,14 @@ function SegmentBuilderModal({
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+              className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={pending || !name.trim()}
-              className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+              className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
             >
               {pending ? 'Salvando...' : 'Salvar segmento'}
             </button>
@@ -1126,10 +1126,10 @@ function PanelRow({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-[11px] text-stone-dark tracking-tight">{label}</span>
+      <span className="text-[11px] text-muted tracking-tight">{label}</span>
       <span
         className={cn(
-          'text-[12px] text-cloud tracking-tight truncate',
+          'text-[12px] text-foreground tracking-tight truncate',
           mono && 'font-data'
         )}
       >
@@ -1142,8 +1142,8 @@ function PanelRow({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between">
-      <span className="text-[11px] text-stone-dark tracking-tight">{label}</span>
-      <span className="text-[14px] font-medium text-cloud font-data tracking-tight">
+      <span className="text-[11px] text-muted tracking-tight">{label}</span>
+      <span className="text-[14px] font-medium text-foreground font-data tracking-tight">
         {value}
       </span>
     </div>
@@ -1159,7 +1159,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
         {label}
       </label>
       {children}
@@ -1187,7 +1187,7 @@ function Input({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       className={cn(
-        'w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors',
+        'w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors',
         mono && 'font-data'
       )}
     />

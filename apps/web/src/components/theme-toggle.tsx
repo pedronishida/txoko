@@ -22,11 +22,11 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="p-2 rounded-lg text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+      className="w-7 h-7 flex items-center justify-center rounded-md text-foreground/75 hover:text-foreground hover:bg-surface-hover transition-colors"
       title={isDark ? 'Mudar para claro' : 'Mudar para escuro'}
       aria-label="Alternar tema"
     >
-      {isDark ? <Sun size={18} /> : <Moon size={18} />}
+      {isDark ? <Sun size={14} strokeWidth={1.6} /> : <Moon size={14} strokeWidth={1.6} />}
     </button>
   )
 }

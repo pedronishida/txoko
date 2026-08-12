@@ -36,7 +36,7 @@ export function ReportTable<T>({
               <th
                 key={String(col.key)}
                 className={cn(
-                  'pb-2.5 border-b border-night-lighter font-medium uppercase tracking-[0.07em] text-[10px] text-stone',
+                  'pb-2.5 border-b border-border font-medium uppercase tracking-[0.07em] text-[10px] text-muted',
                   col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
                   col.className
                 )}
@@ -49,18 +49,18 @@ export function ReportTable<T>({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="py-8 text-center text-stone tracking-tight">
+              <td colSpan={columns.length} className="py-8 text-center text-muted tracking-tight">
                 {emptyText}
               </td>
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={getKey(row)} className="border-b border-night-lighter/50 hover:bg-night-light/20 transition-colors">
+              <tr key={getKey(row)} className="border-b border-border/50 hover:bg-surface/20 transition-colors">
                 {columns.map((col) => (
                   <td
                     key={String(col.key)}
                     className={cn(
-                      'py-2.5 text-cloud tracking-tight',
+                      'py-2.5 text-foreground tracking-tight',
                       col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
                       col.className
                     )}

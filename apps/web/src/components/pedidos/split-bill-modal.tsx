@@ -155,18 +155,18 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-night border border-night-lighter rounded-xl flex flex-col max-h-[90vh] shadow-2xl">
+      <div className="w-full max-w-lg bg-night border border-border rounded-xl flex flex-col max-h-[90vh] shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between shrink-0">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-[14px] font-medium text-cloud tracking-tight">Dividir conta</h2>
-            <p className="text-[11px] text-stone-dark mt-0.5 font-data">
+            <h2 className="text-[14px] font-medium text-foreground tracking-tight">Dividir conta</h2>
+            <p className="text-[11px] text-muted mt-0.5 font-data">
               Total: {formatCurrency(order.total)}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-light transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
           >
             <X size={15} />
           </button>
@@ -174,14 +174,14 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
 
         {/* Mode selector */}
         <div className="px-6 pt-4 shrink-0">
-          <div className="flex gap-1 p-1 bg-night-light rounded-md">
+          <div className="flex gap-1 p-1 bg-surface rounded-md">
             {(['igual', 'por_item', 'customizado'] as SplitMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={cn(
                   'flex-1 h-7 text-[11px] font-medium rounded transition-colors tracking-tight',
-                  mode === m ? 'bg-cloud text-night' : 'text-stone-light hover:text-cloud'
+                  mode === m ? 'bg-primary text-primary-foreground' : 'text-foreground/75 hover:text-foreground'
                 )}
               >
                 {modeLabel[m]}
@@ -195,32 +195,32 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
           {mode === 'igual' && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-[12px] text-stone tracking-tight">Dividir entre</span>
+                <span className="text-[12px] text-muted tracking-tight">Dividir entre</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setNumPeople(Math.max(2, numPeople - 1))}
-                    className="w-7 h-7 flex items-center justify-center rounded-md bg-night-light text-stone-light hover:text-cloud transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-md bg-surface text-foreground/75 hover:text-foreground transition-colors"
                   >
                     <Minus size={12} />
                   </button>
-                  <span className="text-[14px] font-medium text-cloud font-data w-6 text-center">
+                  <span className="text-[14px] font-medium text-foreground font-data w-6 text-center">
                     {numPeople}
                   </span>
                   <button
                     onClick={() => setNumPeople(Math.min(20, numPeople + 1))}
-                    className="w-7 h-7 flex items-center justify-center rounded-md bg-night-light text-stone-light hover:text-cloud transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-md bg-surface text-foreground/75 hover:text-foreground transition-colors"
                   >
                     <Plus size={12} />
                   </button>
                 </div>
-                <span className="text-[12px] text-stone tracking-tight">pessoas</span>
+                <span className="text-[12px] text-muted tracking-tight">pessoas</span>
               </div>
 
               <div className="space-y-2">
                 {persons.map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 py-2 border-b border-night-lighter/60 last:border-0">
-                    <span className="text-[12px] text-cloud tracking-tight flex-1">{p.label}</span>
-                    <span className="text-[13px] font-medium text-cloud font-data">{formatCurrency(p.amount)}</span>
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0">
+                    <span className="text-[12px] text-foreground tracking-tight flex-1">{p.label}</span>
+                    <span className="text-[13px] font-medium text-foreground font-data">{formatCurrency(p.amount)}</span>
                     <div className="flex gap-1">
                       {PAYMENT_METHODS.map((m) => (
                         <button
@@ -228,7 +228,7 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
                           onClick={() => updatePersonMethod(i, m)}
                           className={cn(
                             'h-6 px-2 text-[10px] rounded transition-colors',
-                            p.method === m ? 'bg-cloud text-night font-medium' : 'text-stone-dark hover:text-cloud hover:bg-night-light'
+                            p.method === m ? 'bg-primary text-primary-foreground font-medium' : 'text-muted hover:text-foreground hover:bg-surface'
                           )}
                         >
                           {PAYMENT_LABELS[m]}
@@ -245,20 +245,20 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
           {mode === 'por_item' && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-[12px] text-stone tracking-tight">Numero de pessoas</span>
+                <span className="text-[12px] text-muted tracking-tight">Numero de pessoas</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setNumPeople(Math.max(2, numPeople - 1))}
-                    className="w-7 h-7 flex items-center justify-center rounded-md bg-night-light text-stone-light hover:text-cloud transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-md bg-surface text-foreground/75 hover:text-foreground transition-colors"
                   >
                     <Minus size={12} />
                   </button>
-                  <span className="text-[14px] font-medium text-cloud font-data w-6 text-center">
+                  <span className="text-[14px] font-medium text-foreground font-data w-6 text-center">
                     {numPeople}
                   </span>
                   <button
                     onClick={() => setNumPeople(Math.min(10, numPeople + 1))}
-                    className="w-7 h-7 flex items-center justify-center rounded-md bg-night-light text-stone-light hover:text-cloud transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-md bg-surface text-foreground/75 hover:text-foreground transition-colors"
                   >
                     <Plus size={12} />
                   </button>
@@ -266,20 +266,20 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
               </div>
 
               <div className="space-y-1.5">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                   Atribuir itens
                 </p>
                 {items.map((item) => {
                   const prod = products.find((p) => p.id === item.product_id)
                   const assigned = itemAssignment[item.id]
                   return (
-                    <div key={item.id} className="flex items-center gap-3 py-2 border-b border-night-lighter/60 last:border-0">
+                    <div key={item.id} className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] text-cloud tracking-tight truncate">
-                          <span className="font-data text-stone-dark mr-1">{item.quantity}×</span>
+                        <p className="text-[12px] text-foreground tracking-tight truncate">
+                          <span className="font-data text-muted mr-1">{item.quantity}×</span>
                           {prod?.name ?? 'Produto'}
                         </p>
-                        <p className="text-[10px] font-data text-stone-dark">{formatCurrency(item.total_price)}</p>
+                        <p className="text-[10px] font-data text-muted">{formatCurrency(item.total_price)}</p>
                       </div>
                       <div className="flex gap-1 flex-wrap justify-end">
                         {Array.from({ length: numPeople }, (_, i) => (
@@ -295,8 +295,8 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
                             className={cn(
                               'h-6 w-7 text-[10px] rounded transition-colors',
                               assigned === i
-                                ? 'bg-leaf text-night font-medium'
-                                : 'text-stone-dark hover:text-cloud hover:bg-night-light'
+                                ? 'bg-success text-success-foreground font-medium'
+                                : 'text-muted hover:text-foreground hover:bg-surface'
                             )}
                           >
                             P{i + 1}
@@ -309,13 +309,13 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
               </div>
 
               <div className="space-y-1.5 pt-2">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                   Resumo por pessoa
                 </p>
                 {persons.map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 py-2 border-b border-night-lighter/60 last:border-0">
-                    <span className="text-[12px] text-cloud tracking-tight flex-1">{p.label}</span>
-                    <span className="text-[13px] font-medium text-cloud font-data">{formatCurrency(p.amount)}</span>
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0">
+                    <span className="text-[12px] text-foreground tracking-tight flex-1">{p.label}</span>
+                    <span className="text-[13px] font-medium text-foreground font-data">{formatCurrency(p.amount)}</span>
                     <div className="flex gap-1">
                       {PAYMENT_METHODS.map((m) => (
                         <button
@@ -323,7 +323,7 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
                           onClick={() => updatePersonMethod(i, m)}
                           className={cn(
                             'h-6 px-2 text-[10px] rounded transition-colors',
-                            p.method === m ? 'bg-cloud text-night font-medium' : 'text-stone-dark hover:text-cloud hover:bg-night-light'
+                            p.method === m ? 'bg-primary text-primary-foreground font-medium' : 'text-muted hover:text-foreground hover:bg-surface'
                           )}
                         >
                           {PAYMENT_LABELS[m]}
@@ -340,7 +340,7 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
           {mode === 'customizado' && (
             <div className="space-y-2">
               {customAmounts.map((p, i) => (
-                <div key={i} className="space-y-2 py-3 border-b border-night-lighter/60 last:border-0">
+                <div key={i} className="space-y-2 py-3 border-b border-border/60 last:border-0">
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -350,11 +350,11 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
                           prev.map((c, ci) => (ci === i ? { ...c, label: e.target.value } : c))
                         )
                       }
-                      className="flex-1 h-8 bg-transparent text-[12px] text-cloud placeholder:text-stone focus:outline-none tracking-tight border-b border-night-lighter/60"
+                      className="flex-1 h-8 bg-transparent text-[12px] text-foreground placeholder:text-muted focus:outline-none tracking-tight border-b border-border/60"
                       placeholder="Nome"
                     />
                     <div className="flex items-center gap-1">
-                      <span className="text-[12px] text-stone-dark">R$</span>
+                      <span className="text-[12px] text-muted">R$</span>
                       <input
                         type="number"
                         value={p.amount}
@@ -365,13 +365,13 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
                             prev.map((c, ci) => (ci === i ? { ...c, amount: e.target.value } : c))
                           )
                         }
-                        className="w-24 h-8 bg-transparent text-[12px] text-cloud text-right font-data placeholder:text-stone focus:outline-none tracking-tight"
+                        className="w-24 h-8 bg-transparent text-[12px] text-foreground text-right font-data placeholder:text-muted focus:outline-none tracking-tight"
                       />
                     </div>
                     {customAmounts.length > 2 && (
                       <button
                         onClick={() => removeCustomPerson(i)}
-                        className="w-6 h-6 flex items-center justify-center text-stone-dark hover:text-primary transition-colors"
+                        className="w-6 h-6 flex items-center justify-center text-muted hover:text-primary transition-colors"
                       >
                         <X size={11} />
                       </button>
@@ -388,7 +388,7 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
                         }
                         className={cn(
                           'h-6 px-2 text-[10px] rounded transition-colors',
-                          p.method === m ? 'bg-cloud text-night font-medium' : 'text-stone-dark hover:text-cloud hover:bg-night-light'
+                          p.method === m ? 'bg-primary text-primary-foreground font-medium' : 'text-muted hover:text-foreground hover:bg-surface'
                         )}
                       >
                         {PAYMENT_LABELS[m]}
@@ -399,7 +399,7 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
               ))}
               <button
                 onClick={addCustomPerson}
-                className="w-full h-8 border border-dashed border-night-lighter rounded-md text-[12px] text-stone hover:text-cloud hover:border-stone transition-colors flex items-center justify-center gap-2"
+                className="w-full h-8 border border-dashed border-border rounded-md text-[12px] text-muted hover:text-foreground hover:border-stone transition-colors flex items-center justify-center gap-2"
               >
                 <Plus size={12} />
                 Adicionar pessoa
@@ -409,14 +409,14 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
         </div>
 
         {/* Summary footer */}
-        <div className="px-6 py-4 border-t border-night-lighter space-y-1.5 shrink-0">
+        <div className="px-6 py-4 border-t border-border space-y-1.5 shrink-0">
           <div className="flex justify-between text-[12px]">
-            <span className="text-stone tracking-tight">Total do pedido</span>
-            <span className="font-data text-cloud">{formatCurrency(order.total)}</span>
+            <span className="text-muted tracking-tight">Total do pedido</span>
+            <span className="font-data text-foreground">{formatCurrency(order.total)}</span>
           </div>
           <div className="flex justify-between text-[12px]">
-            <span className="text-stone tracking-tight">Soma das divisoes</span>
-            <span className={cn('font-data', isValid ? 'text-leaf' : 'text-primary')}>
+            <span className="text-muted tracking-tight">Soma das divisoes</span>
+            <span className={cn('font-data', isValid ? 'text-success' : 'text-primary')}>
               {formatCurrency(splitSum)}
             </span>
           </div>
@@ -436,14 +436,14 @@ export function SplitBillModal({ order, items, products, onClose, onDone }: Prop
         <div className="px-6 pb-5 flex gap-2 shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 h-9 text-[12px] text-stone-light hover:text-cloud hover:bg-night-light rounded-md transition-colors"
+            className="flex-1 h-9 text-[12px] text-foreground/75 hover:text-foreground hover:bg-surface rounded-md transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
             disabled={pending || !isValid}
-            className="flex-1 h-9 bg-cloud text-night text-[12px] font-medium rounded-md hover:bg-cloud-dark transition-colors disabled:opacity-40"
+            className="flex-1 h-9 bg-primary text-primary-foreground text-[12px] font-medium rounded-md hover:bg-primary-hover transition-colors disabled:opacity-40"
           >
             {pending ? 'Processando...' : 'Confirmar divisao'}
           </button>

@@ -87,7 +87,39 @@ export function TemplatesView({ templates }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CampaignTemplate | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [channelFilter, setChannelFilter] = useState<'all' | TemplateTab>('all')
   const [pending, startTransition] = useTransition()
+
+  const filtered = templates.filter((tmpl) => {
+    if (
+      (channelFilter === 'whatsapp' && !tmpl.wa_body) ||
+      (channelFilter === 'email' && !tmpl.email_subject && !tmpl.email_html) ||
+      (channelFilter === 'sms' && !tmpl.sms_body)
+    ) {
+      return false
+    }
+    if (search.trim()) {
+      const query = search.trim().toLowerCase()
+      if (
+        ![tmpl.name, tmpl.category, tmpl.wa_body, tmpl.email_subject, tmpl.sms_body]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(query)
+      ) {
+        return false
+      }
+    }
+    return true
+  })
+
+  const channelCounts = {
+    all: templates.length,
+    whatsapp: templates.filter((t) => t.wa_body).length,
+    email: templates.filter((t) => t.email_subject || t.email_html).length,
+    sms: templates.filter((t) => t.sms_body).length,
+  }
 
   function openForm(tmpl: CampaignTemplate | null) {
     setError(null)
@@ -119,18 +151,18 @@ export function TemplatesView({ templates }: Props) {
 
   return (
     <div className="-mx-8 -mt-6">
-      <header className="px-8 pt-6 pb-8 border-b border-night-lighter flex items-end justify-between">
+      <header className="px-8 pt-6 pb-8 border-b border-border flex items-end justify-between">
         <div>
-          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-cloud leading-none">
+          <h1 className="text-[26px] font-medium tracking-[-0.03em] text-foreground leading-none">
             Templates
           </h1>
-          <p className="text-[13px] text-stone mt-2 tracking-tight">
+          <p className="text-[13px] text-muted mt-2 tracking-tight">
             Modelos de mensagem para WhatsApp, email e SMS
           </p>
         </div>
         <button
           onClick={() => openForm(null)}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors"
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
         >
           <Plus size={14} strokeWidth={2} />
           Novo template
@@ -147,19 +179,77 @@ export function TemplatesView({ templates }: Props) {
           </div>
         )}
 
+        {templates.length > 0 && (
+          <div className="mb-6 space-y-3">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome, categoria ou conteudo..."
+              className="w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
+            />
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(
+                [
+                  { key: 'all', label: 'Todos', count: channelCounts.all },
+                  { key: 'whatsapp', label: 'WhatsApp', count: channelCounts.whatsapp },
+                  { key: 'email', label: 'Email', count: channelCounts.email },
+                  { key: 'sms', label: 'SMS', count: channelCounts.sms },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setChannelFilter(tab.key)}
+                  className={cn(
+                    'px-3 py-1 rounded-md text-[11px] font-medium tracking-tight transition-colors',
+                    channelFilter === tab.key
+                      ? 'bg-primary text-primary-foreground'
+                      : 'border border-border text-foreground/75 hover:text-foreground hover:border-stone'
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'ml-1.5 text-[10px] font-data',
+                      channelFilter === tab.key ? 'text-foreground/60' : 'text-muted'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {templates.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-[14px] text-stone tracking-tight">
+            <p className="text-[14px] text-muted tracking-tight">
               Nenhum template criado
             </p>
-            <p className="text-[12px] text-stone-dark tracking-tight mt-1.5">
+            <p className="text-[12px] text-muted tracking-tight mt-1.5">
               Templates sao modelos de mensagem reutilizaveis com variaveis
               dinamicas
             </p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-[13px] text-muted tracking-tight">
+              Nenhum template corresponde aos filtros
+            </p>
+            <button
+              onClick={() => {
+                setSearch('')
+                setChannelFilter('all')
+              }}
+              className="text-[11px] text-foreground/75 hover:text-foreground tracking-tight mt-2"
+            >
+              Limpar filtros
+            </button>
+          </div>
         ) : (
-          <div className="divide-y divide-night-lighter">
-            {templates.map((tmpl) => {
+          <div className="divide-y divide-border">
+            {filtered.map((tmpl) => {
               const hasWa = Boolean(tmpl.wa_body)
               const hasEmail = Boolean(tmpl.email_subject || tmpl.email_html)
               const hasSms = Boolean(tmpl.sms_body)
@@ -178,19 +268,19 @@ export function TemplatesView({ templates }: Props) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-3 mb-1">
-                      <span className="text-[14px] font-medium text-cloud tracking-tight">
+                      <span className="text-[14px] font-medium text-foreground tracking-tight">
                         {tmpl.name}
                       </span>
                       {tmpl.category && (
-                        <span className="text-[10px] text-stone-dark tracking-tight">
+                        <span className="text-[10px] text-muted tracking-tight">
                           {CATEGORY_LABEL[tmpl.category] ?? tmpl.category}
                         </span>
                       )}
                     </div>
-                    <p className="text-[12px] text-stone tracking-tight line-clamp-2">
+                    <p className="text-[12px] text-muted tracking-tight line-clamp-2">
                       {tmpl.wa_body ?? tmpl.sms_body ?? tmpl.email_subject ?? ''}
                     </p>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] text-stone-dark tracking-tight">
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-muted tracking-tight">
                       <span>{channels || 'Sem conteudo'}</span>
                       {tmpl.ai_variation_enabled && (
                         <>
@@ -213,7 +303,7 @@ export function TemplatesView({ templates }: Props) {
                       <button
                         onClick={() => handleGenerateVariations(tmpl.id)}
                         disabled={pending}
-                        className="text-[10px] text-leaf hover:text-leaf/80 tracking-tight disabled:opacity-40"
+                        className="text-[10px] text-success hover:text-success/80 tracking-tight disabled:opacity-40"
                       >
                         gerar variacoes
                       </button>
@@ -221,20 +311,20 @@ export function TemplatesView({ templates }: Props) {
                     <button
                       onClick={() => handleDuplicate(tmpl.id)}
                       disabled={pending}
-                      className="text-[10px] text-stone-light hover:text-cloud tracking-tight disabled:opacity-40"
+                      className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight disabled:opacity-40"
                     >
                       duplicar
                     </button>
                     <button
                       onClick={() => openForm(tmpl)}
-                      className="text-[10px] text-stone-light hover:text-cloud tracking-tight"
+                      className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight"
                     >
                       editar
                     </button>
                     <button
                       onClick={() => handleDelete(tmpl.id)}
                       disabled={pending}
-                      className="text-[10px] text-stone-dark hover:text-primary tracking-tight disabled:opacity-40"
+                      className="text-[10px] text-muted hover:text-primary tracking-tight disabled:opacity-40"
                     >
                       remover
                     </button>
@@ -395,25 +485,25 @@ function TemplateEditor({
       onClick={onClose}
     >
       <div
-        className="bg-night-light border border-night-lighter rounded-xl w-full max-w-6xl max-h-[95vh] flex flex-col"
+        className="bg-surface border border-border rounded-xl w-full max-w-6xl max-h-[95vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-night-lighter flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <h2 className="text-[14px] font-medium text-cloud tracking-tight shrink-0">
+            <h2 className="text-[14px] font-medium text-foreground tracking-tight shrink-0">
               {template ? 'Editar template' : 'Novo template'}
             </h2>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nome do template..."
-              className="flex-1 max-w-[260px] h-8 px-3 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+              className="flex-1 max-w-[260px] h-8 px-3 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
             />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="h-8 px-2 bg-night border border-night-lighter rounded-md text-[11px] text-stone-light focus:outline-none focus:border-stone-dark transition-colors"
+              className="h-8 px-2 bg-night border border-border rounded-md text-[11px] text-foreground/75 focus:outline-none focus:border-stone-dark transition-colors"
             >
               <option value="">Categoria</option>
               {CATEGORIES.map((c) => (
@@ -426,20 +516,20 @@ function TemplateEditor({
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={onClose}
-              className="h-8 px-3 text-[12px] text-stone-light hover:text-cloud border border-night-lighter hover:border-stone-dark rounded-md transition-colors"
+              className="h-8 px-3 text-[12px] text-foreground/75 hover:text-foreground border border-border hover:border-stone-dark rounded-md transition-colors"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={pending || !name.trim()}
-              className="h-8 px-4 bg-cloud text-night rounded-md text-[12px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+              className="h-8 px-4 bg-primary text-primary-foreground rounded-md text-[12px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
             >
               {pending ? 'Salvando...' : template ? 'Salvar' : 'Criar template'}
             </button>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
             >
               <X size={14} />
             </button>
@@ -447,7 +537,7 @@ function TemplateEditor({
         </div>
 
         {/* Channel tabs */}
-        <div className="px-6 border-b border-night-lighter shrink-0">
+        <div className="px-6 border-b border-border shrink-0">
           <div className="flex items-center gap-6">
             {(['whatsapp', 'email', 'sms'] as const).map((ch) => {
               const hasContent =
@@ -462,15 +552,15 @@ function TemplateEditor({
                   onClick={() => setActiveTab(ch)}
                   className={cn(
                     'relative py-3 text-[12px] font-medium tracking-tight transition-colors',
-                    activeTab === ch ? 'text-cloud' : 'text-stone hover:text-stone-light'
+                    activeTab === ch ? 'text-foreground' : 'text-muted hover:text-foreground/75'
                   )}
                 >
                   {ch === 'whatsapp' ? 'WhatsApp' : ch === 'email' ? 'Email' : 'SMS'}
                   {hasContent && (
-                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-leaf inline-block align-middle" />
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-success inline-block align-middle" />
                   )}
                   {activeTab === ch && (
-                    <span className="absolute left-0 right-0 bottom-0 h-px bg-cloud" />
+                    <span className="absolute left-0 right-0 bottom-0 h-px bg-primary" />
                   )}
                 </button>
               )
@@ -481,7 +571,7 @@ function TemplateEditor({
         {/* Two-column body */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left: form */}
-          <div className="w-1/2 border-r border-night-lighter overflow-y-auto p-6 space-y-5">
+          <div className="w-1/2 border-r border-border overflow-y-auto p-6 space-y-5">
             {/* WhatsApp tab */}
             {activeTab === 'whatsapp' && (
               <>
@@ -496,14 +586,14 @@ function TemplateEditor({
                   <ToolbarBtn title="Tachado (~text~)" onClick={() => applyWaFormat('strike')}>
                     <Strikethrough size={12} />
                   </ToolbarBtn>
-                  <span className="w-px h-5 bg-night-lighter mx-1" />
-                  <span className="text-[10px] text-stone-dark tracking-tight">Variaveis:</span>
+                  <span className="w-px h-5 bg-muted-subtle mx-1" />
+                  <span className="text-[10px] text-muted tracking-tight">Variaveis:</span>
                   {VARIABLES.map((v) => (
                     <button
                       key={v.key}
                       onClick={() => insertVar(v.key, 'wa')}
                       title={v.label}
-                      className="h-6 px-1.5 rounded text-[9px] font-data text-stone-light hover:text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+                      className="h-6 px-1.5 rounded text-[9px] font-data text-foreground/75 hover:text-foreground hover:bg-muted-subtle transition-colors tracking-tight"
                     >
                       {v.key}
                     </button>
@@ -517,16 +607,16 @@ function TemplateEditor({
                     onChange={(e) => setWaBody(e.target.value)}
                     rows={8}
                     placeholder="Ola {first_name}! Temos uma novidade especial..."
-                    className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark resize-none transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark resize-none transition-colors"
                   />
                   <div className="flex items-center justify-between mt-1.5">
-                    <p className="text-[10px] text-stone-dark tracking-tight">
+                    <p className="text-[10px] text-muted tracking-tight">
                       Use *negrito*, _italico_, ~tachado~
                     </p>
                     <span
                       className={cn(
                         'text-[10px] font-data tracking-tight',
-                        waCharCount > 1000 ? 'text-warm' : 'text-stone-dark'
+                        waCharCount > 1000 ? 'text-accent-foreground' : 'text-muted'
                       )}
                     >
                       {waCharCount}/1000
@@ -539,7 +629,7 @@ function TemplateEditor({
                     value={waImageUrl}
                     onChange={(e) => setWaImageUrl(e.target.value)}
                     placeholder="https://exemplo.com/imagem.jpg"
-                    className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark font-data focus:outline-none focus:border-stone-dark transition-colors"
+                    className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted font-data focus:outline-none focus:border-stone-dark transition-colors"
                   />
                 </Field>
 
@@ -549,7 +639,7 @@ function TemplateEditor({
                       value={waLinkUrl}
                       onChange={(e) => setWaLinkUrl(e.target.value)}
                       placeholder="https://..."
-                      className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark font-data focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted font-data focus:outline-none focus:border-stone-dark transition-colors"
                     />
                   </Field>
                   <Field label="Titulo do link">
@@ -557,7 +647,7 @@ function TemplateEditor({
                       value={waLinkTitle}
                       onChange={(e) => setWaLinkTitle(e.target.value)}
                       placeholder="Ex: Ver cardapio"
-                      className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+                      className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
                     />
                   </Field>
                 </div>
@@ -567,7 +657,7 @@ function TemplateEditor({
                     value={waLinkDesc}
                     onChange={(e) => setWaLinkDesc(e.target.value)}
                     placeholder="Descricao breve do link..."
-                    className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+                    className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
                   />
                 </Field>
               </>
@@ -581,7 +671,7 @@ function TemplateEditor({
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
                     placeholder="{first_name}, temos uma novidade!"
-                    className="w-full h-9 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors"
+                    className="w-full h-9 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
                   />
                 </Field>
 
@@ -602,14 +692,14 @@ function TemplateEditor({
                   <ToolbarBtn title="Separador" onClick={() => insertEmailBlock('<hr />')}>
                     <Minus size={12} />
                   </ToolbarBtn>
-                  <span className="w-px h-5 bg-night-lighter mx-1" />
-                  <span className="text-[10px] text-stone-dark tracking-tight">Variaveis:</span>
+                  <span className="w-px h-5 bg-muted-subtle mx-1" />
+                  <span className="text-[10px] text-muted tracking-tight">Variaveis:</span>
                   {VARIABLES.map((v) => (
                     <button
                       key={v.key}
                       onClick={() => insertEmailVar(v.key)}
                       title={v.label}
-                      className="h-6 px-1.5 rounded text-[9px] font-data text-stone-light hover:text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+                      className="h-6 px-1.5 rounded text-[9px] font-data text-foreground/75 hover:text-foreground hover:bg-muted-subtle transition-colors tracking-tight"
                     >
                       {v.key}
                     </button>
@@ -623,7 +713,7 @@ function TemplateEditor({
                     onChange={(e) => setEmailHtml(e.target.value)}
                     rows={12}
                     placeholder="<p>Ola {first_name},</p><p>Visite-nos neste fim de semana e aproveite nossas novidades.</p>"
-                    className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone-dark font-data focus:outline-none focus:border-stone-dark resize-none transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[12px] text-foreground placeholder:text-muted font-data focus:outline-none focus:border-stone-dark resize-none transition-colors"
                     spellCheck={false}
                   />
                 </Field>
@@ -634,13 +724,13 @@ function TemplateEditor({
             {activeTab === 'sms' && (
               <>
                 <div className="flex items-center gap-1 flex-wrap mb-1">
-                  <span className="text-[10px] text-stone-dark tracking-tight">Variaveis:</span>
+                  <span className="text-[10px] text-muted tracking-tight">Variaveis:</span>
                   {VARIABLES.map((v) => (
                     <button
                       key={v.key}
                       onClick={() => insertVar(v.key, 'sms')}
                       title={v.label}
-                      className="h-6 px-1.5 rounded text-[9px] font-data text-stone-light hover:text-cloud hover:bg-night-lighter transition-colors tracking-tight"
+                      className="h-6 px-1.5 rounded text-[9px] font-data text-foreground/75 hover:text-foreground hover:bg-muted-subtle transition-colors tracking-tight"
                     >
                       {v.key}
                     </button>
@@ -654,10 +744,10 @@ function TemplateEditor({
                     onChange={(e) => setSmsBody(e.target.value)}
                     rows={4}
                     placeholder="{restaurant_name}: {first_name}, novidades te esperam neste fim de semana!"
-                    className="w-full px-3.5 py-2.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark resize-none transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark resize-none transition-colors"
                   />
                   <div className="flex items-center justify-between mt-1.5">
-                    <p className="text-[10px] text-stone-dark tracking-tight">
+                    <p className="text-[10px] text-muted tracking-tight">
                       {smsBody.length > 160
                         ? `${smsSegments} segmentos`
                         : 'Um unico SMS'}
@@ -665,7 +755,7 @@ function TemplateEditor({
                     <span
                       className={cn(
                         'text-[10px] font-data tracking-tight',
-                        smsBody.length > 160 ? 'text-warm' : 'text-stone-dark'
+                        smsBody.length > 160 ? 'text-accent-foreground' : 'text-muted'
                       )}
                     >
                       {smsBody.length}/{smsSegments > 1 ? smsSegments * 153 : 160}
@@ -676,13 +766,13 @@ function TemplateEditor({
             )}
 
             {/* AI Variation section */}
-            <div className="border-t border-night-lighter pt-5">
+            <div className="border-t border-border pt-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-[12px] text-cloud tracking-tight">
+                  <p className="text-[12px] text-foreground tracking-tight">
                     Variacao por IA
                   </p>
-                  <p className="text-[11px] text-stone-dark tracking-tight mt-0.5">
+                  <p className="text-[11px] text-muted tracking-tight mt-0.5">
                     Claude gera variacoes para evitar envios identicos
                   </p>
                 </div>
@@ -691,8 +781,8 @@ function TemplateEditor({
                   className={cn(
                     'h-7 px-3 text-[11px] font-medium rounded-md transition-colors tracking-tight',
                     aiEnabled
-                      ? 'bg-cloud text-night'
-                      : 'text-stone-light hover:text-cloud hover:bg-night-lighter border border-night-lighter'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground/75 hover:text-foreground hover:bg-muted-subtle border border-border'
                   )}
                 >
                   {aiEnabled ? 'Ativo' : 'Inativo'}
@@ -729,22 +819,22 @@ function TemplateEditor({
                   <button
                     onClick={handlePreviewVariations}
                     disabled={aiLoading || !waBody}
-                    className="h-8 px-4 text-[11px] font-medium text-leaf border border-leaf/30 hover:bg-leaf/5 rounded-md transition-colors disabled:opacity-40 tracking-tight"
+                    className="h-8 px-4 text-[11px] font-medium text-success border border-success/30 hover:bg-success/5 rounded-md transition-colors disabled:opacity-40 tracking-tight"
                   >
                     {aiLoading ? 'Gerando...' : 'Gerar preview de variacoes'}
                   </button>
 
                   {aiVariations.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
                         Variacoes geradas
                       </p>
                       {aiVariations.map((v, i) => (
                         <div
                           key={i}
-                          className="p-3 bg-night border border-night-lighter rounded-md text-[12px] text-stone-light tracking-tight leading-relaxed"
+                          className="p-3 bg-night border border-border rounded-md text-[12px] text-foreground/75 tracking-tight leading-relaxed"
                         >
-                          <span className="text-[9px] font-data text-stone-dark mr-2">
+                          <span className="text-[9px] font-data text-muted mr-2">
                             #{i + 1}
                           </span>
                           {v}
@@ -758,15 +848,15 @@ function TemplateEditor({
 
             {/* Detected variables */}
             {detectedVars.length > 0 && (
-              <div className="border-t border-night-lighter pt-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+              <div className="border-t border-border pt-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
                   Variaveis detectadas
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {detectedVars.map((v) => (
                     <span
                       key={v}
-                      className="text-[11px] font-data text-stone-light bg-night px-1.5 py-0.5 rounded tracking-tight"
+                      className="text-[11px] font-data text-foreground/75 bg-night px-1.5 py-0.5 rounded tracking-tight"
                     >
                       {v}
                     </span>
@@ -778,7 +868,7 @@ function TemplateEditor({
 
           {/* Right: preview */}
           <div className="w-1/2 overflow-y-auto p-6 bg-night/30">
-            <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-5">
+            <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-5">
               Preview
             </p>
 
@@ -864,12 +954,12 @@ function WaPreview({
       <div className="w-72 bg-[#0A0A0A] rounded-2xl p-4 border border-white/5">
         {/* WhatsApp header */}
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/5">
-          <div className="w-8 h-8 rounded-full bg-leaf/20 flex items-center justify-center">
-            <span className="text-[10px] text-leaf font-medium">R</span>
+          <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+            <span className="text-[10px] text-success font-medium">R</span>
           </div>
           <div>
-            <p className="text-[11px] text-cloud font-medium">Restaurante Demo</p>
-            <p className="text-[9px] text-stone-dark">online</p>
+            <p className="text-[11px] text-foreground font-medium">Restaurante Demo</p>
+            <p className="text-[9px] text-muted">online</p>
           </div>
         </div>
 
@@ -879,7 +969,7 @@ function WaPreview({
             <div className="flex justify-end">
               <div className="max-w-[85%] bg-[#005C4B] rounded-tl-xl rounded-bl-xl rounded-tr-xl p-3 space-y-2">
                 {imageUrl && (
-                  <div className="w-full aspect-video bg-night-lighter rounded-md overflow-hidden">
+                  <div className="w-full aspect-video bg-muted-subtle rounded-md overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={imageUrl}
@@ -909,20 +999,20 @@ function WaPreview({
           {linkUrl && (
             <div className="flex justify-end">
               <div className="max-w-[85%] bg-[#1F2C34] border border-white/10 rounded-xl overflow-hidden">
-                <div className="h-1 bg-leaf" />
+                <div className="h-1 bg-success" />
                 <div className="p-2.5">
-                  <p className="text-[11px] text-cloud font-medium truncate">{linkTitle || linkUrl}</p>
+                  <p className="text-[11px] text-foreground font-medium truncate">{linkTitle || linkUrl}</p>
                   {linkDesc && (
-                    <p className="text-[10px] text-stone-dark tracking-tight mt-0.5 line-clamp-2">{linkDesc}</p>
+                    <p className="text-[10px] text-muted tracking-tight mt-0.5 line-clamp-2">{linkDesc}</p>
                   )}
-                  <p className="text-[9px] text-stone-dark font-data mt-1 truncate">{linkUrl}</p>
+                  <p className="text-[9px] text-muted font-data mt-1 truncate">{linkUrl}</p>
                 </div>
               </div>
             </div>
           )}
 
           {!body && !imageUrl && !linkUrl && (
-            <p className="text-center text-[11px] text-stone-dark tracking-tight py-4">
+            <p className="text-center text-[11px] text-muted tracking-tight py-4">
               Escreva o conteudo para ver o preview
             </p>
           )}
@@ -939,21 +1029,21 @@ function EmailPreview({ subject, html }: { subject: string; html: string }) {
   return (
     <div className="space-y-3">
       {subject && (
-        <div className="p-3 bg-night border border-night-lighter rounded-md">
-          <p className="text-[10px] text-stone-dark mb-1 tracking-tight">Assunto</p>
-          <p className="text-[13px] text-cloud tracking-tight">{renderedSubject}</p>
+        <div className="p-3 bg-night border border-border rounded-md">
+          <p className="text-[10px] text-muted mb-1 tracking-tight">Assunto</p>
+          <p className="text-[13px] text-foreground tracking-tight">{renderedSubject}</p>
         </div>
       )}
 
       <div className="bg-white rounded-xl overflow-hidden shadow-lg">
         {/* Email header */}
         <div className="bg-[#1A1A1A] px-4 py-3 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-leaf/20 flex items-center justify-center shrink-0">
-            <span className="text-[9px] text-leaf font-medium">R</span>
+          <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center shrink-0">
+            <span className="text-[9px] text-success font-medium">R</span>
           </div>
           <div>
-            <p className="text-[10px] text-cloud">Restaurante Demo &lt;contato@restaurante.com&gt;</p>
-            <p className="text-[9px] text-stone-dark">Para: {MOCK_CONTEXT['{name}']}</p>
+            <p className="text-[10px] text-foreground">Restaurante Demo &lt;contato@restaurante.com&gt;</p>
+            <p className="text-[9px] text-muted">Para: {MOCK_CONTEXT['{name}']}</p>
           </div>
         </div>
 
@@ -1036,7 +1126,7 @@ function ToolbarBtn({
     <button
       onClick={onClick}
       title={title}
-      className="w-7 h-7 flex items-center justify-center rounded text-stone-light hover:text-cloud hover:bg-night-lighter transition-colors"
+      className="w-7 h-7 flex items-center justify-center rounded text-foreground/75 hover:text-foreground hover:bg-muted-subtle transition-colors"
     >
       {children}
     </button>
@@ -1052,7 +1142,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
         {label}
       </label>
       {children}

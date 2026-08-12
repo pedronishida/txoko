@@ -100,7 +100,7 @@ function SectionLabel({
 }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone">
+      <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
         {label}
       </span>
       {action}
@@ -331,16 +331,16 @@ export function ContactPanel({
 
   return (
     <aside
-      className="flex flex-col bg-night border-l border-night-lighter overflow-hidden"
+      className="flex flex-col bg-night border-l border-border overflow-hidden"
       aria-label="Painel do contato"
     >
       {/* ---- 1. Header ---- */}
-      <div className="sticky top-0 z-10 bg-night border-b border-night-lighter px-5 pt-4 pb-4 flex flex-col items-center text-center relative">
+      <div className="sticky top-0 z-10 bg-night border-b border-border px-5 pt-4 pb-4 flex flex-col items-center text-center relative">
         {onClose && (
           <button
             onClick={onClose}
             aria-label="Fechar painel"
-            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
           >
             <X size={14} />
           </button>
@@ -355,21 +355,21 @@ export function ContactPanel({
             className="w-14 h-14 rounded-full object-cover"
           />
         ) : (
-          <div className="w-14 h-14 rounded-full bg-night-lighter flex items-center justify-center text-[18px] font-medium text-cloud tracking-tight">
+          <div className="w-14 h-14 rounded-full bg-muted-subtle flex items-center justify-center text-[18px] font-medium text-foreground tracking-tight">
             {initials(contact.display_name)}
           </div>
         )}
 
-        <h2 className="mt-3 text-[18px] font-medium text-cloud tracking-tight leading-snug">
+        <h2 className="mt-3 text-[18px] font-medium text-foreground tracking-tight leading-snug">
           {contact.display_name}
         </h2>
 
         {customer?.phone && (
-          <p className="mt-0.5 text-[12px] font-data text-stone">{customer.phone}</p>
+          <p className="mt-0.5 text-[12px] font-data text-muted">{customer.phone}</p>
         )}
 
         {channelType && channelLabel[channelType] && (
-          <span className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full bg-night-lighter text-[10px] text-stone-light tracking-tight">
+          <span className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full bg-muted-subtle text-[10px] text-foreground/75 tracking-tight">
             {channelLabel[channelType]}
           </span>
         )}
@@ -380,11 +380,11 @@ export function ContactPanel({
 
         {/* Inline error banner */}
         {inlineError && (
-          <div className="mx-5 mt-4 px-3 py-2 bg-coral/10 border border-coral/20 rounded-md flex items-center justify-between gap-2">
-            <span className="text-[11px] text-coral tracking-tight">{inlineError}</span>
+          <div className="mx-5 mt-4 px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-md flex items-center justify-between gap-2">
+            <span className="text-[11px] text-destructive tracking-tight">{inlineError}</span>
             <button
               onClick={() => setInlineError(null)}
-              className="text-coral/60 hover:text-coral shrink-0"
+              className="text-destructive/60 hover:text-destructive shrink-0"
               aria-label="Fechar erro"
             >
               <X size={10} />
@@ -393,21 +393,21 @@ export function ContactPanel({
         )}
 
         {/* ---- 2. Stats mini-grid ---- */}
-        <div className="px-5 py-4 border-b border-night-lighter/50">
+        <div className="px-5 py-4 border-b border-border/50">
           <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone">
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                 Mensagens
               </p>
-              <p className="text-[18px] font-medium font-data text-cloud tracking-tight leading-none mt-1.5">
+              <p className="text-[18px] font-medium font-data text-foreground tracking-tight leading-none mt-1.5">
                 {stats.totalMessages}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone">
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                 Primeira msg
               </p>
-              <p className="text-[14px] font-medium font-data text-cloud tracking-tight leading-none mt-1.5">
+              <p className="text-[14px] font-medium font-data text-foreground tracking-tight leading-none mt-1.5">
                 {stats.firstMessageAt
                   ? formatDate(stats.firstMessageAt)
                   : '—'}
@@ -417,7 +417,7 @@ export function ContactPanel({
         </div>
 
         {/* ---- 3. AI Summary ---- */}
-        <div className="px-5 py-4 border-b border-night-lighter/50">
+        <div className="px-5 py-4 border-b border-border/50">
           <SectionLabel
             label="Resumo da conversa"
             action={
@@ -426,7 +426,7 @@ export function ContactPanel({
                   onClick={handleGenerateSummary}
                   disabled={summaryPending}
                   aria-label="Atualizar resumo"
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors disabled:opacity-40"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors disabled:opacity-40"
                 >
                   <RefreshCw
                     size={12}
@@ -438,20 +438,20 @@ export function ContactPanel({
           />
 
           {summaryPending && !aiSummary && (
-            <div className="text-[12px] text-stone tracking-tight animate-pulse">
+            <div className="text-[12px] text-muted tracking-tight animate-pulse">
               Gerando resumo...
             </div>
           )}
 
           {!summaryPending && !aiSummary && (
             <div className="space-y-3">
-              <p className="text-[12px] text-stone tracking-tight leading-relaxed">
+              <p className="text-[12px] text-muted tracking-tight leading-relaxed">
                 Clique para gerar um resumo inteligente desta conversa.
               </p>
               <button
                 onClick={handleGenerateSummary}
                 disabled={summaryPending}
-                className="h-8 px-3.5 bg-leaf text-night rounded-md text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 tracking-tight"
+                className="h-8 px-3.5 bg-success text-success-foreground rounded-md text-[12px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 tracking-tight"
               >
                 Gerar resumo
               </button>
@@ -459,17 +459,17 @@ export function ContactPanel({
           )}
 
           {aiSummary && (
-            <div className="bg-night-lighter/30 border border-night-lighter rounded-lg px-3.5 py-3 space-y-2">
+            <div className="bg-muted-subtle/30 border border-border rounded-lg px-3.5 py-3 space-y-2">
               {aiSummary.split('\n\n').map((para, i) => (
                 <p
                   key={i}
-                  className="text-[13px] text-cloud-dark leading-relaxed tracking-tight"
+                  className="text-[13px] text-foreground/75 leading-relaxed tracking-tight"
                 >
                   {para}
                 </p>
               ))}
               {aiSummaryGeneratedAt && (
-                <p className="text-[10px] text-stone-dark font-data pt-1 border-t border-night-lighter/50">
+                <p className="text-[10px] text-muted font-data pt-1 border-t border-border/50">
                   Atualizado {formatRelativeTime(aiSummaryGeneratedAt)}
                 </p>
               )}
@@ -477,21 +477,21 @@ export function ContactPanel({
           )}
 
           {summaryPending && aiSummary && (
-            <p className="mt-2 text-[11px] text-stone tracking-tight animate-pulse">
+            <p className="mt-2 text-[11px] text-muted tracking-tight animate-pulse">
               Atualizando...
             </p>
           )}
         </div>
 
         {/* ---- 4. Internal Notes ---- */}
-        <div className="px-5 py-4 border-b border-night-lighter/50">
+        <div className="px-5 py-4 border-b border-border/50">
           <SectionLabel
             label="Notas internas"
             action={
               <button
                 onClick={() => setShowNoteForm((v) => !v)}
                 aria-label="Adicionar nota"
-                className="w-6 h-6 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <Plus size={13} />
               </button>
@@ -517,7 +517,7 @@ export function ContactPanel({
                 }}
                 rows={3}
                 placeholder="Escreva uma nota para a equipe..."
-                className="w-full px-3 py-2.5 bg-night-lighter/30 border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark resize-none transition-colors"
+                className="w-full px-3 py-2.5 bg-muted-subtle/30 border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark resize-none transition-colors"
               />
               <div className="flex gap-2">
                 <button
@@ -525,19 +525,19 @@ export function ContactPanel({
                     setShowNoteForm(false)
                     setNoteBody('')
                   }}
-                  className="h-7 px-2.5 text-[11px] text-stone hover:text-cloud transition-colors rounded-md hover:bg-night-lighter tracking-tight"
+                  className="h-7 px-2.5 text-[11px] text-muted hover:text-foreground transition-colors rounded-md hover:bg-muted-subtle tracking-tight"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleAddNote}
                   disabled={notesPending || !noteBody.trim()}
-                  className="h-7 px-3 bg-cloud text-night rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 tracking-tight"
+                  className="h-7 px-3 bg-primary text-primary-foreground rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 tracking-tight"
                 >
                   {notesPending ? 'Salvando...' : 'Salvar nota'}
                 </button>
               </div>
-              <p className="text-[10px] text-stone-dark font-data tracking-tight">
+              <p className="text-[10px] text-muted font-data tracking-tight">
                 ⌘↵ para salvar · Esc para cancelar
               </p>
             </div>
@@ -545,7 +545,7 @@ export function ContactPanel({
 
           {/* Notes list */}
           {notesLoaded && notes.length === 0 && !showNoteForm && (
-            <p className="text-[12px] text-stone tracking-tight leading-relaxed">
+            <p className="text-[12px] text-muted tracking-tight leading-relaxed">
               Nenhuma nota ainda — use para alinhar com a equipe.
             </p>
           )}
@@ -562,14 +562,14 @@ export function ContactPanel({
         </div>
 
         {/* ---- 5. Tags ---- */}
-        <div className="px-5 py-4 border-b border-night-lighter/50">
+        <div className="px-5 py-4 border-b border-border/50">
           <SectionLabel
             label="Tags"
             action={
               <button
                 onClick={() => setShowAddTag((v) => !v)}
                 aria-label="Adicionar tag"
-                className="text-[10px] text-stone hover:text-cloud transition-colors tracking-tight"
+                className="text-[10px] text-muted hover:text-foreground transition-colors tracking-tight"
               >
                 + Adicionar
               </button>
@@ -594,12 +594,12 @@ export function ContactPanel({
                   }
                 }}
                 placeholder="Nome da tag"
-                className="flex-1 h-7 px-2.5 bg-night-lighter/30 border border-night-lighter rounded-md text-[12px] text-cloud placeholder:text-stone focus:outline-none focus:border-stone-dark transition-colors"
+                className="flex-1 h-7 px-2.5 bg-muted-subtle/30 border border-border rounded-md text-[12px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
               />
               <button
                 onClick={handleAddTag}
                 disabled={tagsPending || !newTag.trim()}
-                className="h-7 px-2.5 bg-cloud text-night rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+                className="h-7 px-2.5 bg-primary text-primary-foreground rounded-md text-[11px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 OK
               </button>
@@ -607,7 +607,7 @@ export function ContactPanel({
           )}
 
           {contact.tags.length === 0 && !showAddTag && (
-            <p className="text-[12px] text-stone tracking-tight">Nenhuma tag</p>
+            <p className="text-[12px] text-muted tracking-tight">Nenhuma tag</p>
           )}
 
           {contact.tags.length > 0 && (
@@ -615,13 +615,13 @@ export function ContactPanel({
               {contact.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-night-lighter text-[11px] text-cloud-dark tracking-tight group"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted-subtle text-[11px] text-foreground/75 tracking-tight group"
                 >
                   {tag}
                   <button
                     onClick={() => handleRemoveTag(tag)}
                     aria-label={`Remover tag ${tag}`}
-                    className="text-stone-dark hover:text-cloud transition-colors opacity-0 group-hover:opacity-100"
+                    className="text-muted hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <X size={9} />
                   </button>
@@ -633,19 +633,19 @@ export function ContactPanel({
 
         {/* ---- 6. Customer Data (collapsible) ---- */}
         {customer && (
-          <div className="px-5 py-4 border-b border-night-lighter/50">
+          <div className="px-5 py-4 border-b border-border/50">
             <button
               onClick={() => setCustomerExpanded((v) => !v)}
               className="w-full flex items-center justify-between group"
               aria-expanded={customerExpanded}
             >
-              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone">
+              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
                 Cliente vinculado
               </span>
               {customerExpanded ? (
-                <ChevronDown size={12} className="text-stone-dark" />
+                <ChevronDown size={12} className="text-muted" />
               ) : (
-                <ChevronRight size={12} className="text-stone-dark" />
+                <ChevronRight size={12} className="text-muted" />
               )}
             </button>
 
@@ -653,54 +653,54 @@ export function ContactPanel({
               <div className="mt-3 space-y-3 animate-fade-in">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div className="col-span-2">
-                    <p className="text-[10px] text-stone-dark uppercase tracking-wider">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">
                       Nome
                     </p>
-                    <p className="text-[13px] text-cloud tracking-tight mt-0.5">
+                    <p className="text-[13px] text-foreground tracking-tight mt-0.5">
                       {customer.name}
                     </p>
                   </div>
                   {customer.email && (
                     <div className="col-span-2">
-                      <p className="text-[10px] text-stone-dark uppercase tracking-wider">
+                      <p className="text-[10px] text-muted uppercase tracking-wider">
                         E-mail
                       </p>
-                      <p className="text-[12px] text-cloud-dark tracking-tight mt-0.5 truncate">
+                      <p className="text-[12px] text-foreground/75 tracking-tight mt-0.5 truncate">
                         {customer.email}
                       </p>
                     </div>
                   )}
                   <div>
-                    <p className="text-[10px] text-stone-dark uppercase tracking-wider">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">
                       Fidelidade
                     </p>
-                    <p className="text-[16px] font-medium font-data text-leaf leading-none mt-1.5">
+                    <p className="text-[16px] font-medium font-data text-success leading-none mt-1.5">
                       {customer.loyalty_points}
-                      <span className="text-[10px] text-stone ml-1">pts</span>
+                      <span className="text-[10px] text-muted ml-1">pts</span>
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-stone-dark uppercase tracking-wider">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">
                       Pedidos
                     </p>
-                    <p className="text-[16px] font-medium font-data text-cloud leading-none mt-1.5">
+                    <p className="text-[16px] font-medium font-data text-foreground leading-none mt-1.5">
                       {customer.total_orders}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-stone-dark uppercase tracking-wider">
+                    <p className="text-[10px] text-muted uppercase tracking-wider">
                       Total gasto
                     </p>
-                    <p className="text-[14px] font-medium font-data text-cloud leading-none mt-1.5">
+                    <p className="text-[14px] font-medium font-data text-foreground leading-none mt-1.5">
                       {formatCurrency(customer.total_spent)}
                     </p>
                   </div>
                   {customer.last_visit_at && (
                     <div>
-                      <p className="text-[10px] text-stone-dark uppercase tracking-wider">
+                      <p className="text-[10px] text-muted uppercase tracking-wider">
                         Última visita
                       </p>
-                      <p className="text-[12px] font-data text-stone leading-none mt-1.5">
+                      <p className="text-[12px] font-data text-muted leading-none mt-1.5">
                         {formatDate(customer.last_visit_at)}
                       </p>
                     </div>
@@ -712,7 +712,7 @@ export function ContactPanel({
         )}
 
         {/* ---- 7. AI Controls ---- */}
-        <div className="px-5 py-4 border-b border-night-lighter/50">
+        <div className="px-5 py-4 border-b border-border/50">
           <SectionLabel label="Automacao IA" />
 
           <div className="flex items-start gap-3">
@@ -723,12 +723,12 @@ export function ContactPanel({
               disabled={aiPausePending}
               className={cn(
                 'relative w-9 h-5 rounded-full transition-colors shrink-0 mt-0.5 disabled:opacity-40',
-                aiPaused ? 'bg-warm' : 'bg-night-lighter'
+                aiPaused ? 'bg-accent' : 'bg-muted-subtle'
               )}
             >
               <span
                 className={cn(
-                  'absolute top-0.5 w-4 h-4 rounded-full bg-cloud transition-transform',
+                  'absolute top-0.5 w-4 h-4 rounded-full bg-primary transition-transform',
                   aiPaused ? 'left-[18px]' : 'left-0.5'
                 )}
               />
@@ -737,12 +737,12 @@ export function ContactPanel({
               <p
                 className={cn(
                   'text-[13px] font-medium tracking-tight',
-                  aiPaused ? 'text-warm' : 'text-stone-light'
+                  aiPaused ? 'text-accent-foreground' : 'text-foreground/75'
                 )}
               >
                 {aiPaused ? 'IA pausada' : 'IA ativa'}
               </p>
-              <p className="text-[11px] text-stone tracking-tight mt-0.5 leading-relaxed">
+              <p className="text-[11px] text-muted tracking-tight mt-0.5 leading-relaxed">
                 {aiPaused
                   ? 'Respostas automáticas desativadas nesta conversa.'
                   : 'A IA pode responder automaticamente nesta conversa.'}
@@ -758,7 +758,7 @@ export function ContactPanel({
           <button
             onClick={handleExportConversation}
             disabled={exportPending}
-            className="w-full h-9 border border-night-lighter rounded-md text-[12px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors tracking-tight disabled:opacity-40"
+            className="w-full h-9 border border-border rounded-md text-[12px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors tracking-tight disabled:opacity-40"
           >
             {exportPending ? 'Exportando...' : 'Exportar conversa (.txt)'}
           </button>
@@ -774,7 +774,7 @@ export function ContactPanel({
                 alert('Funcionalidade disponível em breve.')
               }
             }}
-            className="w-full h-9 border border-coral/30 rounded-md text-[12px] text-coral hover:bg-coral/5 hover:border-coral/60 transition-colors tracking-tight"
+            className="w-full h-9 border border-destructive/30 rounded-md text-[12px] text-destructive hover:bg-destructive/5 hover:border-destructive/60 transition-colors tracking-tight"
           >
             Apagar contato e conversa
           </button>
@@ -799,25 +799,25 @@ function NoteCard({
   onDelete: () => void
 }) {
   return (
-    <div className="group relative bg-night-lighter/30 border border-night-lighter rounded-md px-3 py-2.5">
+    <div className="group relative bg-muted-subtle/30 border border-border rounded-md px-3 py-2.5">
       <div className="flex items-start gap-2">
-        <div className="w-5 h-5 rounded-full bg-night-lighter flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-[9px] font-medium text-cloud">
+        <div className="w-5 h-5 rounded-full bg-muted-subtle flex items-center justify-center shrink-0 mt-0.5">
+          <span className="text-[9px] font-medium text-foreground">
             {note.author_id ? note.author_id.slice(0, 1).toUpperCase() : 'A'}
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] text-cloud tracking-tight leading-relaxed whitespace-pre-wrap break-words">
+          <p className="text-[12px] text-foreground tracking-tight leading-relaxed whitespace-pre-wrap break-words">
             {note.body}
           </p>
-          <p className="text-[10px] text-stone-dark font-data mt-1 tracking-tight">
+          <p className="text-[10px] text-muted font-data mt-1 tracking-tight">
             {formatRelativeTime(note.created_at)}
           </p>
         </div>
         <button
           onClick={onDelete}
           aria-label="Apagar nota"
-          className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded-md text-stone hover:text-coral hover:bg-coral/10 shrink-0"
+          className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded-md text-muted hover:text-destructive hover:bg-destructive/10 shrink-0"
         >
           <Trash2 size={11} />
         </button>

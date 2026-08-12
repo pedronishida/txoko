@@ -153,11 +153,11 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
           placeholder="Buscar insumo"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 h-9 bg-transparent border-0 text-[13px] text-cloud placeholder:text-stone focus:outline-none tracking-tight"
+          className="flex-1 h-9 bg-transparent border-0 text-[13px] text-foreground placeholder:text-muted focus:outline-none tracking-tight"
         />
         <button
           onClick={() => openForm(null)}
-          className="inline-flex items-center gap-2 h-9 px-3.5 bg-cloud text-night text-[13px] font-medium rounded-md hover:bg-cloud-dark transition-colors shrink-0"
+          className="inline-flex items-center gap-2 h-9 px-3.5 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors shrink-0"
         >
           <Plus size={14} strokeWidth={2} />
           Novo insumo
@@ -174,7 +174,7 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
 
       {/* Table */}
       <div>
-        <div className="grid grid-cols-[2fr_0.7fr_0.9fr_0.7fr_0.9fr_1.2fr_0.8fr_auto] gap-4 pb-3 border-b border-night-lighter text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark">
+        <div className="grid grid-cols-[2fr_0.7fr_0.9fr_0.7fr_0.9fr_1.2fr_0.8fr_auto] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
           <span>Insumo</span>
           <span>Un.</span>
           <span className="text-right">Estoque</span>
@@ -184,9 +184,9 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
           <span>Local</span>
           <span></span>
         </div>
-        <div className="divide-y divide-night-lighter">
+        <div className="divide-y divide-border">
           {filtered.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-stone tracking-tight">
+            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
               Nenhum insumo cadastrado
             </p>
           ) : (
@@ -205,49 +205,49 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
                       <span className="w-1 h-1 rounded-full bg-primary shrink-0" />
                     )}
                     {status === 'warning' && (
-                      <span className="w-1 h-1 rounded-full bg-warm shrink-0" />
+                      <span className="w-1 h-1 rounded-full bg-accent shrink-0" />
                     )}
-                    <span className="text-[13px] text-cloud tracking-tight truncate">
+                    <span className="text-[13px] text-foreground tracking-tight truncate">
                       {ing.name}
                     </span>
                   </div>
-                  <span className="text-[11px] text-stone-dark font-data">
+                  <span className="text-[11px] text-muted font-data">
                     {ing.unit}
                   </span>
                   <span
                     className={cn(
                       'text-[12px] font-data text-right',
-                      status === 'critical' && 'text-primary',
-                      status === 'warning' && 'text-warm',
-                      status === 'ok' && 'text-cloud'
+                      status === 'critical' && 'text-destructive font-semibold',
+                      status === 'warning' && 'text-accent-foreground',
+                      status === 'ok' && 'text-foreground'
                     )}
                   >
                     {Number(ing.current_stock)}
                   </span>
-                  <span className="text-[11px] text-stone-dark font-data text-right">
+                  <span className="text-[11px] text-muted font-data text-right">
                     {Number(ing.min_stock)}
                   </span>
-                  <span className="text-[12px] text-stone-light font-data text-right">
+                  <span className="text-[12px] text-foreground/75 font-data text-right">
                     {ing.cost_per_unit
                       ? formatCurrency(Number(ing.cost_per_unit))
                       : '—'}
                   </span>
-                  <span className="text-[11px] text-stone tracking-tight truncate">
+                  <span className="text-[11px] text-muted tracking-tight truncate">
                     {supplier?.name || '—'}
                   </span>
-                  <span className="text-[11px] text-stone tracking-tight capitalize">
+                  <span className="text-[11px] text-muted tracking-tight capitalize">
                     {ing.storage_location ?? '—'}
                   </span>
                   <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => openForm(ing)}
-                      className="text-[10px] text-stone-light hover:text-cloud tracking-tight"
+                      className="text-[10px] text-foreground/75 hover:text-foreground tracking-tight"
                     >
                       editar
                     </button>
                     <button
                       onClick={() => handleDelete(ing.id)}
-                      className="text-[10px] text-stone-dark hover:text-primary tracking-tight"
+                      className="text-[10px] text-muted hover:text-primary tracking-tight"
                     >
                       remover
                     </button>
@@ -266,16 +266,16 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
           onClick={() => setShowForm(false)}
         >
           <div
-            className="bg-night-light border border-night-lighter rounded-xl w-full max-w-md"
+            className="bg-surface border border-border rounded-xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-night-lighter flex items-center justify-between">
-              <h2 className="text-[14px] font-medium text-cloud tracking-tight">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-[14px] font-medium text-foreground tracking-tight">
                 {editing ? 'Editar insumo' : 'Novo insumo'}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-stone hover:text-cloud hover:bg-night-lighter transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-muted-subtle transition-colors"
               >
                 <X size={14} />
               </button>
@@ -349,14 +349,14 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex-1 h-10 border border-night-lighter rounded-md text-[13px] text-stone-light hover:text-cloud hover:border-stone-dark transition-colors"
+                  className="flex-1 h-10 border border-border rounded-md text-[13px] text-foreground/75 hover:text-foreground hover:border-stone-dark transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={pending}
-                  className="flex-1 h-10 bg-cloud text-night rounded-md text-[13px] font-medium hover:bg-cloud-dark transition-colors disabled:opacity-40"
+                  className="flex-1 h-10 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
                 >
                   {pending ? 'Salvando' : editing ? 'Salvar' : 'Criar'}
                 </button>
@@ -378,7 +378,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-stone-dark mb-2">
+      <label className="block text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-2">
         {label}
       </label>
       {children}
@@ -407,7 +407,7 @@ function Input({
       placeholder={placeholder}
       step={type === 'number' ? '0.01' : undefined}
       className={cn(
-        'w-full h-10 px-3.5 bg-night border border-night-lighter rounded-md text-[13px] text-cloud placeholder:text-stone-dark focus:outline-none focus:border-stone-dark transition-colors',
+        'w-full h-10 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors',
         mono && 'font-data'
       )}
     />
@@ -427,7 +427,7 @@ function Select({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full h-10 px-3 bg-night border border-night-lighter rounded-md text-[13px] text-cloud focus:outline-none focus:border-stone-dark transition-colors capitalize"
+      className="w-full h-10 px-3 bg-night border border-border rounded-md text-[13px] text-foreground focus:outline-none focus:border-stone-dark transition-colors capitalize"
     >
       {children}
     </select>

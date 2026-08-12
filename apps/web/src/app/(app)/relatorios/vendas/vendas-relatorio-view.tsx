@@ -47,8 +47,8 @@ const METHOD_LABELS: Record<string, string> = {
   online: 'Online',
 }
 
-const PIE_COLORS_TYPE = ['#4ADE80', '#F59E0B', '#60A5FA', '#F472B6', '#A78BFA']
-const PIE_COLORS_METHOD = ['#4ADE80', '#60A5FA', '#F59E0B', '#F472B6', '#34D399', '#FB923C']
+const PIE_COLORS_TYPE = ['#1B3FCB', '#F2C94C', '#D63A37', '#16A34A', '#6B8AE8']
+const PIE_COLORS_METHOD = ['#1B3FCB', '#F2C94C', '#16A34A', '#D63A37', '#6B8AE8', '#8C8885']
 
 export function VendasRelatorioView({
   totalRevenue,
@@ -118,7 +118,7 @@ export function VendasRelatorioView({
       {/* Daily bar chart */}
       {dailySeries.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Vendas Diarias
           </h2>
           <SimpleBarChart
@@ -131,7 +131,7 @@ export function VendasRelatorioView({
 
       {/* Heatmap */}
       <section>
-        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
           Vendas por Horario (Receita por dia × hora)
         </h2>
         <Heatmap
@@ -145,24 +145,24 @@ export function VendasRelatorioView({
       {/* Pie charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Vendas por Tipo / Canal
           </h2>
           {typeSlices.length > 0 ? (
             <SimplePieChart data={typeSlices} formatValue={formatCurrency} />
           ) : (
-            <p className="text-[12px] text-stone">Sem dados no periodo</p>
+            <p className="text-[12px] text-muted">Sem dados no periodo</p>
           )}
         </section>
 
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Forma de Pagamento
           </h2>
           {methodSlices.length > 0 ? (
             <SimplePieChart data={methodSlices} formatValue={formatCurrency} />
           ) : (
-            <p className="text-[12px] text-stone">Sem pagamentos aprovados no periodo</p>
+            <p className="text-[12px] text-muted">Sem pagamentos aprovados no periodo</p>
           )}
         </section>
       </div>
@@ -170,7 +170,7 @@ export function VendasRelatorioView({
       {/* Top 10 days table */}
       {topDaysSorted.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-stone-dark mb-4">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted mb-4">
             Top 10 Melhores Dias
           </h2>
           <ReportTable
@@ -182,7 +182,7 @@ export function VendasRelatorioView({
                 className: 'w-10',
                 render: (_row) => {
                   const idx = topDaysSorted.indexOf(_row as DayPoint)
-                  return <span className="text-stone-dark font-data">{idx + 1}</span>
+                  return <span className="text-muted font-data">{idx + 1}</span>
                 },
               },
               {
@@ -213,7 +213,7 @@ export function VendasRelatorioView({
                 label: 'Receita',
                 align: 'right',
                 render: (row) => (
-                  <span className="font-data text-leaf">{formatCurrency((row as DayPoint).revenue)}</span>
+                  <span className="font-data text-success">{formatCurrency((row as DayPoint).revenue)}</span>
                 ),
               },
             ]}

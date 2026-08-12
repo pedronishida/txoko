@@ -14,7 +14,7 @@ export default function AuthLayout({
         <div className="w-full max-w-[360px]">{children}</div>
       </main>
       <footer className="px-8 py-6 text-center">
-        <p className="text-[11px] text-stone-dark tracking-tight">
+        <p className="text-[11px] text-muted tracking-tight">
           © 2026 Txoko · Gestao para restaurantes
         </p>
       </footer>
