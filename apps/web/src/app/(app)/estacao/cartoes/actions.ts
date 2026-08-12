@@ -10,14 +10,22 @@ export type CardBatchResult =
   | { ok: true; created: number; first_number: number; last_number: number }
   | { error: string }
 
+// `null` = cartao generico: a modalidade e escolhida na estacao, na balanca.
+// E o formato recomendado — cartao com modalidade fixa obriga o cliente a
+// escolher antes de se servir.
 export async function createCardBatch(
   quantity: number,
-  service_mode: ServiceMode
+  service_mode: ServiceMode | null = null
 ): Promise<CardBatchResult> {
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 500) {
     return { error: 'Quantidade deve ser entre 1 e 500' }
   }
-  if (service_mode !== 'avontade' && service_mode !== 'por_kg') {
+  if (
+    service_mode !== null &&
+    service_mode !== 'avontade' &&
+    service_mode !== 'por_kg' &&
+    service_mode !== 'por_kg_2mix'
+  ) {
     return { error: 'Modo invalido' }
   }
 

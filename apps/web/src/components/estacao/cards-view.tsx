@@ -28,10 +28,10 @@ interface CardsViewProps {
 const MODE_LABEL: Record<ServiceMode, string> = {
   avontade: 'A Vontade',
   por_kg: 'Por Kg',
+  por_kg_2mix: 'Por Kg · 2 Misturas',
 }
 
 export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
-  const [filterMode, setFilterMode] = useState<ServiceMode | 'all'>('all')
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('active')
   const [showBatch, setShowBatch] = useState(false)
   const [showCancelBatch, setShowCancelBatch] = useState(false)
@@ -41,12 +41,11 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
 
   const filtered = useMemo(() => {
     return customerCards.filter((c) => {
-      if (filterMode !== 'all' && c.service_mode !== filterMode) return false
       if (filterActive === 'active' && !c.is_active) return false
       if (filterActive === 'inactive' && c.is_active) return false
       return true
     })
-  }, [customerCards, filterMode, filterActive])
+  }, [customerCards, filterActive])
 
   const hasAvontade = selfServiceProducts.some(
     (p) => !p.sold_by_weight && p.is_active && p.name.toLowerCase().includes('a vontade'),
@@ -54,8 +53,10 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
   const hasPorKg = selfServiceProducts.some((p) => p.sold_by_weight && p.is_active)
 
   const activeCount = customerCards.filter((c) => c.is_active).length
-  const avontadeCount = customerCards.filter((c) => c.service_mode === 'avontade' && c.is_active).length
-  const porKgCount = customerCards.filter((c) => c.service_mode === 'por_kg' && c.is_active).length
+  const inactiveCount = customerCards.filter((c) => !c.is_active).length
+  // Cartoes com modalidade fixa sao do desenho antigo — hoje todo cartao novo
+  // nasce generico e a modalidade e escolhida na balanca.
+  const legacyCount = customerCards.filter((c) => c.service_mode !== null && c.is_active).length
 
   return (
     <div className="space-y-6">
@@ -85,22 +86,17 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
       {/* Stats (so customer cards) */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="Ativos (cliente)" value={activeCount} sub={`${customerCards.length} totais`} />
-        <StatCard label="A Vontade" value={avontadeCount} icon={<ChefHat size={14} />} />
-        <StatCard label="Por Kg" value={porKgCount} icon={<Scale size={14} />} />
+        <StatCard label="Inativos" value={inactiveCount} />
+        <StatCard
+          label="Modalidade fixa"
+          value={legacyCount}
+          icon={<Scale size={14} />}
+          sub={legacyCount > 0 ? 'desenho antigo' : 'todos genericos'}
+        />
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={filterMode}
-          onChange={(e) => setFilterMode(e.target.value as ServiceMode | 'all')}
-          className="h-9 px-3 bg-night border border-border rounded-lg text-sm text-foreground"
-        >
-          <option value="all">Todos os modos</option>
-          <option value="avontade">A Vontade</option>
-          <option value="por_kg">Por Kg</option>
-        </select>
-
         <select
           value={filterActive}
           onChange={(e) => setFilterActive(e.target.value as 'all' | 'active' | 'inactive')}
@@ -115,7 +111,7 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
 
         {filtered.length > 0 && (
           <Link
-            href={`/estacao-imprimir?mode=${filterMode}&status=${filterActive}`}
+            href={`/estacao-imprimir?mode=all&status=${filterActive}`}
             target="_blank"
             className="inline-flex items-center gap-2 h-9 px-3 border border-border rounded-lg text-sm text-foreground hover:bg-muted-subtle"
           >
@@ -423,7 +419,6 @@ function CardRow({ card }: { card: ComandaCard }) {
 
 function BatchModal({ onClose }: { onClose: () => void }) {
   const [quantity, setQuantity] = useState('100')
-  const [mode, setMode] = useState<ServiceMode>('por_kg')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -434,7 +429,7 @@ function BatchModal({ onClose }: { onClose: () => void }) {
     setSuccess(null)
     const q = parseInt(quantity)
     startTransition(async () => {
-      const res = await createCardBatch(q, mode)
+      const res = await createCardBatch(q)
       if ('error' in res) setError(res.error)
       else setSuccess(`${res.created} cartoes criados (n° ${res.first_number} a ${res.last_number})`)
     })
@@ -469,55 +464,10 @@ function BatchModal({ onClose }: { onClose: () => void }) {
             </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground/75 mb-1">
-              Modo de servico
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label
-                className={
-                  'flex items-center gap-2 px-3 py-2.5 border rounded-lg cursor-pointer transition-colors ' +
-                  (mode === 'avontade'
-                    ? 'border-success bg-success/10 text-foreground'
-                    : 'border-border text-foreground/75 hover:bg-muted-subtle')
-                }
-              >
-                <input
-                  type="radio"
-                  name="mode"
-                  value="avontade"
-                  checked={mode === 'avontade'}
-                  onChange={() => setMode('avontade')}
-                  className="hidden"
-                />
-                <ChefHat size={14} />
-                <span className="text-sm">A Vontade</span>
-              </label>
-
-              <label
-                className={
-                  'flex items-center gap-2 px-3 py-2.5 border rounded-lg cursor-pointer transition-colors ' +
-                  (mode === 'por_kg'
-                    ? 'border-accent bg-accent/10 text-foreground'
-                    : 'border-border text-foreground/75 hover:bg-muted-subtle')
-                }
-              >
-                <input
-                  type="radio"
-                  name="mode"
-                  value="por_kg"
-                  checked={mode === 'por_kg'}
-                  onChange={() => setMode('por_kg')}
-                  className="hidden"
-                />
-                <Scale size={14} />
-                <span className="text-sm">Por Kg</span>
-              </label>
-            </div>
-            <p className="mt-1 text-xs text-muted">
-              Todos os cartoes desse lote serao do mesmo modo. Pra mixar, gere 2 lotes.
-            </p>
-          </div>
+          <p className="text-xs text-muted">
+            Um cartao serve pra qualquer modalidade — a atendente escolhe na
+            balanca ao bipar a comanda.
+          </p>
 
           {error && <p className="text-destructive text-xs">{error}</p>}
           {success && <p className="text-success text-xs">{success}</p>}

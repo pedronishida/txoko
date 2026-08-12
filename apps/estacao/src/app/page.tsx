@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat, Ban, Trash2, Users, Minus, Plus } from 'lucide-react'
+import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat, Ban, Trash2 } from 'lucide-react'
 import { parseScan } from '@/lib/parse-scan'
 import {
   resolveScan,
@@ -29,8 +29,6 @@ const MODE_BY_KEY: Record<string, ServiceMode> = {
 // 485. Prato de self-service raramente passa de 1,5 kg.
 const WEIGHT_CONFIRM_THRESHOLD = 1500
 
-const MAX_PEOPLE = 20
-
 function isPorKg(mode: ServiceMode | null): boolean {
   return mode === 'por_kg' || mode === 'por_kg_2mix'
 }
@@ -44,9 +42,6 @@ export default function StationPage() {
   const [toasts, setToasts] = useState<Toast[]>([])
   // Peso alto aguardando confirmacao (null = nada pendente)
   const [pendingWeight, setPendingWeight] = useState<number | null>(null)
-  // Quantidade de pessoas no "a vontade". Local: o valor real fica no banco,
-  // isso aqui so alimenta o stepper durante a sessao no tablet.
-  const [people, setPeople] = useState(1)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const lastActivityRef = useRef<number>(Date.now())
@@ -88,24 +83,18 @@ export default function StationPage() {
     setCancelToken(null)
     setBuffer('')
     setPendingWeight(null)
-    setPeople(1)
   }
 
-  // Define (ou corrige) a modalidade da comanda
+  // Define a modalidade da comanda. Uma comanda por pessoa, entao o "a
+  // vontade" e sempre 1 — nao ha quantidade pra ajustar na estacao.
   const applyMode = useCallback(
-    async (mode: ServiceMode, qty = 1) => {
+    async (mode: ServiceMode) => {
       if (!token) return
       try {
         setBusy(true)
-        const snap = await setServiceMode(token, mode, qty)
+        const snap = await setServiceMode(token, mode, 1)
         setSession(snap)
-        if (mode === 'avontade') setPeople(qty)
-        pushToast(
-          'ok',
-          mode === 'avontade'
-            ? `${serviceModeLabel(mode)} · ${qty} ${qty === 1 ? 'pessoa' : 'pessoas'}`
-            : serviceModeLabel(mode)
-        )
+        pushToast('ok', serviceModeLabel(mode))
       } catch (e) {
         pushToast('error', e instanceof Error ? e.message : 'Erro ao definir modalidade')
       } finally {
@@ -256,18 +245,9 @@ export default function StationPage() {
       return
     }
 
-    // 3) "A vontade": digito curto corrige o numero de pessoas
-    if (session?.service_mode === 'avontade' && /^\d{1,2}$/.test(v)) {
-      const qty = Number(v)
-      if (qty >= 1 && qty <= MAX_PEOPLE) {
-        void applyMode('avontade', qty)
-      } else {
-        pushToast('error', `Pessoas: 1 a ${MAX_PEOPLE}`)
-      }
-      return
-    }
-
-    // 4) "Por quilo": digito curto e o peso em gramas
+    // 3) "Por quilo": digito curto e o peso em gramas
+    //    (no "a vontade" nao ha digitacao: e uma comanda por pessoa, entao o
+    //     valor fixo ja entrou sozinho ao escolher a modalidade)
     if (session && isPorKg(session.service_mode) && /^\d{1,4}$/.test(v)) {
       const grams = Number(v)
       if (grams <= 0) {
@@ -312,9 +292,7 @@ export default function StationPage() {
           buffer={buffer}
           setBuffer={setBuffer}
           onInputKeyDown={onInputKeyDown}
-          people={people}
           onPickMode={(m) => void applyMode(m)}
-          onSetPeople={(qty) => void applyMode('avontade', qty)}
           cancelToken={cancelToken}
           onCloseCancelMode={() => setCancelToken(null)}
           onCancelItem={async (itemId) => {
@@ -425,9 +403,7 @@ function ActiveView({
   buffer,
   setBuffer,
   onInputKeyDown,
-  people,
   onPickMode,
-  onSetPeople,
   cancelToken,
   onCloseCancelMode,
   onCancelItem,
@@ -439,9 +415,7 @@ function ActiveView({
   buffer: string
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
-  people: number
   onPickMode: (mode: ServiceMode) => void
-  onSetPeople: (qty: number) => void
   cancelToken: string | null
   onCloseCancelMode: () => void
   onCancelItem: (itemId: string) => void
@@ -484,34 +458,6 @@ function ActiveView({
             </div>
           </div>
 
-          {/* "A vontade" e por pessoa — stepper corrige sem duplicar lancamento */}
-          {mode === 'avontade' && (
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
-              <Users size={16} className="text-fg-muted" />
-              <button
-                onClick={() => onSetPeople(Math.max(1, people - 1))}
-                disabled={busy || people <= 1}
-                className="w-10 h-10 rounded-lg border border-border text-fg-muted disabled:opacity-30 flex items-center justify-center"
-                aria-label="Menos uma pessoa"
-              >
-                <Minus size={16} />
-              </button>
-              <div className="w-12 text-center">
-                <div className="text-2xl font-mono font-bold tabular-nums">{people}</div>
-                <div className="text-[10px] uppercase text-fg-muted -mt-1">
-                  {people === 1 ? 'pessoa' : 'pessoas'}
-                </div>
-              </div>
-              <button
-                onClick={() => onSetPeople(Math.min(MAX_PEOPLE, people + 1))}
-                disabled={busy || people >= MAX_PEOPLE}
-                className="w-10 h-10 rounded-lg border border-border text-fg-muted disabled:opacity-30 flex items-center justify-center"
-                aria-label="Mais uma pessoa"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-          )}
         </div>
 
         <button
@@ -595,7 +541,7 @@ function ActiveView({
                   : mode == null
                     ? 'Aperte 1, 2 ou 3 pra escolher a modalidade'
                     : mode === 'avontade'
-                      ? 'Escaneie bebidas — ou digite o numero de pessoas + Enter'
+                        ? 'Escaneie as bebidas do cliente'
                       : 'Escaneie bebidas — ou digite o peso + Enter'}
               </span>
             </div>

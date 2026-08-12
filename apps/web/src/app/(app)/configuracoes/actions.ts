@@ -170,3 +170,110 @@ export async function updateAiAgentSettings(input: {
   revalidatePath('/configuracoes/assistente')
   return { ok: true }
 }
+
+// ---------------------------------------------------------------
+// Self-service: precos das modalidades da estacao
+// ---------------------------------------------------------------
+// O dono pensa em "quanto custa o buffet", nao em "produto com
+// service_mode". Estas actions escondem esse encanamento: cada modalidade
+// e um produto com `service_mode` preenchido, que as RPCs da estacao
+// resolvem na hora de lancar na comanda.
+
+export type SelfServicePrices = {
+  avontade: number | null
+  por_kg: number | null
+  por_kg_2mix: number | null
+}
+
+const SELF_SERVICE_PRODUCTS: {
+  mode: keyof SelfServicePrices
+  name: string
+  byWeight: boolean
+}[] = [
+  { mode: 'avontade', name: 'Self-Service a Vontade', byWeight: false },
+  { mode: 'por_kg', name: 'Self-Service por Quilo', byWeight: true },
+  { mode: 'por_kg_2mix', name: 'Self-Service por Quilo · 2 Misturas', byWeight: true },
+]
+
+const priceField = z
+  .union([z.number(), z.null()])
+  .refine((v) => v === null || (v > 0 && v < 100000), 'Preco invalido')
+
+const selfServiceSchema = z.object({
+  restaurantId: z.string().uuid(),
+  prices: z.object({
+    avontade: priceField,
+    por_kg: priceField,
+    por_kg_2mix: priceField,
+  }),
+})
+
+export async function updateSelfServicePrices(input: {
+  restaurantId: string
+  prices: SelfServicePrices
+}) {
+  const parsed = selfServiceSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Entrada invalida' }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'Nao autenticado' }
+
+  const { restaurantId, prices } = parsed.data
+
+  const { data: existing, error: readErr } = await supabase
+    .from('products')
+    .select('id, service_mode')
+    .eq('restaurant_id', restaurantId)
+    .not('service_mode', 'is', null)
+
+  if (readErr) return { ok: false, error: readErr.message }
+
+  const byMode = new Map(
+    (existing ?? []).map((p) => [p.service_mode as string, p.id as string])
+  )
+
+  for (const def of SELF_SERVICE_PRODUCTS) {
+    const price = prices[def.mode]
+    const id = byMode.get(def.mode)
+
+    // Sem preco = modalidade nao usada. Desativa em vez de apagar, pra nao
+    // quebrar o historico de comandas que ja usaram esse produto.
+    if (price == null) {
+      if (id) {
+        const { error } = await supabase
+          .from('products')
+          .update({ is_active: false })
+          .eq('id', id)
+        if (error) return { ok: false, error: error.message }
+      }
+      continue
+    }
+
+    const row = {
+      restaurant_id: restaurantId,
+      name: def.name,
+      service_mode: def.mode,
+      sold_by_weight: def.byWeight,
+      // `price` e not null na tabela; pra item por peso o valor que vale e
+      // o price_per_kg, entao espelhamos os dois.
+      price: def.byWeight ? 0 : price,
+      price_per_kg: def.byWeight ? price : null,
+      is_active: true,
+    }
+
+    const { error } = id
+      ? await supabase.from('products').update(row).eq('id', id)
+      : await supabase.from('products').insert(row)
+
+    if (error) return { ok: false, error: error.message }
+  }
+
+  revalidatePath('/configuracoes/operacao')
+  revalidatePath('/cardapio')
+  return { ok: true }
+}

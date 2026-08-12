@@ -66,6 +66,9 @@ type InputProps = {
   min?: string
   max?: string
   step?: string
+  // Abre o teclado numerico no tablet sem forcar type="number"
+  // (que rejeita virgula decimal no pt-BR)
+  inputMode?: 'text' | 'decimal' | 'numeric'
 }
 
 export function Input({

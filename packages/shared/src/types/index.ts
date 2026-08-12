@@ -94,7 +94,7 @@ export interface Product {
   updated_at: string
 }
 
-export type ServiceMode = 'avontade' | 'por_kg'
+export type ServiceMode = 'avontade' | 'por_kg' | 'por_kg_2mix'
 export type CardKind = 'customer' | 'cancel'
 
 export interface ComandaCard {

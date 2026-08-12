@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { updateRestaurant } from '../actions'
+import {
+  updateRestaurant,
+  updateSelfServicePrices,
+  type SelfServicePrices,
+} from '../actions'
 import { Field, Input, SaveBar, Section } from '../settings-ui'
 
 export type OperacaoFormData = {
@@ -12,6 +16,19 @@ export type OperacaoFormData = {
   loyalty_points_per: number
   timezone: string
   currency: string
+  self_service: SelfServicePrices
+}
+
+// Campo de preco aceita vazio (= modalidade nao usada) e virgula decimal
+function parsePrice(v: string): number | null {
+  const clean = v.replace(',', '.').trim()
+  if (!clean) return null
+  const n = parseFloat(clean)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function priceToInput(n: number | null): string {
+  return n == null ? '' : String(n)
 }
 
 export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
@@ -47,9 +64,28 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
         setErrorMsg(res.error)
         return
       }
+
+      // Precos do self-service vivem em produtos, nao em settings
+      const ss = await updateSelfServicePrices({
+        restaurantId: form.id,
+        prices: form.self_service,
+      })
+      if (!ss.ok) {
+        setFeedback('error')
+        setErrorMsg(ss.error ?? 'Erro ao salvar precos do self-service')
+        return
+      }
+
       setFeedback('saved')
       setTimeout(() => setFeedback(null), 2500)
     })
+  }
+
+  function updateSelfService(mode: keyof SelfServicePrices, raw: string) {
+    setForm((prev) => ({
+      ...prev,
+      self_service: { ...prev.self_service, [mode]: parsePrice(raw) },
+    }))
   }
 
   return (
@@ -76,6 +112,63 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
             />
           </Field>
         </div>
+      </Section>
+
+      <Section
+        title="Self-service (estacao da balanca)"
+        description="Precos das modalidades que a atendente escolhe na balanca. Deixe em branco a modalidade que o restaurante nao usa."
+      >
+        <div className="grid gap-4 sm:grid-cols-3 max-w-2xl">
+          <Field label="A vontade" hint="Por pessoa">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[12px] text-muted tracking-tight">R$</span>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={priceToInput(form.self_service.avontade)}
+                onChange={(v) => updateSelfService('avontade', v)}
+                className="w-24 text-right"
+                mono
+              />
+            </div>
+          </Field>
+
+          <Field label="Por quilo" hint="Por kg">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[12px] text-muted tracking-tight">R$</span>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={priceToInput(form.self_service.por_kg)}
+                onChange={(v) => updateSelfService('por_kg', v)}
+                className="w-24 text-right"
+                mono
+              />
+            </div>
+          </Field>
+
+          <Field label="Por quilo · 2 misturas" hint="Por kg">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[12px] text-muted tracking-tight">R$</span>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={priceToInput(form.self_service.por_kg_2mix)}
+                onChange={(v) => updateSelfService('por_kg_2mix', v)}
+                className="w-24 text-right"
+                mono
+              />
+            </div>
+          </Field>
+        </div>
+
+        <p className="mt-3 text-[12px] text-muted tracking-tight">
+          Configure a balanca com o mesmo preco por quilo, pra o visor bater
+          com a comanda.
+        </p>
       </Section>
 
       <Section

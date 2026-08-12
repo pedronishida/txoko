@@ -24,6 +24,22 @@ export default async function OperacaoPage() {
 
   const settings = (restaurant.settings ?? {}) as Record<string, unknown>
 
+  // Precos do self-service moram em produtos com service_mode preenchido —
+  // a estacao resolve por ali na hora de lancar.
+  const { data: ssRows } = await supabase
+    .from('products')
+    .select('service_mode, price, price_per_kg, sold_by_weight')
+    .eq('restaurant_id', restaurantId)
+    .eq('is_active', true)
+    .not('service_mode', 'is', null)
+
+  const priceFor = (mode: string): number | null => {
+    const row = (ssRows ?? []).find((r) => r.service_mode === mode)
+    if (!row) return null
+    const value = row.sold_by_weight ? row.price_per_kg : row.price
+    return value == null ? null : Number(value)
+  }
+
   const initial: OperacaoFormData = {
     id: restaurant.id as string,
     service_rate: Number(settings.service_rate ?? 10),
@@ -32,6 +48,11 @@ export default async function OperacaoPage() {
     loyalty_points_per: Number(settings.loyalty_points_per ?? 10),
     timezone: (settings.timezone as string) ?? 'America/Sao_Paulo',
     currency: (settings.currency as string) ?? 'BRL',
+    self_service: {
+      avontade: priceFor('avontade'),
+      por_kg: priceFor('por_kg'),
+      por_kg_2mix: priceFor('por_kg_2mix'),
+    },
   }
 
   return <OperacaoView initial={initial} />
