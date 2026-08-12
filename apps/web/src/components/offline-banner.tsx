@@ -10,12 +10,20 @@ import { cn } from '@/lib/utils'
  * Adicionado ao dashboard-shell.tsx.
  */
 export function OfflineBanner() {
+  // Comeca sempre 'online' pra bater com o SSR. Nao dá pra checar
+  // navigator.onLine aqui: `navigator` existe no servidor (Node 21+ e
+  // Cloudflare Workers), mas `onLine` e undefined la — `!undefined` e true,
+  // entao o servidor renderizava a faixa de offline, o cliente nao, e a
+  // hidratacao quebrava (React #418) alem de piscar a faixa a cada navegacao.
   const [status, setStatus] = useState<'online' | 'offline' | 'reconnected'>(
-    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'online'
+    'online'
   )
 
   useEffect(() => {
     let reconnectedTimer: ReturnType<typeof setTimeout>
+
+    // Estado real so depois da hidratacao
+    if (!navigator.onLine) setStatus('offline')
 
     function handleOffline() {
       setStatus('offline')
