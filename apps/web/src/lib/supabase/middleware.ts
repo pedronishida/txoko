@@ -4,12 +4,20 @@ import { NextResponse, type NextRequest } from 'next/server'
 type CookieToSet = { name: string; value: string; options: CookieOptions }
 
 // Rotas publicas — tudo o mais na raiz eh app protegido.
+// As rotas abaixo NAO ficam sem protecao: cada uma tem seu proprio controle
+// (Bearer CRON_SECRET nos crons, assinatura nos webhooks). O que elas nao
+// podem e depender de sessao/cookie, porque quem chama nao e um browser
+// logado — sem isso o middleware devolve 307 pro /login e a chamada morre
+// em silencio (o fetch segue o redirect e recebe 200 da tela de login).
 const PUBLIC_PREFIXES = [
   '/login',
   '/signup',
   '/menu/',
   '/api/webhooks/',
   '/api/reviews/public',
+  '/api/cron/',
+  '/api/menu/',
+  '/l/',
   '/termos',
   '/privacidade',
 ]
