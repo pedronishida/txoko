@@ -39,3 +39,6 @@ supabase/.temp/
 
 # build artifacts do OpenNext — contem .env.local inlinado (segredos!)
 apps/web/.open-next/
+
+# build info do TypeScript
+*.tsbuildinfo

@@ -90,6 +90,12 @@ export interface Product {
   sold_by_weight: boolean
   price_per_kg: number | null
   barcode: string | null
+  // Opcionais: colunas que existem no banco mas nem todo formulario preenche
+  sku?: string | null
+  stock_tracked?: boolean
+  stock_quantity?: number | null
+  // Preenchido so nos produtos de self-service (lancados na estacao)
+  service_mode?: ServiceMode | null
   created_at: string
   updated_at: string
 }

@@ -16,6 +16,9 @@ export default async function PdvPage() {
         .select('*')
         .eq('restaurant_id', restaurantId)
         .eq('is_active', true)
+        // Produtos de self-service sao lancados na estacao (por peso ou por
+        // pessoa) — no PDV apareceriam como R$ 0,00 e nao fazem sentido aqui.
+        .is('service_mode', null)
         .order('name', { ascending: true }),
       supabase
         .from('categories')

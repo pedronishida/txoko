@@ -33,6 +33,27 @@ function isPorKg(mode: ServiceMode | null): boolean {
   return mode === 'por_kg' || mode === 'por_kg_2mix'
 }
 
+/**
+ * Le o peso do jeito que a atendente digitar, olhando pro visor da balanca:
+ *   "485" / "485g" / "485 G"  -> 485 g
+ *   "0,485" / "0.485" / "1,5" -> quilos, vira 485 g / 1500 g
+ * Retorna null quando nao e peso (ai o texto segue pro leitor de barras).
+ */
+function parseManualWeight(raw: string): number | null {
+  const s = raw.trim().toLowerCase().replace(/\s+/g, '')
+
+  const grams = s.match(/^(\d{1,4})g?$/)
+  if (grams) return Number(grams[1])
+
+  const kilos = s.match(/^(\d{1,2})[.,](\d{1,3})(?:kg)?$/)
+  if (kilos) {
+    const decimals = kilos[2].padEnd(3, '0')
+    return Number(kilos[1]) * 1000 + Number(decimals)
+  }
+
+  return null
+}
+
 export default function StationPage() {
   const [session, setSession] = useState<StationSnapshot | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -42,6 +63,8 @@ export default function StationPage() {
   const [toasts, setToasts] = useState<Toast[]>([])
   // Peso alto aguardando confirmacao (null = nada pendente)
   const [pendingWeight, setPendingWeight] = useState<number | null>(null)
+  // Reabre o seletor quando a atendente aperta a modalidade errada
+  const [changingMode, setChangingMode] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const lastActivityRef = useRef<number>(Date.now())
@@ -83,6 +106,7 @@ export default function StationPage() {
     setCancelToken(null)
     setBuffer('')
     setPendingWeight(null)
+    setChangingMode(false)
   }
 
   // Define a modalidade da comanda. Uma comanda por pessoa, entao o "a
@@ -94,6 +118,7 @@ export default function StationPage() {
         setBusy(true)
         const snap = await setServiceMode(token, mode, 1)
         setSession(snap)
+        setChangingMode(false)
         pushToast('ok', serviceModeLabel(mode))
       } catch (e) {
         pushToast('error', e instanceof Error ? e.message : 'Erro ao definir modalidade')
@@ -235,7 +260,7 @@ export default function StationPage() {
     if (!v) return
 
     // 2) Comanda aberta sem modalidade: 1 / 2 / 3
-    if (session && !session.service_mode) {
+    if (session && (!session.service_mode || changingMode)) {
       const mode = MODE_BY_KEY[v]
       if (mode) {
         void applyMode(mode)
@@ -245,21 +270,23 @@ export default function StationPage() {
       return
     }
 
-    // 3) "Por quilo": digito curto e o peso em gramas
+    // 3) "Por quilo": peso digitado (gramas ou quilos)
     //    (no "a vontade" nao ha digitacao: e uma comanda por pessoa, entao o
     //     valor fixo ja entrou sozinho ao escolher a modalidade)
-    if (session && isPorKg(session.service_mode) && /^\d{1,4}$/.test(v)) {
-      const grams = Number(v)
-      if (grams <= 0) {
-        pushToast('error', 'Peso invalido')
+    if (session && isPorKg(session.service_mode)) {
+      const grams = parseManualWeight(v)
+      if (grams != null) {
+        if (grams <= 0) {
+          pushToast('error', 'Peso invalido')
+          return
+        }
+        if (grams > WEIGHT_CONFIRM_THRESHOLD) {
+          setPendingWeight(grams)
+          return
+        }
+        void applyManualWeight(grams)
         return
       }
-      if (grams > WEIGHT_CONFIRM_THRESHOLD) {
-        setPendingWeight(grams)
-        return
-      }
-      void applyManualWeight(grams)
-      return
     }
 
     // 5) Resto e scan (QR do cartao, etiqueta de peso, codigo de barras)
@@ -293,6 +320,8 @@ export default function StationPage() {
           setBuffer={setBuffer}
           onInputKeyDown={onInputKeyDown}
           onPickMode={(m) => void applyMode(m)}
+          changingMode={changingMode}
+          onStartChangeMode={() => setChangingMode(true)}
           cancelToken={cancelToken}
           onCloseCancelMode={() => setCancelToken(null)}
           onCancelItem={async (itemId) => {
@@ -404,6 +433,8 @@ function ActiveView({
   setBuffer,
   onInputKeyDown,
   onPickMode,
+  changingMode,
+  onStartChangeMode,
   cancelToken,
   onCloseCancelMode,
   onCancelItem,
@@ -416,6 +447,8 @@ function ActiveView({
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onPickMode: (mode: ServiceMode) => void
+  changingMode: boolean
+  onStartChangeMode: () => void
   cancelToken: string | null
   onCloseCancelMode: () => void
   onCancelItem: (itemId: string) => void
@@ -450,8 +483,19 @@ function ActiveView({
             )}
           </div>
           <div>
-            <div className="text-xs uppercase tracking-wide text-fg-muted">
-              {serviceModeLabel(mode)}
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-fg-muted">
+                {serviceModeLabel(mode)}
+              </span>
+              {mode != null && !changingMode && (
+                <button
+                  onClick={onStartChangeMode}
+                  disabled={busy}
+                  className="text-[11px] uppercase tracking-wide px-2 py-0.5 rounded-md border border-border text-fg-muted hover:text-fg hover:border-fg-muted transition-colors"
+                >
+                  Trocar
+                </button>
+              )}
             </div>
             <div className="text-2xl font-semibold">
               Comanda #{String(session.comanda_card.card_number).padStart(3, '0')}
@@ -471,8 +515,8 @@ function ActiveView({
 
       {/* Items — ou o seletor de modalidade, que vem antes de tudo */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-8 py-4">
-        {mode == null ? (
-          <ModePicker busy={busy} onPick={onPickMode} />
+        {mode == null || changingMode ? (
+          <ModePicker busy={busy} onPick={onPickMode} trocando={changingMode} />
         ) : session.items.length === 0 ? (
           <EmptyHint mode={mode} />
         ) : (
@@ -523,12 +567,12 @@ function ActiveView({
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-mono font-bold tabular-nums text-fg leading-none">
-                    {/^\d{1,4}$/.test(buffer) ? buffer : '—'}
+                    {parseManualWeight(buffer) ?? '—'}
                   </span>
                   <span className="text-2xl font-mono text-fg-muted">g</span>
                 </div>
                 <div className="text-xs text-fg-muted mt-1">
-                  Leia o visor da balanca, digite e Enter
+                  Digite em gramas (485) ou quilos (0,485) e Enter
                 </div>
               </div>
             )}
@@ -592,14 +636,18 @@ const MODE_OPTIONS: {
 function ModePicker({
   busy,
   onPick,
+  trocando,
 }: {
   busy: boolean
   onPick: (mode: ServiceMode) => void
+  trocando?: boolean
 }) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-8">
       <div className="text-center space-y-1">
-        <h2 className="text-3xl font-semibold tracking-tight text-fg">Qual a modalidade?</h2>
+        <h2 className="text-3xl font-semibold tracking-tight text-fg">
+          {trocando ? 'Trocar modalidade' : 'Qual a modalidade?'}
+        </h2>
         <p className="text-fg-muted">Aperte 1, 2 ou 3 — ou toque na opcao</p>
       </div>
 

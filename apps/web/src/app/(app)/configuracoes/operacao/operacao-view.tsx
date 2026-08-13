@@ -8,6 +8,16 @@ import {
 } from '../actions'
 import { Field, Input, SaveBar, Section } from '../settings-ui'
 
+// Os precos ficam como TEXTO no formulario, nao como numero. Se o input for
+// controlado pelo numero ja convertido, digitar "59," vira 59 e a virgula
+// some antes do proximo digito — o campo fica impossivel de preencher.
+// A conversao acontece so no save.
+export type SelfServicePricesInput = {
+  avontade: string
+  por_kg: string
+  por_kg_2mix: string
+}
+
 export type OperacaoFormData = {
   id: string
   service_rate: number
@@ -16,19 +26,19 @@ export type OperacaoFormData = {
   loyalty_points_per: number
   timezone: string
   currency: string
-  self_service: SelfServicePrices
+  self_service: SelfServicePricesInput
 }
 
-// Campo de preco aceita vazio (= modalidade nao usada) e virgula decimal
+// Campo vazio = modalidade nao usada. Aceita "59,90", "59.90" e ate
+// "1.234,56" (se tem virgula, ela e o decimal e os pontos sao milhar).
 function parsePrice(v: string): number | null {
-  const clean = v.replace(',', '.').trim()
-  if (!clean) return null
+  const raw = v.trim()
+  if (!raw) return null
+  const clean = raw.includes(',')
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw
   const n = parseFloat(clean)
   return Number.isFinite(n) && n > 0 ? n : null
-}
-
-function priceToInput(n: number | null): string {
-  return n == null ? '' : String(n)
 }
 
 export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
@@ -68,7 +78,11 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
       // Precos do self-service vivem em produtos, nao em settings
       const ss = await updateSelfServicePrices({
         restaurantId: form.id,
-        prices: form.self_service,
+        prices: {
+          avontade: parsePrice(form.self_service.avontade),
+          por_kg: parsePrice(form.self_service.por_kg),
+          por_kg_2mix: parsePrice(form.self_service.por_kg_2mix),
+        },
       })
       if (!ss.ok) {
         setFeedback('error')
@@ -81,10 +95,12 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
     })
   }
 
-  function updateSelfService(mode: keyof SelfServicePrices, raw: string) {
+  function updateSelfService(mode: keyof SelfServicePricesInput, raw: string) {
+    // Guarda o texto como digitado — so numeros, virgula e ponto
+    const clean = raw.replace(/[^\d.,]/g, '')
     setForm((prev) => ({
       ...prev,
-      self_service: { ...prev.self_service, [mode]: parsePrice(raw) },
+      self_service: { ...prev.self_service, [mode]: clean },
     }))
   }
 
@@ -126,7 +142,7 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
                 type="text"
                 inputMode="decimal"
                 placeholder="0,00"
-                value={priceToInput(form.self_service.avontade)}
+                value={form.self_service.avontade}
                 onChange={(v) => updateSelfService('avontade', v)}
                 className="w-24 text-right"
                 mono
@@ -141,7 +157,7 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
                 type="text"
                 inputMode="decimal"
                 placeholder="0,00"
-                value={priceToInput(form.self_service.por_kg)}
+                value={form.self_service.por_kg}
                 onChange={(v) => updateSelfService('por_kg', v)}
                 className="w-24 text-right"
                 mono
@@ -156,7 +172,7 @@ export function OperacaoView({ initial }: { initial: OperacaoFormData }) {
                 type="text"
                 inputMode="decimal"
                 placeholder="0,00"
-                value={priceToInput(form.self_service.por_kg_2mix)}
+                value={form.self_service.por_kg_2mix}
                 onChange={(v) => updateSelfService('por_kg_2mix', v)}
                 className="w-24 text-right"
                 mono

@@ -18,7 +18,7 @@ export type CaixaItem = {
 export type CaixaOrder = {
   order_id: string
   card_number: number
-  service_mode: 'avontade' | 'por_kg' | null
+  service_mode: 'avontade' | 'por_kg' | 'por_kg_2mix' | null
   subtotal: number
   discount: number
   service_fee: number
@@ -48,7 +48,7 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
     | {
         id: string
         card_number: number
-        service_mode: 'avontade' | 'por_kg' | null
+        service_mode: 'avontade' | 'por_kg' | 'por_kg_2mix' | null
         card_kind: 'customer' | 'cancel'
         restaurant_id: string
       }
@@ -60,7 +60,7 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
 
   const { data: orderRow, error: orderErr } = await supabase
     .from('orders')
-    .select('id, subtotal, discount, service_fee, total, status')
+    .select('id, subtotal, discount, service_fee, total, status, service_mode')
     .eq('comanda_card_id', card.id)
     .in('status', ['open', 'preparing', 'ready', 'delivered'])
     .order('created_at', { ascending: false })
@@ -76,6 +76,7 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
         service_fee: number
         total: number
         status: string
+        service_mode: string | null
       }
     | null
 
@@ -104,7 +105,9 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
     order: {
       order_id: order.id,
       card_number: card.card_number,
-      service_mode: card.service_mode,
+      // A modalidade mora na COMANDA (escolhida na balanca). O cartao so
+      // tem modo nos cartoes antigos, de modalidade fixa.
+      service_mode: (order.service_mode ?? card.service_mode) as CaixaOrder['service_mode'],
       subtotal: Number(order.subtotal),
       discount: Number(order.discount),
       service_fee: Number(order.service_fee),
@@ -260,5 +263,176 @@ export async function closeOrder(
   revalidatePath('/caixa')
   revalidatePath('/pedidos')
   revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+// ---------------------------------------------------------------
+// Tela unificada PDV + Caixa
+// ---------------------------------------------------------------
+// A venda de balcao e a comanda da estacao viraram a mesma coisa: um
+// pedido aberto que da pra editar e fechar na mesma tela. As actions
+// abaixo cobrem o que faltava pra isso.
+
+export type OpenOrderSummary = {
+  order_id: string
+  card_number: number | null
+  service_mode: string | null
+  type: string
+  total: number
+  items_count: number
+  opened_at: string
+}
+
+/** Comandas e vendas abertas — alimenta a lista de carrinhos do topo. */
+export async function listOpenOrders(): Promise<OpenOrderSummary[]> {
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select(
+      'id, type, total, service_mode, opened_at, created_at, comanda_cards(card_number), order_items(id, status)'
+    )
+    .eq('restaurant_id', restaurant_id)
+    .in('status', ['open', 'preparing', 'ready', 'delivered'])
+    .order('created_at', { ascending: false })
+
+  if (error || !data) return []
+
+  type Row = {
+    id: string
+    type: string
+    total: number | string
+    service_mode: string | null
+    opened_at: string | null
+    created_at: string
+    comanda_cards: { card_number: number } | { card_number: number }[] | null
+    order_items: { id: string; status: string }[] | null
+  }
+
+  return (data as Row[]).map((o) => {
+    const card = Array.isArray(o.comanda_cards) ? o.comanda_cards[0] : o.comanda_cards
+    return {
+      order_id: o.id,
+      card_number: card?.card_number ?? null,
+      service_mode: o.service_mode,
+      type: o.type,
+      total: Number(o.total ?? 0),
+      items_count: (o.order_items ?? []).filter((i) => i.status !== 'cancelled').length,
+      opened_at: o.opened_at ?? o.created_at,
+    }
+  })
+}
+
+/** Adiciona produto tocando no card da grade (agrupa se ja existe). */
+export async function addProductToOrder(
+  orderId: string,
+  productId: string,
+  quantity = 1
+): Promise<{ ok: true } | { error: string }> {
+  if (quantity < 1) return { error: 'Quantidade invalida' }
+
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+
+  const { data: product } = await supabase
+    .from('products')
+    .select('id, price, is_active, restaurant_id, service_mode')
+    .eq('id', productId)
+    .maybeSingle()
+
+  if (!product) return { error: 'Produto nao encontrado' }
+  if (product.restaurant_id !== restaurant_id) return { error: 'Produto de outro restaurante' }
+  if (!product.is_active) return { error: 'Produto inativo' }
+  if (product.service_mode) {
+    return { error: 'Item de self-service e lancado na estacao, pela balanca' }
+  }
+
+  // Mesmo produto ja na comanda (e sem peso) -> soma quantidade
+  const { data: existing } = await supabase
+    .from('order_items')
+    .select('id, quantity, unit_price')
+    .eq('order_id', orderId)
+    .eq('product_id', productId)
+    .is('weight_grams', null)
+    .neq('status', 'cancelled')
+    .limit(1)
+    .maybeSingle()
+
+  const price = Number(product.price)
+
+  if (existing) {
+    const qty = Number(existing.quantity) + quantity
+    const { error } = await supabase
+      .from('order_items')
+      .update({ quantity: qty, total_price: Number((price * qty).toFixed(2)) })
+      .eq('id', existing.id)
+    if (error) return { error: error.message }
+  } else {
+    const { error } = await supabase.from('order_items').insert({
+      order_id: orderId,
+      product_id: productId,
+      quantity,
+      unit_price: price,
+      total_price: Number((price * quantity).toFixed(2)),
+      status: 'pending',
+    })
+    if (error) return { error: error.message }
+  }
+
+  const { error: recalcErr } = await supabase.rpc('recalc_order_totals', {
+    p_order_id: orderId,
+  })
+  if (recalcErr) return { error: recalcErr.message }
+
+  revalidatePath('/pdv')
+  return { ok: true }
+}
+
+/** Stepper de quantidade. quantity = 0 cancela o item. */
+export async function setOrderItemQuantity(
+  orderId: string,
+  itemId: string,
+  quantity: number
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient()
+
+  const { data: item } = await supabase
+    .from('order_items')
+    .select('id, order_id, unit_price, weight_grams')
+    .eq('id', itemId)
+    .maybeSingle()
+
+  if (!item) return { error: 'Item nao encontrado' }
+  if (item.order_id !== orderId) return { error: 'Item de outra comanda' }
+  if (item.weight_grams != null) {
+    return { error: 'Item pesado — use cancelar em vez de mudar a quantidade' }
+  }
+
+  if (quantity <= 0) {
+    const { error } = await supabase
+      .from('order_items')
+      .update({
+        status: 'cancelled',
+        cancelled_by: 'pdv',
+        cancelled_at: new Date().toISOString(),
+      })
+      .eq('id', itemId)
+    if (error) return { error: error.message }
+  } else {
+    const price = Number(item.unit_price)
+    const { error } = await supabase
+      .from('order_items')
+      .update({ quantity, total_price: Number((price * quantity).toFixed(2)) })
+      .eq('id', itemId)
+    if (error) return { error: error.message }
+  }
+
+  const { error: recalcErr } = await supabase.rpc('recalc_order_totals', {
+    p_order_id: orderId,
+  })
+  if (recalcErr) return { error: recalcErr.message }
+
+  revalidatePath('/pdv')
   return { ok: true }
 }

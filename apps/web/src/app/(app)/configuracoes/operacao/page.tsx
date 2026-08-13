@@ -33,11 +33,16 @@ export default async function OperacaoPage() {
     .eq('is_active', true)
     .not('service_mode', 'is', null)
 
-  const priceFor = (mode: string): number | null => {
+  // Volta como texto em pt-BR ("59,90") — o formulario guarda o que foi
+  // digitado e so converte no save.
+  const priceFor = (mode: string): string => {
     const row = (ssRows ?? []).find((r) => r.service_mode === mode)
-    if (!row) return null
+    if (!row) return ''
     const value = row.sold_by_weight ? row.price_per_kg : row.price
-    return value == null ? null : Number(value)
+    if (value == null) return ''
+    // Sem separador de milhar de proposito: "1234,50" e nao "1.234,50", pra
+    // nao dar ambiguidade na hora de converter de volta.
+    return Number(value).toFixed(2).replace('.', ',')
   }
 
   const initial: OperacaoFormData = {
