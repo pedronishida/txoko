@@ -201,7 +201,9 @@ export function VendaView({
           </span>
         </div>
 
-        <div className="relative flex-1 max-w-md">
+        {/* Campo do leitor ocupa todo o meio da barra — e o que a operadora
+            mais usa e o texto nao pode cortar */}
+        <div className="relative flex-1 min-w-0">
           <ScanLine
             size={14}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
@@ -223,9 +225,7 @@ export function VendaView({
           />
         </div>
 
-        <div className="flex-1" />
-
-        <div className="flex items-center gap-2 h-9 px-3 rounded-lg border border-border text-[12px] text-muted">
+        <div className="flex items-center gap-2 h-9 px-3 shrink-0 rounded-lg border border-border text-[12px] text-muted">
           <ShoppingCart size={14} />
           Comandas abertas
           <span className="font-mono font-semibold text-foreground">{openOrders.length}</span>

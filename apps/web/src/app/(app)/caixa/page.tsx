@@ -1,7 +1,7 @@
-import { CaixaView } from './caixa-view'
+import { redirect } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
-
+// Caixa e PDV viraram a mesma tela. Link antigo (e QR ja impresso apontando
+// pra ca) continua funcionando.
 export default function CaixaPage() {
-  return <CaixaView />
+  redirect('/pdv')
 }
