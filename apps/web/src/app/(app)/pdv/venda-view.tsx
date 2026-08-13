@@ -7,6 +7,7 @@ import { Search, ScanLine, Plus, Minus, X, Loader2, ShoppingCart, Clock } from '
 import {
   listOpenOrders,
   findOrderByCardToken,
+  findOrderByCardNumber,
   addBarcodeToOrder,
   addProductToOrder,
   setOrderItemQuantity,
@@ -99,10 +100,16 @@ export function VendaView({
     [refreshOrders]
   )
 
-  const [token, setToken] = useState<string | null>(null)
 
   // A camera dispara varias vezes por segundo — ignora repeticao em <2s
   const lastScanRef = useRef<{ value: string; ts: number } | null>(null)
+
+  // handleScan e memoizado e a camera segura a referencia antiga; o ref
+  // garante que ele enxergue sempre a comanda atual.
+  const orderRef = useRef<CaixaOrder | null>(null)
+  useEffect(() => {
+    orderRef.current = order
+  }, [order])
 
   const handleScan = useCallback(
     (raw: string) => {
@@ -123,18 +130,32 @@ export function VendaView({
             notify('error', res.error)
             return
           }
-          setToken(value)
           setOrder(res.order)
           notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
           return
         }
 
-        if (!token) {
-          notify('error', 'Bipe o QR da comanda antes de lancar itens')
+        // Numero curto = numero impresso no cartao. Plano B pra quando o
+        // leitor falha ou a camera do aparelho nao le. Codigo de barras tem
+        // 8+ digitos, entao nao ha confusao.
+        if (/^\d{1,4}$/.test(value)) {
+          const res = await findOrderByCardNumber(Number(value))
+          if ('error' in res) {
+            notify('error', res.error)
+            return
+          }
+          setOrder(res.order)
+          notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
           return
         }
 
-        const res = await addBarcodeToOrder(token, value)
+        const current = orderRef.current
+        if (!current) {
+          notify('error', 'Bipe o QR ou digite o numero do cartao antes de lancar itens')
+          return
+        }
+
+        const res = await addBarcodeToOrder(current.qr_token, value)
         if ('error' in res) {
           notify('error', res.error)
           return
@@ -144,7 +165,7 @@ export function VendaView({
         void refreshOrders()
       })
     },
-    [token, notify, refreshOrders]
+    [notify, refreshOrders]
   )
 
   function addProduct(product: Product) {
@@ -158,7 +179,7 @@ export function VendaView({
         notify('error', res.error)
         return
       }
-      if (token) await reloadOrder(token)
+      await reloadOrder(order.qr_token)
     })
   }
 
@@ -170,7 +191,7 @@ export function VendaView({
         notify('error', res.error)
         return
       }
-      if (token) await reloadOrder(token)
+      await reloadOrder(order.qr_token)
     })
   }
 
@@ -182,7 +203,7 @@ export function VendaView({
         notify('error', res.error)
         return
       }
-      if (token) await reloadOrder(token)
+      await reloadOrder(order.qr_token)
     })
   }
 
@@ -196,7 +217,6 @@ export function VendaView({
       }
       notify('ok', `Comanda #${String(order.card_number).padStart(3, '0')} fechada — ${brl(order.total)}`)
       setOrder(null)
-      setToken(null)
       void refreshOrders()
       scanRef.current?.focus()
     })
@@ -213,8 +233,7 @@ export function VendaView({
         if (order && !pending) finalize()
       } else if (e.key === 'Escape') {
         setOrder(null)
-        setToken(null)
-        scanRef.current?.focus()
+          scanRef.current?.focus()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -256,7 +275,7 @@ export function VendaView({
           <input
             ref={scanRef}
             autoFocus
-            placeholder="Bipe o QR da comanda pra abrir a venda"
+            placeholder="Bipe o QR, digite o numero do cartao ou o codigo de barras"
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return
               e.preventDefault()

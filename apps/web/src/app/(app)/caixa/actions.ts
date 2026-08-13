@@ -18,6 +18,9 @@ export type CaixaItem = {
 export type CaixaOrder = {
   order_id: string
   card_number: number
+  // Vai junto pra tela nao precisar guardar o token separado — ela pode ter
+  // carregado a comanda pelo numero do cartao, sem passar pelo QR.
+  qr_token: string
   service_mode: 'avontade' | 'por_kg' | 'por_kg_2mix' | null
   subtotal: number
   discount: number
@@ -105,6 +108,7 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
     order: {
       order_id: order.id,
       card_number: card.card_number,
+      qr_token: token,
       // A modalidade mora na COMANDA (escolhida na balanca). O cartao so
       // tem modo nos cartoes antigos, de modalidade fixa.
       service_mode: (order.service_mode ?? card.service_mode) as CaixaOrder['service_mode'],
@@ -435,4 +439,37 @@ export async function setOrderItemQuantity(
 
   revalidatePath('/pdv')
   return { ok: true }
+}
+
+/**
+ * Acha a comanda pelo NUMERO impresso no cartao (ex: "3"), em vez do token
+ * do QR. Serve de plano B quando o leitor falha, o QR rasgou ou a camera do
+ * aparelho e ruim demais pra ler.
+ *
+ * So existe aqui no painel, que exige login. Na estacao continua sendo o
+ * token: as RPCs de la sao abertas ao anon e aceitar numero permitiria
+ * abrir a comanda de qualquer um de fora.
+ */
+export async function findOrderByCardNumber(
+  cardNumber: number
+): Promise<FindOrderResult> {
+  if (!Number.isInteger(cardNumber) || cardNumber < 1) {
+    return { error: 'Numero de cartao invalido' }
+  }
+
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+
+  const { data: card } = await supabase
+    .from('comanda_cards')
+    .select('qr_token')
+    .eq('restaurant_id', restaurant_id)
+    .eq('card_number', cardNumber)
+    .eq('card_kind', 'customer')
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (!card) return { error: `Cartao #${cardNumber} nao encontrado` }
+
+  return findOrderByCardToken(card.qr_token as string)
 }
