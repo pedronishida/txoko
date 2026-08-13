@@ -1,11 +1,13 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import type { Category, Product } from '@txoko/shared'
 import { Search, ScanLine, Plus, Minus, X, Loader2, ShoppingCart, Clock } from 'lucide-react'
 import {
   listOpenOrders,
   findOrderByCardToken,
+  addBarcodeToOrder,
   addProductToOrder,
   setOrderItemQuantity,
   cancelItemFromOrder,
@@ -16,6 +18,16 @@ import {
 } from '@/app/(app)/caixa/actions'
 import { cn } from '@/lib/utils'
 
+// Camera fica ativa em background: o tablet do caixa nem sempre tem leitor
+// USB. Carrega so no cliente porque depende de getUserMedia.
+const BackgroundCameraScanner = dynamic(
+  () =>
+    import('@/components/caixa/camera-scanner').then(
+      (m) => m.BackgroundCameraScanner
+    ),
+  { ssr: false }
+)
+
 // Venda de balcao e comanda da estacao sao a mesma coisa aqui: um pedido
 // aberto que da pra editar e fechar sem trocar de tela.
 
@@ -25,6 +37,8 @@ const PAYMENT_METHODS: { value: PaymentLine['method']; label: string; key: strin
   { value: 'credit', label: 'Credito', key: 'F7' },
   { value: 'debit', label: 'Debito', key: 'F8' },
 ]
+
+const QR_TOKEN_RE = /^[0-9a-f]{32}$/i
 
 function brl(n: number): string {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -87,20 +101,51 @@ export function VendaView({
 
   const [token, setToken] = useState<string | null>(null)
 
-  function handleScan(raw: string) {
-    const value = raw.trim()
-    if (!value) return
-    startTransition(async () => {
-      const res = await findOrderByCardToken(value)
-      if ('error' in res) {
-        notify('error', res.error)
-        return
-      }
-      setToken(value)
-      setOrder(res.order)
-      notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
-    })
-  }
+  // A camera dispara varias vezes por segundo — ignora repeticao em <2s
+  const lastScanRef = useRef<{ value: string; ts: number } | null>(null)
+
+  const handleScan = useCallback(
+    (raw: string) => {
+      const value = raw.trim()
+      if (!value) return
+
+      const now = Date.now()
+      const last = lastScanRef.current
+      if (last && last.value === value && now - last.ts < 2000) return
+      lastScanRef.current = { value, ts: now }
+
+      startTransition(async () => {
+        // QR do cartao (32 hex) abre a comanda; qualquer outro codigo e
+        // produto, e so faz sentido com uma comanda carregada.
+        if (QR_TOKEN_RE.test(value)) {
+          const res = await findOrderByCardToken(value)
+          if ('error' in res) {
+            notify('error', res.error)
+            return
+          }
+          setToken(value)
+          setOrder(res.order)
+          notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
+          return
+        }
+
+        if (!token) {
+          notify('error', 'Bipe o QR da comanda antes de lancar itens')
+          return
+        }
+
+        const res = await addBarcodeToOrder(token, value)
+        if ('error' in res) {
+          notify('error', res.error)
+          return
+        }
+        setOrder(res.order)
+        notify('ok', 'Item adicionado')
+        void refreshOrders()
+      })
+    },
+    [token, notify, refreshOrders]
+  )
 
   function addProduct(product: Product) {
     if (!order) {
@@ -484,6 +529,10 @@ export function VendaView({
           )}
         </aside>
       </div>
+
+      {/* Camera sempre ativa: le o QR da comanda e o codigo de barras das
+          bebidas, sem precisar de leitor USB */}
+      <BackgroundCameraScanner onScan={handleScan} />
 
       {feedback && (
         <div
