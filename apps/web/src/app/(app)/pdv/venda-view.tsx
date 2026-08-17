@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import type { Category, Product } from '@txoko/shared'
-import { Search, ScanLine, Plus, Minus, X, Loader2, ShoppingCart, Clock } from 'lucide-react'
+import { Search, ScanLine, Plus, Minus, X, Loader2, ShoppingCart, Clock, Printer } from 'lucide-react'
 import {
   listOpenOrders,
   findOrderByCardToken,
@@ -71,6 +71,9 @@ export function VendaView({
   const [query, setQuery] = useState('')
   const [categoryId, setCategoryId] = useState<string | 'all'>('all')
   const [method, setMethod] = useState<PaymentLine['method']>('pix')
+  // Impressao automatica ao fechar — preferencia do aparelho (o tablet da
+  // estacao nao tem impressora, o caixa tem)
+  const [autoPrint, setAutoPrint] = useState(true)
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -88,6 +91,7 @@ export function VendaView({
 
   useEffect(() => {
     void refreshOrders()
+    setAutoPrint(localStorage.getItem('txoko_pdv_auto_print') !== 'off')
   }, [refreshOrders])
 
   // Recarrega a comanda atual depois de cada alteracao
@@ -209,17 +213,29 @@ export function VendaView({
 
   function finalize() {
     if (!order) return
+    const closing = order
     startTransition(async () => {
-      const res = await closeOrder(order.order_id, [{ method, amount: order.total }])
+      const res = await closeOrder(closing.order_id, [{ method, amount: closing.total }])
       if ('error' in res) {
         notify('error', res.error)
         return
       }
-      notify('ok', `Comanda #${String(order.card_number).padStart(3, '0')} fechada — ${brl(order.total)}`)
+      notify(
+        'ok',
+        `Comanda #${String(closing.card_number).padStart(3, '0')} fechada — ${brl(closing.total)}`
+      )
+      // Comprovante nao fiscal na termica. A janela imprime sozinha e fecha;
+      // se o navegador bloquear o popup, o caixa segue normal (o botao
+      // Reimprimir da o mesmo caminho).
+      if (autoPrint) openReceipt(closing.order_id)
       setOrder(null)
       void refreshOrders()
       scanRef.current?.focus()
     })
+  }
+
+  function openReceipt(orderId: string) {
+    window.open(`/pedidos/${orderId}/imprimir`, '_blank', 'width=420,height=640')
   }
 
   // Atalhos: F2 busca, F9 finaliza, Esc limpa a venda atual
@@ -288,6 +304,24 @@ export function VendaView({
             spellCheck={false}
           />
         </div>
+
+        <button
+          onClick={() => {
+            const next = !autoPrint
+            setAutoPrint(next)
+            localStorage.setItem('txoko_pdv_auto_print', next ? 'on' : 'off')
+          }}
+          title="Imprimir comprovante ao fechar a comanda"
+          className={cn(
+            'flex items-center gap-2 h-9 px-3 shrink-0 rounded-lg border text-[12px] transition-colors',
+            autoPrint
+              ? 'border-primary bg-primary/10 text-foreground'
+              : 'border-border text-muted hover:text-foreground'
+          )}
+        >
+          <Printer size={14} />
+          {autoPrint ? 'Imprime ao fechar' : 'Sem impressao'}
+        </button>
 
         <div className="flex items-center gap-2 h-9 px-3 shrink-0 rounded-lg border border-border text-[12px] text-muted">
           <ShoppingCart size={14} />
