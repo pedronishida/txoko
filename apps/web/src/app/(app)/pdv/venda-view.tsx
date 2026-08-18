@@ -8,6 +8,7 @@ import {
   listOpenOrders,
   findOrderByCardToken,
   findOrderByCardNumber,
+  findOrderByCardBarcode,
   addBarcodeToOrder,
   addProductToOrder,
   setOrderItemQuantity,
@@ -39,7 +40,8 @@ const PAYMENT_METHODS: { value: PaymentLine['method']; label: string; key: strin
   { value: 'debit', label: 'Debito', key: 'F8' },
 ]
 
-const QR_TOKEN_RE = /^[0-9a-f]{32}$/i
+// Codigo de barras do cartao: 'C' + 12 hex
+const CARD_BARCODE_RE = /^C[0-9A-F]{12}$/i
 
 function brl(n: number): string {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -126,10 +128,10 @@ export function VendaView({
       lastScanRef.current = { value, ts: now }
 
       startTransition(async () => {
-        // QR do cartao (32 hex) abre a comanda; qualquer outro codigo e
+        // Codigo de barras do cartao abre a comanda; qualquer outro codigo e
         // produto, e so faz sentido com uma comanda carregada.
-        if (QR_TOKEN_RE.test(value)) {
-          const res = await findOrderByCardToken(value)
+        if (CARD_BARCODE_RE.test(value)) {
+          const res = await findOrderByCardBarcode(value)
           if ('error' in res) {
             notify('error', res.error)
             return
@@ -155,7 +157,7 @@ export function VendaView({
 
         const current = orderRef.current
         if (!current) {
-          notify('error', 'Bipe o QR ou digite o numero do cartao antes de lancar itens')
+          notify('error', 'Bipe o cartao ou digite o numero dele antes de lancar itens')
           return
         }
 
@@ -291,7 +293,7 @@ export function VendaView({
           <input
             ref={scanRef}
             autoFocus
-            placeholder="Bipe o QR, digite o numero do cartao ou o codigo de barras"
+            placeholder="Bipe o cartao, digite o numero dele ou bipe o produto"
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return
               e.preventDefault()

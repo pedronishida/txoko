@@ -164,43 +164,23 @@ export default function StationPage() {
         return
       }
 
-      // Sem sessao ativa — so aceita QR do cartao (customer). Cancel card sem sessao = erro.
+      // Sem comanda aberta: so cartao de cliente entra. Cartao de
+      // cancelamento sem comanda nao faz sentido.
       if (!session) {
-        // Codigo de barras do cartao e o caminho normal; o QR segue aceito
-        // pros cartoes antigos, ja impressos.
-        if (scan.kind !== 'card_barcode' && scan.kind !== 'qr_token') {
+        if (scan.kind !== 'card_barcode') {
           pushToast('error', 'Bipe o codigo de barras do cartao primeiro')
           return
         }
         try {
           setBusy(true)
-
-          // Os dois caminhos devolvem formatos diferentes: o do codigo de
-          // barras ja traz o token, o do QR e o proprio token escaneado.
-          let snap: StationSnapshot
-          let sessionToken: string
-
-          if (scan.kind === 'card_barcode') {
-            const res = await resolveBarcode(scan.barcode)
-            if (res.kind === 'cancel') {
-              pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
-              return
-            }
-            snap = res.session
-            sessionToken = res.qr_token
-          } else {
-            const res = await resolveScan(scan.token)
-            if (res.kind === 'cancel') {
-              pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
-              return
-            }
-            snap = res.session
-            sessionToken = scan.token
+          const res = await resolveBarcode(scan.barcode)
+          if (res.kind === 'cancel') {
+            pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
+            return
           }
-
-          setSession(snap)
-          setToken(sessionToken)
-          pushToast('ok', `Comanda ${snap.comanda_card.card_number} aberta`)
+          setSession(res.session)
+          setToken(res.qr_token)
+          pushToast('ok', `Comanda ${res.session.comanda_card.card_number} aberta`)
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Erro ao abrir comanda'
           pushToast('error', msg)
@@ -210,18 +190,22 @@ export default function StationPage() {
         return
       }
 
-      // Sessao ativa — processa item OU abre drawer de cancelamento
+      // Comanda aberta — lanca item OU entra em modo cancelamento
       if (!token) return
 
-      if (scan.kind === 'qr_token') {
+      if (scan.kind === 'card_barcode') {
         try {
           setBusy(true)
-          const res = await resolveScan(scan.token)
+          const res = await resolveBarcode(scan.barcode)
           if (res.kind === 'cancel') {
-            setCancelToken(scan.token)
+            // O cartao de cancelamento tambem e identificado por codigo de
+            // barras; guardamos o token dele, que e o que a RPC recebe.
+            setCancelToken(res.qr_token)
             pushToast('ok', 'Modo cancelamento — toque no item pra cancelar')
           } else {
-            pushToast('error', 'Ja existe uma comanda aberta')
+            // Cartao de outro cliente: nao troca por acidente no meio do
+            // atendimento.
+            pushToast('error', 'Ja existe uma comanda aberta — finalize antes')
           }
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Erro'
@@ -229,13 +213,6 @@ export default function StationPage() {
         } finally {
           setBusy(false)
         }
-        return
-      }
-
-      // Cartao de outro cliente bipado com comanda aberta: nao troca por
-      // acidente — encerre a atual primeiro.
-      if (scan.kind === 'card_barcode') {
-        pushToast('error', 'Ja existe uma comanda aberta — finalize antes')
         return
       }
 

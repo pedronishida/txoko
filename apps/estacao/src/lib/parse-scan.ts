@@ -1,29 +1,27 @@
-// Classifica o que foi escaneado: QR token (cartao), etiqueta de peso ou codigo de barras unitario.
+// Classifica o que foi bipado: cartao de comanda, etiqueta de peso da balanca
+// ou codigo de barras de produto.
 //
-// Pro MVP usamos heuristica de prefixo:
-// - 32 hex chars           -> QR token do cartao (gerado por crypto.randomBytes(16))
-// - 13 digitos comecando 2 -> etiqueta de peso Toledo (convencao BR: "2" sinaliza item de peso)
-// - 13 ou 8+ digitos outro -> barcode EAN-13 / EAN-8 / UPC de item unitario
+// O cartao e identificado por CODIGO DE BARRAS, nao mais por QR: leitor 1D
+// barato le mais rapido e muitos leem so 1D. O QR do cartao passou a ser
+// exclusivo do cliente (link em /q/<slug>) e nao abre comanda nenhuma.
 //
-// Formato EAN-13 de peso (Toledo Prix padrao BR): 2PPPPPWWWWWC
+// Formato de peso EAN-13 (Toledo Prix padrao BR): 2PPPPPWWWWWC
 //   2      = prefixo (1 digito)
-//   PPPPP  = codigo do produto cadastrado na balanca (5 digitos) - ignorado pro MVP
-//            (o produto "Self-Service por Kg" eh resolvido por restaurante no DB)
+//   PPPPP  = codigo do produto cadastrado na balanca (5 digitos) - ignorado
 //   WWWWW  = peso em gramas (5 digitos, 00001 a 99999)
-//   C      = check digit (1 digito)
+//   C      = check digit
 //
-// Se o restaurante configurar a balanca com formato diferente, ajustar as posicoes abaixo.
+// Se o restaurante configurar a balanca com formato diferente, ajustar as
+// posicoes abaixo.
 
 export type ScanResult =
-  | { kind: 'qr_token'; token: string }
   | { kind: 'card_barcode'; barcode: string }
   | { kind: 'weight'; weightGrams: number; raw: string }
   | { kind: 'barcode'; code: string }
   | { kind: 'unknown'; raw: string }
 
-const QR_TOKEN_RE = /^[0-9a-f]{32}$/i
-// Codigo de barras do cartao: 'C' + 12 hex. Comeca com letra, entao nunca
-// colide com etiqueta de peso (13 digitos) nem com EAN de produto.
+// 'C' + 12 hex. Comeca com letra, entao nunca colide com etiqueta de peso
+// nem com EAN de produto.
 const CARD_BARCODE_RE = /^C[0-9A-F]{12}$/i
 const WEIGHT_EAN_RE = /^2\d{12}$/
 const GENERIC_BARCODE_RE = /^\d{8,14}$/
@@ -32,10 +30,6 @@ export function parseScan(raw: string): ScanResult {
   const s = raw.trim()
 
   if (!s) return { kind: 'unknown', raw: s }
-
-  if (QR_TOKEN_RE.test(s)) {
-    return { kind: 'qr_token', token: s.toLowerCase() }
-  }
 
   if (CARD_BARCODE_RE.test(s)) {
     return { kind: 'card_barcode', barcode: s.toUpperCase() }

@@ -473,3 +473,32 @@ export async function findOrderByCardNumber(
 
   return findOrderByCardToken(card.qr_token as string)
 }
+
+/**
+ * Acha a comanda pelo codigo de barras do cartao — o caminho normal do caixa
+ * agora que a identificacao por QR saiu de circulacao.
+ */
+export async function findOrderByCardBarcode(
+  barcode: string
+): Promise<FindOrderResult> {
+  const code = barcode.trim().toUpperCase()
+  if (!/^C[0-9A-F]{12}$/.test(code)) {
+    return { error: 'Codigo de cartao invalido' }
+  }
+
+  const supabase = await createClient()
+  const restaurant_id = await getActiveRestaurantId()
+
+  const { data: card } = await supabase
+    .from('comanda_cards')
+    .select('qr_token, card_kind')
+    .eq('restaurant_id', restaurant_id)
+    .eq('barcode', code)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (!card) return { error: 'Cartao nao encontrado' }
+  if (card.card_kind !== 'customer') return { error: 'Esse cartao nao abre comanda' }
+
+  return findOrderByCardToken(card.qr_token as string)
+}
