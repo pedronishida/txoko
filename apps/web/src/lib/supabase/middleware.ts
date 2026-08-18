@@ -18,6 +18,7 @@ const PUBLIC_PREFIXES = [
   '/api/cron/',
   '/api/menu/',
   '/l/',
+  '/q/',
   '/termos',
   '/privacidade',
 ]
