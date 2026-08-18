@@ -15,7 +15,11 @@ export type CardBatchResult =
 // escolher antes de se servir.
 export async function createCardBatch(
   quantity: number,
-  service_mode: ServiceMode | null = null
+  service_mode: ServiceMode | null = null,
+  /** Numero do primeiro cartao. Serve pra casar com lote ja impresso — se os
+   *  cartoes saem numerados de 1501, o sistema tem que gerar exatamente
+   *  esses numeros. Vazio = continua de onde parou. */
+  firstNumber?: number
 ): Promise<CardBatchResult> {
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 500) {
     return { error: 'Quantidade deve ser entre 1 e 500' }
@@ -40,7 +44,29 @@ export async function createCardBatch(
     .order('card_number', { ascending: false })
     .limit(1)
 
-  const startNumber = (maxRow?.[0]?.card_number ?? 0) + 1
+  const proximoLivre = (maxRow?.[0]?.card_number ?? 0) + 1
+  const startNumber = firstNumber ?? proximoLivre
+
+  if (firstNumber != null) {
+    if (!Number.isInteger(firstNumber) || firstNumber < 1 || firstNumber > 999999) {
+      return { error: 'Numero inicial invalido' }
+    }
+    // Colisao de numero quebraria a leitura no balcao: dois cartoes com o
+    // mesmo numero impresso abririam comandas diferentes.
+    const { data: conflito } = await supabase
+      .from('comanda_cards')
+      .select('card_number')
+      .eq('restaurant_id', restaurant_id)
+      .gte('card_number', firstNumber)
+      .lt('card_number', firstNumber + quantity)
+      .limit(1)
+
+    if (conflito && conflito.length > 0) {
+      return {
+        error: `Ja existe cartao numerado nessa faixa (a partir de ${conflito[0].card_number})`,
+      }
+    }
+  }
 
   const rows = Array.from({ length: quantity }, (_, i) => ({
     restaurant_id,

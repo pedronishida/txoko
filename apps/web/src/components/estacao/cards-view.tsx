@@ -419,6 +419,7 @@ function CardRow({ card }: { card: ComandaCard }) {
 
 function BatchModal({ onClose }: { onClose: () => void }) {
   const [quantity, setQuantity] = useState('100')
+  const [firstNumber, setFirstNumber] = useState('')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -428,8 +429,9 @@ function BatchModal({ onClose }: { onClose: () => void }) {
     setError(null)
     setSuccess(null)
     const q = parseInt(quantity)
+    const inicio = firstNumber.trim() ? parseInt(firstNumber) : undefined
     startTransition(async () => {
-      const res = await createCardBatch(q)
+      const res = await createCardBatch(q, null, inicio)
       if ('error' in res) setError(res.error)
       else setSuccess(`${res.created} cartoes criados (n° ${res.first_number} a ${res.last_number})`)
     })
@@ -461,6 +463,25 @@ function BatchModal({ onClose }: { onClose: () => void }) {
             />
             <p className="mt-1 text-xs text-muted">
               Lotes comuns: 100 (1 pacote de cartoes PVC). Max 500.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground/75 mb-1">
+              Comecar do numero
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={firstNumber}
+              onChange={(e) => setFirstNumber(e.target.value)}
+              placeholder="continua de onde parou"
+              className="w-full px-3 py-2 bg-night border border-border rounded-lg text-sm text-foreground font-data placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary/30"
+            />
+            <p className="mt-1 text-xs text-muted">
+              Use quando os cartoes ja vem numerados da grafica — se a arte sai
+              de 1501, gere comecando em 1501 pro numero impresso bater com o do
+              sistema.
             </p>
           </div>
 
