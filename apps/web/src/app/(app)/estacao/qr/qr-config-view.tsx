@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, Copy, ExternalLink } from 'lucide-react'
+import { Check, Copy, Download, ExternalLink } from 'lucide-react'
 import { updateQrUrl } from './actions'
 
 export function QrConfigView({
   qrTarget,
+  qrSvg,
   menuUrl,
   initialUrl,
 }: {
   qrTarget: string
+  qrSvg: string
   menuUrl: string
   initialUrl: string
 }) {
@@ -40,6 +42,32 @@ export function QrConfigView({
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Converte o SVG em PNG grande no proprio navegador — Canva e afins nao
+  // aceitam SVG em todo lugar, e 1200px imprime bem em cartao.
+  function baixarPng() {
+    const img = new Image()
+    const svg = new Blob([qrSvg], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(svg)
+    img.onload = () => {
+      const size = 1200
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, size, size)
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(img, 0, 0, size, size)
+      URL.revokeObjectURL(url)
+      const a = document.createElement('a')
+      a.href = canvas.toDataURL('image/png')
+      a.download = 'qr-comanda.png'
+      a.click()
+    }
+    img.src = url
+  }
+
   return (
     <div className="max-w-2xl space-y-8">
       <section>
@@ -53,7 +81,36 @@ export function QrConfigView({
         </p>
       </section>
 
-      <section className="rounded-xl border border-border bg-night p-4">
+      <section className="rounded-xl border border-border bg-night p-4 flex flex-col sm:flex-row gap-5">
+        {/* Vetor pra grafica: escala sem perder nitidez */}
+        <div className="shrink-0 space-y-2">
+          <div
+            className="w-40 h-40 bg-white rounded-lg p-2 [&>svg]:w-full [&>svg]:h-full"
+            dangerouslySetInnerHTML={{ __html: qrSvg }}
+          />
+          <div className="flex gap-1.5">
+            <a
+              href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`}
+              download="qr-comanda.svg"
+              className="flex-1 h-8 rounded-md border border-border text-[11px] text-muted hover:text-foreground inline-flex items-center justify-center gap-1"
+            >
+              <Download size={12} />
+              SVG
+            </a>
+            <button
+              onClick={baixarPng}
+              className="flex-1 h-8 rounded-md border border-border text-[11px] text-muted hover:text-foreground inline-flex items-center justify-center gap-1"
+            >
+              <Download size={12} />
+              PNG
+            </button>
+          </div>
+          <p className="text-[11px] text-muted text-center">
+            SVG pra grafica, PNG pra Canva
+          </p>
+        </div>
+
+        <div className="flex-1 min-w-0">
         <p className="text-[11px] uppercase tracking-wide text-muted">
           Endereco que vai no QR impresso
         </p>
@@ -73,6 +130,7 @@ export function QrConfigView({
           Esse endereco nunca muda — imprima ele nos cartoes uma vez. Trocar o
           destino abaixo nao exige reimprimir nada.
         </p>
+        </div>
       </section>
 
       <section className="space-y-3">
