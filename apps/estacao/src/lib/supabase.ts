@@ -116,3 +116,20 @@ export async function cancelItem(
   if (error) throw new Error(error.message)
   return data as StationSnapshot
 }
+
+export type BarcodeResolveResult =
+  | { kind: 'customer'; qr_token: string; session: StationSnapshot }
+  | { kind: 'cancel'; qr_token: string; restaurant_id: string; card_number: number }
+
+/**
+ * Abre a comanda pelo codigo de barras do cartao — o caminho normal da
+ * operacao agora. Devolve tambem o qr_token porque as demais RPCs (peso,
+ * barcode de produto, cancelamento) continuam recebendo token.
+ */
+export async function resolveBarcode(barcode: string): Promise<BarcodeResolveResult> {
+  const { data, error } = await supabase.rpc('station_resolve_barcode', {
+    p_barcode: barcode,
+  })
+  if (error) throw new Error(error.message)
+  return data as BarcodeResolveResult
+}

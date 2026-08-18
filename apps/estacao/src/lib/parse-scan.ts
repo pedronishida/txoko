@@ -16,11 +16,15 @@
 
 export type ScanResult =
   | { kind: 'qr_token'; token: string }
+  | { kind: 'card_barcode'; barcode: string }
   | { kind: 'weight'; weightGrams: number; raw: string }
   | { kind: 'barcode'; code: string }
   | { kind: 'unknown'; raw: string }
 
 const QR_TOKEN_RE = /^[0-9a-f]{32}$/i
+// Codigo de barras do cartao: 'C' + 12 hex. Comeca com letra, entao nunca
+// colide com etiqueta de peso (13 digitos) nem com EAN de produto.
+const CARD_BARCODE_RE = /^C[0-9A-F]{12}$/i
 const WEIGHT_EAN_RE = /^2\d{12}$/
 const GENERIC_BARCODE_RE = /^\d{8,14}$/
 
@@ -31,6 +35,10 @@ export function parseScan(raw: string): ScanResult {
 
   if (QR_TOKEN_RE.test(s)) {
     return { kind: 'qr_token', token: s.toLowerCase() }
+  }
+
+  if (CARD_BARCODE_RE.test(s)) {
+    return { kind: 'card_barcode', barcode: s.toUpperCase() }
   }
 
   if (WEIGHT_EAN_RE.test(s)) {

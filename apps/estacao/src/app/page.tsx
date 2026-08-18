@@ -5,6 +5,7 @@ import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat
 import { parseScan } from '@/lib/parse-scan'
 import {
   resolveScan,
+  resolveBarcode,
   addWeightItem,
   addBarcodeItem,
   cancelItem,
@@ -165,20 +166,41 @@ export default function StationPage() {
 
       // Sem sessao ativa — so aceita QR do cartao (customer). Cancel card sem sessao = erro.
       if (!session) {
-        if (scan.kind !== 'qr_token') {
-          pushToast('error', 'Escaneie o QR do cartao primeiro')
+        // Codigo de barras do cartao e o caminho normal; o QR segue aceito
+        // pros cartoes antigos, ja impressos.
+        if (scan.kind !== 'card_barcode' && scan.kind !== 'qr_token') {
+          pushToast('error', 'Bipe o codigo de barras do cartao primeiro')
           return
         }
         try {
           setBusy(true)
-          const res = await resolveScan(scan.token)
-          if (res.kind === 'cancel') {
-            pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
-            return
+
+          // Os dois caminhos devolvem formatos diferentes: o do codigo de
+          // barras ja traz o token, o do QR e o proprio token escaneado.
+          let snap: StationSnapshot
+          let sessionToken: string
+
+          if (scan.kind === 'card_barcode') {
+            const res = await resolveBarcode(scan.barcode)
+            if (res.kind === 'cancel') {
+              pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
+              return
+            }
+            snap = res.session
+            sessionToken = res.qr_token
+          } else {
+            const res = await resolveScan(scan.token)
+            if (res.kind === 'cancel') {
+              pushToast('error', 'Abra uma comanda antes de usar o cartao de cancelamento')
+              return
+            }
+            snap = res.session
+            sessionToken = scan.token
           }
-          setSession(res.session)
-          setToken(scan.token)
-          pushToast('ok', `Comanda ${res.session.comanda_card.card_number} aberta`)
+
+          setSession(snap)
+          setToken(sessionToken)
+          pushToast('ok', `Comanda ${snap.comanda_card.card_number} aberta`)
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Erro ao abrir comanda'
           pushToast('error', msg)
@@ -207,6 +229,13 @@ export default function StationPage() {
         } finally {
           setBusy(false)
         }
+        return
+      }
+
+      // Cartao de outro cliente bipado com comanda aberta: nao troca por
+      // acidente — encerre a atual primeiro.
+      if (scan.kind === 'card_barcode') {
+        pushToast('error', 'Ja existe uma comanda aberta — finalize antes')
         return
       }
 
@@ -413,10 +442,10 @@ function IdleView({ busy }: { busy: boolean }) {
       </div>
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-semibold tracking-tight text-fg">
-          Escaneie seu cartao
+          Bipe seu cartao
         </h1>
         <p className="text-lg text-fg-muted">
-          Aproxime o QR do cartao no leitor pra abrir sua comanda
+          Bipe o codigo de barras do cartao pra abrir sua comanda
         </p>
       </div>
       {busy && <div className="text-fg-muted text-sm">Abrindo...</div>}
