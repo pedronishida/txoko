@@ -27,12 +27,18 @@ export default async function EstacaoQrPage() {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.txoko.com.br'
   const qrTarget = base + '/q/' + restaurant.slug
 
-  // Margem 1 e correcao M: le bem impresso pequeno no cartao sem inflar o
-  // desenho. SVG porque a grafica precisa de vetor.
+  // Margem 4: e a quiet zone que a norma do QR exige. Com menos que isso a
+  // arte do cartao encosta no simbolo e o leitor perde o enquadramento.
+  //
+  // Correcao Q (25%) em vez de M (15%): pra uma URL deste tamanho as duas
+  // caem na mesma matriz 29x29, entao Q e robustez de graca — e o cartao vive
+  // num restaurante, pegando gordura, dobra e risco.
+  //
+  // SVG porque a grafica precisa de vetor.
   const qrSvg = await QRCode.toString(qrTarget, {
     type: 'svg',
-    margin: 1,
-    errorCorrectionLevel: 'M',
+    margin: 4,
+    errorCorrectionLevel: 'Q',
   })
 
   return (
