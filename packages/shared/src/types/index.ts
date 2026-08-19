@@ -107,7 +107,10 @@ export interface ComandaCard {
   id: string
   restaurant_id: string
   card_number: number
+  /** Chave interna das RPCs da estacao. Nao e mais impresso nem lido. */
   qr_token: string
+  /** O que vai impresso no cartao e o leitor bipa: C + 12 hex. */
+  barcode: string | null
   service_mode: ServiceMode | null
   card_kind: CardKind
   is_active: boolean

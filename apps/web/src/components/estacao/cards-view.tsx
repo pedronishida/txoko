@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import type { ComandaCard, ServiceMode } from '@txoko/shared'
-import { Printer, Plus, X, AlertTriangle, ChefHat, Scale, Ban } from 'lucide-react'
+import { Printer, Plus, X, AlertTriangle, ChefHat, Scale, Ban, Download } from 'lucide-react'
 import {
   createCardBatch,
   createCancelCards,
@@ -51,6 +51,29 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
     (p) => !p.sold_by_weight && p.is_active && p.name.toLowerCase().includes('a vontade'),
   )
   const hasPorKg = selfServiceProducts.some((p) => p.sold_by_weight && p.is_active)
+
+  // Impressao de dados variaveis: a grafica precisa da lista completa, porque
+  // cada cartao sai com um codigo diferente.
+  function exportarCsv() {
+    const linhas = [
+      ['numero', 'codigo_barras', 'status'],
+      ...filtered.map((c) => [
+        String(c.card_number),
+        c.barcode ?? '',
+        c.is_active ? 'ativo' : 'inativo',
+      ]),
+    ]
+    // BOM pro Excel abrir acentuacao certa; ponto-e-virgula porque e o
+    // separador que o Excel em pt-BR espera.
+    const csv =
+      '﻿' + linhas.map((l) => l.map((v) => `"${v}"`).join(';')).join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cartoes-${filtered[0]?.card_number ?? 0}-${filtered[filtered.length - 1]?.card_number ?? 0}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const activeCount = customerCards.filter((c) => c.is_active).length
   const inactiveCount = customerCards.filter((c) => !c.is_active).length
@@ -110,6 +133,17 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
         <div className="flex-1" />
 
         {filtered.length > 0 && (
+          <button
+            onClick={exportarCsv}
+            className="inline-flex items-center gap-2 h-9 px-3 border border-border rounded-lg text-sm text-foreground hover:bg-muted-subtle"
+            title="Lista pra grafica: numero + codigo de barras de cada cartao"
+          >
+            <Download size={14} />
+            Exportar CSV
+          </button>
+        )}
+
+        {filtered.length > 0 && (
           <Link
             href={`/estacao-imprimir?mode=all&status=${filterActive}`}
             target="_blank"
@@ -145,7 +179,7 @@ export function CardsView({ cards, selfServiceProducts }: CardsViewProps) {
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium">N°</th>
                 <th className="text-left px-4 py-2.5 font-medium">Modo</th>
-                <th className="text-left px-4 py-2.5 font-medium">Token</th>
+                <th className="text-left px-4 py-2.5 font-medium">Codigo de barras</th>
                 <th className="text-left px-4 py-2.5 font-medium">Criado</th>
                 <th className="text-left px-4 py-2.5 font-medium">Status</th>
                 <th className="text-right px-4 py-2.5 font-medium">Acoes</th>
@@ -385,7 +419,7 @@ function CardRow({ card }: { card: ComandaCard }) {
         </span>
       </td>
       <td className="px-4 py-2.5 font-data text-foreground/75 text-xs">
-        {card.qr_token.slice(0, 12)}...
+        {card.barcode ?? '—'}
       </td>
       <td className="px-4 py-2.5 text-foreground/75 text-xs">
         {new Date(card.created_at).toLocaleDateString('pt-BR')}
