@@ -1,7 +1,7 @@
-import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
 import type { ComandaCard, ServiceMode } from '@txoko/shared'
+import { CardBarcode } from '@/components/estacao/card-barcode'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,17 +50,6 @@ export default async function EstacaoImprimirPage({
     .single()
   const restaurantName = (restRaw as { name?: string } | null)?.name ?? 'Txoko'
 
-  const cardsWithQr = await Promise.all(
-    cards.map(async (c) => ({
-      ...c,
-      qrSvg: await QRCode.toString(c.qr_token, {
-        type: 'svg',
-        margin: 0,
-        width: 120,
-        errorCorrectionLevel: 'M',
-      }),
-    })),
-  )
 
   return (
     <>
@@ -101,8 +90,8 @@ export default async function EstacaoImprimirPage({
         .card.cancel .card-mode { color: #EF4444; font-size: 9pt; }
         .card.cancel .card-number { color: #EF4444; }
         .card-rest { font-size: 6pt; color: #78716C; margin-top: 0.5mm; }
-        .card-qr { width: 32mm; height: 32mm; display: flex; align-items: center; justify-content: center; }
-        .card-qr svg { width: 100%; height: 100%; }
+        .card-barcode { width: 46mm; height: 16mm; display: flex; align-items: center; justify-content: center; }
+        .card-barcode svg { width: 100%; height: 100%; }
         .card-number {
           font-size: 16pt;
           font-weight: 700;
@@ -135,28 +124,28 @@ export default async function EstacaoImprimirPage({
         <script dangerouslySetInnerHTML={{ __html: `document.getElementById('print-btn').addEventListener('click', () => window.print())` }} />
       </div>
 
-      {chunk(cardsWithQr, 10).map((page, idx) => (
+      {chunk(cards, 10).map((page, idx) => (
         <div key={idx} className="sheet">
           {page.map((c) => {
             const isCancel = c.card_kind === 'cancel'
             return (
               <div key={c.id} className={'card' + (isCancel ? ' cancel' : '')}>
                 <div className="card-header">
+                  {/* Sem modalidade: o cartao e generico e a atendente
+                      escolhe na balanca */}
                   <div className="card-mode">
-                    {isCancel
-                      ? 'CANCELAMENTO — CAIXA'
-                      : c.service_mode === 'avontade'
-                      ? 'A VONTADE'
-                      : 'POR QUILO'}
+                    {isCancel ? 'CANCELAMENTO — CAIXA' : ''}
                   </div>
                   <div className="card-rest">{restaurantName}</div>
                 </div>
-                <div className="card-qr" dangerouslySetInnerHTML={{ __html: c.qrSvg }} />
                 <div className="card-number">
-                  #{String(c.card_number).padStart(3, '0')}
+                  {String(c.card_number).padStart(4, '0')}
+                </div>
+                <div className="card-barcode">
+                  {c.barcode ? <CardBarcode value={c.barcode} /> : null}
                 </div>
                 <div className="card-footer">
-                  {isCancel ? 'Uso exclusivo do operador de caixa' : 'Escaneie no tablet da estacao'}
+                  {isCancel ? 'Uso exclusivo do operador de caixa' : 'Bipe no leitor da estacao'}
                 </div>
               </div>
             )
