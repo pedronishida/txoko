@@ -9,6 +9,7 @@ import {
   findOrderByCardToken,
   findOrderByCardNumber,
   findOrderByCardBarcode,
+  openOrderFromCard,
   addBarcodeToOrder,
   addProductToOrder,
   setOrderItemQuantity,
@@ -70,6 +71,11 @@ export function VendaView({
 }) {
   const [openOrders, setOpenOrders] = useState<OpenOrderSummary[]>([])
   const [order, setOrder] = useState<CaixaOrder | null>(null)
+  // Cartao valido que ainda nao tem comanda: o caixa decide se abre.
+  const [pendingCard, setPendingCard] = useState<{
+    qr_token: string
+    card_number: number
+  } | null>(null)
   const [query, setQuery] = useState('')
   const [categoryId, setCategoryId] = useState<string | 'all'>('all')
   const [method, setMethod] = useState<PaymentLine['method']>('pix')
@@ -107,6 +113,24 @@ export function VendaView({
   )
 
 
+  // Abre a comanda do cartao aqui no caixa, sem mandar o cliente ate a
+  // balanca so pra registrar uma bebida.
+  const abrirComanda = useCallback(() => {
+    const alvo = pendingCard
+    if (!alvo) return
+    startTransition(async () => {
+      const res = await openOrderFromCard(alvo.qr_token)
+      if ('error' in res) {
+        notify('error', res.error)
+        return
+      }
+      setPendingCard(null)
+      setOrder(res.order)
+      notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} aberta`)
+      void refreshOrders()
+    })
+  }, [pendingCard, notify, refreshOrders])
+
   // A camera dispara varias vezes por segundo — ignora repeticao em <2s
   const lastScanRef = useRef<{ value: string; ts: number } | null>(null)
 
@@ -132,10 +156,15 @@ export function VendaView({
         // produto, e so faz sentido com uma comanda carregada.
         if (CARD_BARCODE_RE.test(value)) {
           const res = await findOrderByCardBarcode(value)
+          if ('needsOpen' in res) {
+            setPendingCard({ qr_token: res.qr_token, card_number: res.card_number })
+            return
+          }
           if ('error' in res) {
             notify('error', res.error)
             return
           }
+          setPendingCard(null)
           setOrder(res.order)
           notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
           return
@@ -146,10 +175,15 @@ export function VendaView({
         // 8+ digitos, entao nao ha confusao.
         if (/^\d{1,4}$/.test(value)) {
           const res = await findOrderByCardNumber(Number(value))
+          if ('needsOpen' in res) {
+            setPendingCard({ qr_token: res.qr_token, card_number: res.card_number })
+            return
+          }
           if ('error' in res) {
             notify('error', res.error)
             return
           }
+          setPendingCard(null)
           setOrder(res.order)
           notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
           return
@@ -538,6 +572,35 @@ export function VendaView({
             </>
           ) : (
             <div className="flex-1 flex flex-col">
+              {pendingCard && (
+                <div className="px-5 py-4 border-b border-border bg-warm/10">
+                  <p className="text-[13px] font-semibold text-foreground">
+                    Cartao #{String(pendingCard.card_number).padStart(3, '0')} sem comanda
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted">
+                    O cliente nao passou pela balanca. Abrir aqui cria a comanda
+                    vazia, sem cobrar modalidade.
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={abrirComanda}
+                      disabled={pending}
+                      className="h-9 px-4 rounded-lg bg-primary text-primary-foreground font-semibold text-[13px] flex items-center gap-2 disabled:opacity-40"
+                    >
+                      {pending ? <Loader2 size={14} className="animate-spin" /> : null}
+                      Abrir comanda
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingCard(null)}
+                      className="h-9 px-3 rounded-lg border border-border text-[13px] text-muted"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="px-5 py-4 border-b border-border">
                 <span className="text-[13px] font-semibold text-foreground">
                   Comandas abertas
@@ -546,7 +609,7 @@ export function VendaView({
               <div className="flex-1 overflow-y-auto thin-scroll px-3 py-3">
                 {openOrders.length === 0 ? (
                   <p className="text-[13px] text-muted py-10 text-center px-4">
-                    Nenhuma comanda aberta. Bipe o QR de um cartao pra comecar.
+                    Nenhuma comanda aberta. Bipe o codigo de barras de um cartao pra comecar.
                   </p>
                 ) : (
                   <ul className="space-y-1">
@@ -585,8 +648,8 @@ export function VendaView({
         </aside>
       </div>
 
-      {/* Camera sempre ativa: le o QR da comanda e o codigo de barras das
-          bebidas, sem precisar de leitor USB */}
+      {/* Camera sempre ativa: le o codigo de barras do cartao e o das bebidas,
+          sem precisar de leitor USB */}
       <BackgroundCameraScanner onScan={handleScan} />
 
       {feedback && (

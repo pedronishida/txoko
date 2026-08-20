@@ -31,7 +31,16 @@ export type CaixaOrder = {
 
 export type FindOrderResult = { ok: true; order: CaixaOrder } | { error: string }
 
-export async function findOrderByCardToken(qr_token: string): Promise<FindOrderResult> {
+/**
+ * Cartao valido, mas ainda sem comanda aberta — o cliente veio direto pro
+ * caixa sem passar pela balanca (comprou so uma bebida, um doce). Nao e erro:
+ * o caixa pode abrir a comanda dali mesmo.
+ */
+export type FindOrCreateResult =
+  | FindOrderResult
+  | { needsOpen: true; qr_token: string; card_number: number }
+
+export async function findOrderByCardToken(qr_token: string): Promise<FindOrCreateResult> {
   const token = qr_token.trim().toLowerCase()
   if (!/^[0-9a-f]{32}$/.test(token)) {
     return { error: 'Token invalido (esperado 32 hex)' }
@@ -83,7 +92,9 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrderR
       }
     | null
 
-  if (!order) return { error: `Nenhuma comanda aberta no cartao #${card.card_number}` }
+  if (!order) {
+    return { needsOpen: true, qr_token: token, card_number: card.card_number }
+  }
 
   const { data: items } = await supabase
     .from('order_items')
@@ -185,7 +196,7 @@ export async function cancelItemFromOrder(
   // Recalcula totais (chama RPC helper que ja existe)
   await supabase.rpc('recalc_order_totals', { p_order_id: item.order_id })
 
-  return findOrderByCardToken(qrToken)
+  return semNeedsOpen(await findOrderByCardToken(qrToken))
 }
 
 export async function addBarcodeToOrder(
@@ -199,7 +210,15 @@ export async function addBarcodeToOrder(
   })
   if (error) return { error: error.message }
   // Recarrega a comanda (snapshot atualizado)
-  return findOrderByCardToken(qrToken)
+  return semNeedsOpen(await findOrderByCardToken(qrToken))
+}
+
+/**
+ * Depois de uma mutacao a comanda existe por construcao. Estreita o tipo em vez
+ * de vazar 'needsOpen' pra quem so quis adicionar ou cancelar um item.
+ */
+function semNeedsOpen(r: FindOrCreateResult): FindOrderResult {
+  return 'needsOpen' in r ? { error: 'Comanda nao encontrada' } : r
 }
 
 export type PaymentLine = {
@@ -452,7 +471,7 @@ export async function setOrderItemQuantity(
  */
 export async function findOrderByCardNumber(
   cardNumber: number
-): Promise<FindOrderResult> {
+): Promise<FindOrCreateResult> {
   if (!Number.isInteger(cardNumber) || cardNumber < 1) {
     return { error: 'Numero de cartao invalido' }
   }
@@ -480,7 +499,7 @@ export async function findOrderByCardNumber(
  */
 export async function findOrderByCardBarcode(
   barcode: string
-): Promise<FindOrderResult> {
+): Promise<FindOrCreateResult> {
   const code = barcode.trim().toUpperCase()
   if (!/^C[0-9A-F]{12}$/.test(code)) {
     return { error: 'Codigo de cartao invalido' }
@@ -501,4 +520,23 @@ export async function findOrderByCardBarcode(
   if (card.card_kind !== 'customer') return { error: 'Esse cartao nao abre comanda' }
 
   return findOrderByCardToken(card.qr_token as string)
+}
+
+/**
+ * Abre a comanda do cartao a partir do caixa. Mesma RPC que a estacao usa —
+ * e idempotente, entao se alguem ja abriu no meio tempo apenas devolve o que
+ * existe, sem duplicar comanda.
+ *
+ * Com cartao generico (service_mode nulo) a comanda nasce vazia, sem lancar
+ * modalidade nenhuma: quem so comprou uma bebida nao pode sair pagando bufe.
+ */
+export async function openOrderFromCard(qrToken: string): Promise<FindOrderResult> {
+  const token = qrToken.trim().toLowerCase()
+  if (!/^[0-9a-f]{32}$/.test(token)) return { error: 'Token invalido' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('station_open_session', { p_qr_token: token })
+  if (error) return { error: error.message }
+
+  return semNeedsOpen(await findOrderByCardToken(token))
 }
