@@ -5,11 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Espaco estreito inquebravel entre o simbolo e o valor (U+202F).
+ *
+ * Intl devolve U+00A0, que em mono vale um avanco inteiro e afasta demais —
+ * o olho le dois blocos onde deveria ler um preco. U+2009 aproxima mas quebra
+ * linha, deixando o "R$" sozinho acima do numero. U+202F resolve os dois.
+ */
+const NNBSP = ' '
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value)
+  })
+    .format(value)
+    .replace(/ /g, NNBSP)
+}
+
+/** As duas metades da moeda, para quem precisa compor o par no markup. */
+export function splitCurrency(value: number): { symbol: string; amount: string } {
+  const formatted = formatCurrency(value)
+  const i = formatted.indexOf(NNBSP)
+  if (i === -1) return { symbol: 'R$', amount: formatted }
+  return { symbol: formatted.slice(0, i), amount: formatted.slice(i + 1) }
 }
 
 export function formatNumber(value: number): string {

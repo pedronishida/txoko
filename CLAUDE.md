@@ -36,23 +36,50 @@ supabase/          → Migrations, Edge Functions, seed [futuro]
 - Commits: Conventional Commits (`feat:`, `fix:`, `chore:`)
 
 ## Paleta de Cores
-- Night `#1A1A1A` — backgrounds escuros, textos principais
-- Leaf `#4ADE80` — acoes primarias, sucesso, CTAs
-- Warm `#F59E0B` — alertas, destaques
-- Coral `#EF4444` — erros, urgencia
-- Cloud `#FAFAF8` — background claro, cards
-- Stone `#78716C` — textos secundarios, bordas
+Toda cor sai dos tokens em `apps/web/src/app/globals.css`. **Nenhuma tela
+declara `oklch()` nem hex literal** — e isso que faz os dois temas
+continuarem corretos sem revisao dupla.
+
+- `--ink` / `--ink-soft` / `--ink-muted` — texto principal, apoio, rotulos
+- `--bg` / `--island` / `--panel` — fundo, ilhas (header, sidebar, conteudo), cartoes
+- `--rule` / `--rule-faint` — divisorias e bordas
+- `--teal` / `--teal-deep` / `--teal-soft` — acao primaria, selecao, foco, sucesso
+- `--amber` (decorativo) / `--amber-text` (legivel) — alertas e destaques
+- `--red` / `--red-tint` — atraso, cancelamento, critico
+- `--overlay` / `--scrim` — modais (opaco) e o veu atras deles
+
+Os nomes antigos (night, leaf, warm, coral, cloud, stone) seguem mapeados
+sobre esses tokens por compatibilidade. Nao usar em codigo novo.
+
+## Tema
+Claro por padrao. O escuro e **preferencia gravada do usuario, nao o tema do
+sistema**: a escolha vive em `localStorage['txoko-theme']` e o tema ativo
+aparece como `data-theme` no `<html>`. A variante `dark:` do Tailwind segue
+esse atributo, nao a classe `.dark`.
 
 ## Tipografia
-- DM Sans — interface principal
-- Space Mono — numeros, dados financeiros
+- **Archivo** — tudo que se le como texto
+- **Space Mono** — so o que se compara em coluna: numeros, codigos, horarios
+  e duracoes. Nunca em texto corrido, nunca em rotulo. Use `.font-data`.
+- Moeda e unidade tipografica: use `<Money>` ou `formatCurrency`, que unem
+  simbolo e valor com U+202F. Nunca montar `'R$ ' + valor` a mao.
+
+## Elevacao
+Tres niveis, e so tres. Nada de sombra ad hoc.
+- `--e1` — cartoes dentro do conteudo (metricas, KPIs, cards do KDS)
+- `--e2` — a ilha de conteudo, que apenas repousa sobre o fundo
+- `--e3` — o que flutua: header, sidebar, modais, popovers
 
 ## Principios de Design
 1. Clareza > Decoracao
 2. 1 clique < 3 cliques
-3. Mobile-first
-4. Feedback imediato
-5. Modo escuro por padrao
+3. Feedback imediato
+4. Foco sempre visivel — anel de 2px em `--teal`, offset 2px. PDV e KDS sao
+   telas de teclado; nao remover por questao estetica.
+5. Alvo minimo de 44px em PDV, KDS, Mesas, Pedidos, Reservas e na navegacao
+   lateral. O denso de 32-38px so vale em Financeiro, Cardapio e Clientes,
+   que sao telas de mouse.
+6. Trocar de tela nao anima.
 
 ## Seguranca
 - NUNCA expor Supabase `service_role` key no frontend

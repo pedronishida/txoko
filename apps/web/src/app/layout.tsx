@@ -1,20 +1,23 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Archivo, Space_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { PWARegister } from '@/components/pwa-register'
 import './globals.css'
 
-const inter = Inter({
+// Archivo para tudo que se le como texto.
+const archivo = Archivo({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
+  variable: '--font-archivo',
   display: 'swap',
 })
 
-const jetBrainsMono = JetBrains_Mono({
+// Space Mono so para o que se compara em coluna: numeros, codigos,
+// horarios e duracoes. Nunca em texto corrido, nunca em rotulo.
+const spaceMono = Space_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains-mono',
+  weight: ['400', '700'],
+  variable: '--font-space-mono',
   display: 'swap',
 })
 
@@ -88,7 +91,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} ${jetBrainsMono.variable}`}
+      className={`${archivo.variable} ${spaceMono.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -99,7 +102,21 @@ export default function RootLayout({
             __html: `window.__name=window.__name||((t,v)=>(Object.defineProperty(t,"name",{value:v,configurable:true}),t));`,
           }}
         />
-        <meta name="theme-color" content="#EA1D2C" />
+        {/* Anti-flash. O next-themes tambem faz isso, mas o script dele sai
+            depois do <body> — hoje nada pintavel vem antes, o que torna a
+            garantia incidental. Aqui ela e estrutural: o tema esta no <html>
+            antes de qualquer conteudo ser analisado. Mesma chave, mesmo
+            atributo e mesmo padrao do ThemeProvider, entao os dois concordam. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("txoko-theme");t=t==="dark"?"dark":"light";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t}catch(e){}`,
+          }}
+        />
+        {/* --bg do tema claro, que e o padrao do app. O escuro e preferencia
+            gravada e nao acompanha o sistema, entao nao ha media query util
+            aqui — seguir prefers-color-scheme daria a cor errada pra quem
+            tem o sistema escuro e o app claro. */}
+        <meta name="theme-color" content="#ebeff4" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>

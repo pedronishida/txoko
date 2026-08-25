@@ -9,8 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/home',
     display: 'standalone',
     orientation: 'any',
-    background_color: '#0B0B0B',
-    theme_color: '#EA1D2C',
+    // --bg do tema claro, que e o padrao do app (oklch(95% 0.008 250)).
+    background_color: '#ebeff4',
+    theme_color: '#ebeff4',
     lang: 'pt-BR',
     dir: 'ltr',
     scope: '/',
