@@ -384,6 +384,97 @@
   }
 }
 
+/* =============================================================
+   Larguras (Fase 02)
+
+   Regras fora de @layer, entao vencem qualquer utilitario do Tailwind
+   sem precisar de !important. Casam por data-attribute porque o alvo
+   e a peca de layout, nao uma classe solta.
+============================================================= */
+
+/* A grade do shell mora aqui, e nao num style inline no componente: estilo
+   inline vence regra de folha sem !important, entao com a largura inline o
+   trilho de icones nunca colapsaria. */
+[data-shell] {
+  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* Tablet paisagem: a sidebar vira trilho de icones e o header solta o
+   que e secundario. Devolve cerca de 170px a coluna de trabalho. */
+@media (max-width: 1240px) {
+  [data-shell] {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  [data-nav-note],
+  [data-nav-group] {
+    display: none;
+  }
+  /* O rotulo sai da tela sem sair da arvore de acessibilidade. Com
+     display:none seriam 19 links sem nome. */
+  [data-nav-label] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    flex: none;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* Cada item mede 44x44. E a superficie mais tocada em tablet: se
+     encolher junto com a sidebar, vira o menor alvo do produto. */
+  [data-nav-rail] {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  [data-nav-link] {
+    position: relative;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  [data-nav-badge] {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+  }
+  [data-header-search],
+  [data-user-meta],
+  [data-wordmark],
+  [data-org-switch] {
+    display: none;
+  }
+  [data-brand] {
+    padding-right: 0;
+    border-right: 0;
+  }
+}
+
+/* Tablet retrato: os paineis de detalhe cedem largura. A coluna
+   principal e a que precisa de espaco. */
+@media (max-width: 1024px) {
+  [data-pane="pdv"] { width: 296px; }
+  [data-pane="detail"] { width: 244px; padding: 18px; }
+  [data-pane="inbox"] { width: 196px; }
+  [data-pane="cfg"] { padding-left: 10px; padding-right: 10px; width: 164px; }
+}
+
+/* Tres colunas deixam de caber com dignidade: o KDS passa a rolar na
+   horizontal com faixa minima de 264px, em vez de espremer as tres. */
+@media (max-width: 860px) {
+  [data-kds-cols] {
+    display: flex;
+    overflow-x: auto;
+  }
+  [data-kds-cols] > * {
+    flex: 1 0 264px;
+  }
+}
+
 /* Desliga animacao e transicao pra quem pediu menos movimento. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -435,16 +526,65 @@
     border-radius: 9999px;
   }
 
+  /* ========== Esqueleto de carregamento ========== */
+
+  @keyframes txoko-shimmer {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+
+  .skeleton {
+    background: var(--sunken);
+    border-radius: 6px;
+    animation: txoko-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+      opacity: 0.75;
+    }
+  }
+
   /* ========== Islands ========== */
 
-  .island {
-    background-color: var(--bg-elevated);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--e2);
+  /* As tres superficies do redesign.
+
+     .island        o que flutua: header e sidebar            --e3
+     .island-content a ilha de conteudo, que so repousa        --e2
+     .panel          cartoes dentro do conteudo               --e1 */
+
+  /* Sem border-radius aqui de proposito: o header usa 18px e sidebar e
+     conteudo usam 20px. Cada um declara o seu, pra nao depender da ordem
+     em que o Tailwind emite utilitarios da mesma camada. */
+  .island,
+  .island-content {
+    background-color: var(--island);
+    /* Sem o prefixo -webkit- a mao: escrever os dois faz o Lightning CSS
+       colapsar o par e manter so o prefixado, e ai o Firefox perde o blur.
+       Deixando so a propriedade padrao, ele prefixa sozinho quando precisa. */
+    backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--edge);
   }
+  .island {
+    box-shadow: var(--e3), inset 0 1px 0 var(--edge-hi);
+  }
+  .island-content {
+    box-shadow: var(--e2), inset 0 1px 0 var(--edge-hi);
+  }
+
+  .panel {
+    background-color: var(--panel);
+    border: 1px solid var(--edge-hi);
+    border-radius: 16px;
+    box-shadow: var(--e1);
+  }
+
+  /* Modais e popovers: opacos, nunca translucidos. */
   .island-popup {
     background-color: var(--overlay);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
     box-shadow: var(--e3);
   }
 

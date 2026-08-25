@@ -13,7 +13,7 @@ export function ThemeToggle() {
   }, [])
 
   if (!mounted) {
-    return <div className="w-9 h-9" aria-hidden />
+    return <div className="h-8 w-8" aria-hidden />
   }
 
   const current = resolvedTheme ?? theme
@@ -22,11 +22,11 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="w-7 h-7 flex items-center justify-center rounded-md text-foreground/75 hover:text-foreground hover:bg-surface-hover transition-colors"
+      className="flex h-8 w-8 items-center justify-center rounded-[9px] text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
       title={isDark ? 'Mudar para claro' : 'Mudar para escuro'}
-      aria-label="Alternar tema"
+      aria-label="Alternar tema claro e escuro"
     >
-      {isDark ? <Sun size={14} strokeWidth={1.6} /> : <Moon size={14} strokeWidth={1.6} />}
+      {isDark ? <Sun size={14} strokeWidth={1.8} /> : <Moon size={14} strokeWidth={1.8} />}
     </button>
   )
 }

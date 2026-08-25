@@ -5,7 +5,6 @@ import type { Order, OrderItem, OrderItemStatus, Table } from '@txoko/shared'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { acceptOrder, markOrderDelivered, markOrderReady } from './actions'
-import { PageHeader } from '@/components/page-header'
 import { TabBar } from '@/components/tab-bar'
 
 export type ProductWithStation = {
@@ -17,6 +16,8 @@ export type ProductWithStation = {
 
 type MinimalTable = Pick<Table, 'id' | 'number'>
 type Station = 'all' | 'kitchen' | 'bar' | 'dessert'
+
+const STATIONS = ['all', 'kitchen', 'bar', 'dessert'] as const
 
 const STATION_LABEL: Record<Station, string> = {
   all: 'Todos',
@@ -31,6 +32,15 @@ const COLUMN_LABEL: Record<OrderItemStatus, string> = {
   ready: 'Pronto',
   delivered: 'Entregue',
   cancelled: 'Cancelado',
+}
+
+// Um vazio nomeado diz que a coluna esta em dia; "Vazio" so diz que nao ha nada.
+const EMPTY_LABEL: Record<OrderItemStatus, string> = {
+  pending: 'Nada na fila',
+  preparing: 'Nada em preparo',
+  ready: 'Nada pronto para sair',
+  delivered: 'Nada entregue',
+  cancelled: 'Nada cancelado',
 }
 
 type Props = {
@@ -190,32 +200,51 @@ export function KdsView({
     })
   }
 
-  const STATION_TABS = (
-    ['all', 'kitchen', 'bar', 'dessert'] as const
-  ).map((s) => ({ key: s, label: STATION_LABEL[s] }))
+
+  // A tecla vai impressa no chip. Suspensa enquanto o foco esta num campo,
+  // pra nao roubar digito de quem esta escrevendo.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      const n = Number(e.key)
+      if (!n || n > STATIONS.length) return
+      setStation(STATIONS[n - 1]!)
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const STATION_TABS = STATIONS.map((s, i) => ({
+    key: s,
+    label: STATION_LABEL[s],
+    hint: String(i + 1),
+  }))
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] -mx-8 -mt-6">
+    <div className="-mx-8 -mt-6 flex h-[calc(100vh-8rem)] flex-col">
       {/* Header */}
-      <div className="px-8 pt-6">
-        <PageHeader
-          title="KDS"
-          subtitle={
-            cards.length === 0
-              ? 'Nenhum pedido ativo'
-              : `${cards.length} ${cards.length === 1 ? 'pedido ativo' : 'pedidos ativos'}`
-          }
-          border={false}
-        />
+      <div className="flex shrink-0 items-center gap-5 border-b border-rule px-7 py-[18px]">
+        <h1 className="text-xl font-semibold tracking-[-0.02em] text-ink">KDS</h1>
         <TabBar
+          variant="chip"
+          aria-label="Estacao"
           tabs={STATION_TABS}
           active={station}
           onChange={(key) => setStation(key as Station)}
         />
+        <div className="flex-1" />
+        <span className="shrink-0 text-[12.5px] text-ink-muted">
+          {cards.length === 0
+            ? 'Nenhum pedido ativo'
+            : `${cards.length} ${cards.length === 1 ? 'pedido ativo' : 'pedidos ativos'}`}
+        </span>
       </div>
 
       {/* Columns */}
-      <div className="flex-1 grid grid-cols-3 min-h-0">
+      <div data-kds-cols className="grid min-h-0 flex-1 grid-cols-3">
         {columns.map((status, idx) => {
           const colCards = cardsForColumn(status)
           return (
@@ -223,7 +252,7 @@ export function KdsView({
               key={status}
               className={cn(
                 'flex flex-col min-h-0 px-6 py-5',
-                idx > 0 && 'border-l border-border'
+                idx > 0 && 'border-l border-rule'
               )}
             >
               <div className="flex items-baseline justify-between mb-5">
@@ -246,12 +275,12 @@ export function KdsView({
                     <div
                       key={`${card.order.id}-${status}`}
                       className={cn(
-                        'border rounded-lg overflow-hidden hover-lift',
+                        'overflow-hidden rounded-2xl border',
                         isLate
-                          ? 'border-destructive/30 bg-destructive/5'
-                          : 'border-border bg-bg-elevated'
+                          ? 'border-red bg-panel'
+                          : 'border-edge-hi bg-panel'
                       )}
-                      style={isLate ? undefined : { boxShadow: 'var(--shadow-island)' }}
+                      style={{ boxShadow: 'var(--e1)' }}
                     >
                       {/* Card header */}
                       <div className="px-4 py-3 flex items-baseline justify-between gap-3">
@@ -306,12 +335,13 @@ export function KdsView({
                         })}
                       </div>
 
-                      {/* Action */}
-                      <div className="border-t border-border">
+                      {/* Acao — 44px: cozinha opera com o dedo, muitas vezes
+                          com luva ou mao molhada. */}
+                      <div className="border-t border-rule">
                         {status === 'pending' && (
                           <button
                             onClick={() => doAccept(card.order.id)}
-                            className="w-full h-9 text-[12px] font-semibold text-primary hover:bg-primary-soft transition-colors tracking-tight"
+                            className="h-11 w-full text-[13px] font-bold tracking-tight text-teal-deep transition-colors hover:bg-teal-soft"
                           >
                             Aceitar
                           </button>
@@ -319,7 +349,7 @@ export function KdsView({
                         {status === 'preparing' && (
                           <button
                             onClick={() => doReady(card.order.id)}
-                            className="w-full h-9 text-[12px] font-semibold text-success hover:bg-success/10 transition-colors tracking-tight"
+                            className="h-11 w-full text-[13px] font-bold tracking-tight text-teal-deep transition-colors hover:bg-teal-soft"
                           >
                             Marcar pronto
                           </button>
@@ -327,7 +357,7 @@ export function KdsView({
                         {status === 'ready' && (
                           <button
                             onClick={() => doDeliver(card.order.id)}
-                            className="w-full h-9 text-[12px] font-semibold text-accent-foreground bg-accent-soft hover:bg-accent/30 transition-colors tracking-tight"
+                            className="h-11 w-full bg-teal text-[13px] font-bold tracking-tight text-on-teal transition-colors hover:bg-teal-deep"
                           >
                             Entregar
                           </button>
@@ -338,8 +368,8 @@ export function KdsView({
                 })}
 
                 {colCards.length === 0 && (
-                  <p className="py-6 text-center text-[12px] text-muted tracking-tight">
-                    Vazio
+                  <p className="py-8 text-center text-[13px] text-ink-muted">
+                    {EMPTY_LABEL[status]}
                   </p>
                 )}
               </div>

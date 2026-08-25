@@ -19,7 +19,9 @@ import {
   type OpenOrderSummary,
   type PaymentLine,
 } from '@/app/(app)/caixa/actions'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
+import { TabBar } from '@/components/tab-bar'
+import { EmptyState } from '@/components/states'
 
 // Camera fica ativa em background: o tablet do caixa nem sempre tem leitor
 // USB. Carrega so no cliente porque depende de getUserMedia.
@@ -44,9 +46,8 @@ const PAYMENT_METHODS: { value: PaymentLine['method']; label: string; key: strin
 // Codigo de barras do cartao: 'C' + 12 hex
 const CARD_BARCODE_RE = /^C[0-9A-F]{12}$/i
 
-function brl(n: number): string {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
+// Une simbolo e valor com U+202F, como o resto do produto.
+const brl = formatCurrency
 
 function modeLabel(mode: string | null): string {
   if (mode === 'avontade') return 'A vontade'
@@ -274,19 +275,42 @@ export function VendaView({
     window.open(`/pedidos/${orderId}/imprimir`, '_blank', 'width=420,height=640')
   }
 
-  // Atalhos: F2 busca, F9 finaliza, Esc limpa a venda atual
+  // Categorias na ordem em que aparecem nos chips, com a tecla impressa.
+  const categoryTabs = useMemo(
+    () =>
+      [{ key: 'all', label: 'Todos' }, ...categories.map((c) => ({ key: c.id, label: c.name }))]
+        .slice(0, 9)
+        .map((t, i) => ({ ...t, hint: String(i + 1) })),
+    [categories]
+  )
+
+  // Atalhos: F2 busca, F9 finaliza, Esc limpa a venda atual, 1-9 troca
+  // categoria. Os numericos ficam suspensos enquanto o foco esta num campo —
+  // o PDV tem busca e leitor, e roubar digito deles quebraria a venda.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'F2') {
         e.preventDefault()
         searchRef.current?.focus()
-      } else if (e.key === 'F9') {
+        return
+      }
+      if (e.key === 'F9') {
         e.preventDefault()
         if (order && !pending) finalize()
-      } else if (e.key === 'Escape') {
-        setOrder(null)
-          scanRef.current?.focus()
+        return
       }
+      if (e.key === 'Escape') {
+        setOrder(null)
+        scanRef.current?.focus()
+        return
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      const n = Number(e.key)
+      if (!n || n > categoryTabs.length) return
+      setCategoryId(categoryTabs[n - 1]!.key)
+      e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -387,27 +411,28 @@ export function VendaView({
               </kbd>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <Chip active={categoryId === 'all'} onClick={() => setCategoryId('all')}>
-                Todos
-              </Chip>
-              {categories.map((c) => (
-                <Chip
-                  key={c.id}
-                  active={categoryId === c.id}
-                  onClick={() => setCategoryId(c.id)}
-                >
-                  {c.name}
-                </Chip>
-              ))}
-            </div>
+            {/* Linha unica com rolagem horizontal e altura fixa: antes as
+                categorias embrulhavam em ate tres linhas e empurravam a grade
+                de produtos para baixo conforme a largura da janela. */}
+            <TabBar
+              variant="chip"
+              aria-label="Categoria"
+              tabs={categoryTabs}
+              active={categoryId}
+              onChange={setCategoryId}
+            />
           </div>
 
           <div className="flex-1 overflow-y-auto thin-scroll px-8 pb-6">
             {filtered.length === 0 ? (
-              <p className="text-[13px] text-muted py-12 text-center">
-                Nenhum produto encontrado.
-              </p>
+              <EmptyState
+                title="Nenhum produto encontrado"
+                hint={
+                  query.trim()
+                    ? 'Nenhum item bate com a busca. Limpe o campo ou troque a categoria.'
+                    : 'Esta categoria esta vazia. Troque de categoria ou cadastre itens no Cardapio.'
+                }
+              />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filtered.map((p) => {
@@ -447,7 +472,7 @@ export function VendaView({
         </div>
 
         {/* Venda atual */}
-        <aside className="w-[380px] shrink-0 flex flex-col bg-bg-elevated">
+        <aside data-pane="pdv" className="flex w-[380px] shrink-0 flex-col bg-panel-veil">
           {order ? (
             <>
               <div className="px-5 py-4 border-b border-border shrink-0">
@@ -665,30 +690,6 @@ export function VendaView({
         </div>
       )}
     </div>
-  )
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'h-8 px-3 rounded-lg text-[12px] whitespace-nowrap border transition-colors',
-        active
-          ? 'border-primary bg-primary/10 text-foreground'
-          : 'border-border text-muted hover:text-foreground'
-      )}
-    >
-      {children}
-    </button>
   )
 }
 

@@ -15,11 +15,28 @@ const STATUS_LABEL: Record<TableStatus, string> = {
   cleaning: 'Limpeza',
 }
 
-const STATUS_DOT_TONE: Record<TableStatus, 'leaf' | 'warm' | 'stone' | 'primary'> = {
-  available: 'leaf',
-  occupied: 'warm',
-  reserved: 'stone',
-  cleaning: 'primary',
+// A situacao da mesa e carregada pela cor do ponto e da borda, com a contagem
+// na legenda acima da grade. Escrever o rotulo em cada card custaria a altura
+// que a densidade acabou de recuperar.
+const STATUS_BG: Record<TableStatus, string> = {
+  available: 'bg-teal',
+  occupied: 'bg-amber',
+  reserved: 'bg-ink-muted',
+  cleaning: 'bg-ink-soft',
+}
+
+const STATUS_BORDER: Record<TableStatus, string> = {
+  available: 'border-teal',
+  occupied: 'border-amber',
+  reserved: 'border-ink-muted',
+  cleaning: 'border-ink-soft',
+}
+
+const STATUS_TEXT: Record<TableStatus, string> = {
+  available: 'text-teal',
+  occupied: 'text-amber-text',
+  reserved: 'text-ink-muted',
+  cleaning: 'text-ink-soft',
 }
 
 const AREA_LABEL: Record<string, string> = {
@@ -270,14 +287,19 @@ export function MesasView({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-6 mt-3">
+        {/* A legenda e o que da nome as cores da grade — sem ela o card de
+            96px seria so um numero colorido. */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
           {(Object.keys(STATUS_LABEL) as TableStatus[]).map((status) => (
-            <div key={status} className="flex items-center gap-2">
-              <StatusDot tone={STATUS_DOT_TONE[status]} />
-              <span className="text-[11px] text-muted tracking-tight">
-                {STATUS_LABEL[status]}
-              </span>
-              <span className="text-[11px] font-data text-muted">
+            <div
+              key={status}
+              className="flex items-center gap-1.5 text-[11.5px] text-ink-soft"
+            >
+              <span
+                className={cn('h-[7px] w-[7px] rounded-full', STATUS_BG[status])}
+              />
+              <span>{STATUS_LABEL[status]}</span>
+              <span className={cn('font-data', STATUS_TEXT[status])}>
                 {counts[status]}
               </span>
             </div>
@@ -288,82 +310,63 @@ export function MesasView({
       <div className="flex min-h-[calc(100vh-14rem)]">
         {/* Grid */}
         <section className={cn('flex-1 p-8', selectedTable && 'border-r border-border')}>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          {/* Card de 96px com tres niveis: numero, situacao e valor aberto ou
+              tempo de ocupacao. Antes cada mesa ocupava ~350px de altura para
+              exibir um ponto e um numero, e dez mesas nao caiam na tela — mas
+              o salao e justamente a visao que precisa ser lida de uma vez.
+              A grade acomoda de 8 a 40 mesas sem rolar. */}
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(86px, 1fr))' }}
+          >
             {filteredTables.map((table) => {
               const minutes = getOccupiedMinutes(table.occupied_at)
               const tableOrder = ordersByTable[table.id]
               const active = selectedTable?.id === table.id
-              const tone = STATUS_DOT_TONE[table.status]
+              const occupied = table.status === 'occupied'
               return (
-                <div
+                <button
                   key={table.id}
+                  onClick={() =>
+                    setSelectedTable(table.id === selectedTable?.id ? null : table)
+                  }
+                  aria-label={`Mesa ${table.number} — ${STATUS_LABEL[table.status]}`}
+                  aria-pressed={active}
                   className={cn(
-                    'group relative aspect-square flex flex-col items-start justify-between p-4 rounded-lg border transition-all',
-                    active
-                      ? 'border-cloud bg-surface/70'
-                      : 'border-border hover:border-stone-dark hover:bg-surface/40'
+                    'flex h-24 min-w-0 flex-col justify-between overflow-hidden rounded-xl border-[1.5px] px-2.5 py-[9px] text-left transition-colors',
+                    STATUS_BORDER[table.status],
+                    active ? 'bg-teal-soft' : 'bg-panel-solid hover:bg-teal-tint'
                   )}
                 >
-                  {/* QR button — top-right corner */}
-                  {restaurantSlug && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openQrModal(table) }}
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 text-muted hover:text-foreground transition-all"
-                      title="Ver QR code"
-                      aria-label="QR code da mesa"
-                    >
-                      <QrCode size={13} />
-                    </button>
-                  )}
-
-                  <button
-                    className="absolute inset-0 w-full h-full"
-                    onClick={() =>
-                      setSelectedTable(
-                        table.id === selectedTable?.id ? null : table
-                      )
-                    }
-                    aria-label={`Mesa ${table.number}`}
-                  />
-
-                  <div className="relative pointer-events-none flex items-center gap-2">
-                    <StatusDot tone={tone} />
-                    <span className="text-[10px] text-muted tracking-tight">
-                      {table.capacity} lug.
-                    </span>
-                  </div>
-
-                  <div className="relative pointer-events-none">
-                    <p className="text-[28px] font-medium text-foreground font-data tracking-[-0.03em] leading-none">
-                      {table.number}
-                    </p>
-                    <p className="text-[10px] text-muted tracking-tight mt-1">
-                      {STATUS_LABEL[table.status]}
-                    </p>
-                  </div>
-
-                  {table.status === 'occupied' && minutes > 0 && (
-                    <div className="relative pointer-events-none flex items-baseline justify-between w-full">
+                  <span className="flex w-full min-w-0 items-center justify-between gap-1">
+                    <span
+                      className={cn(
+                        'h-[7px] w-[7px] shrink-0 rounded-full',
+                        STATUS_BG[table.status]
+                      )}
+                    />
+                    {occupied && minutes > 0 && (
                       <span
                         className={cn(
-                          'text-[10px] font-data tracking-tight',
-                          minutes > 60
-                            ? 'text-primary'
-                            : minutes > 30
-                              ? 'text-accent-foreground'
-                              : 'text-muted'
+                          'whitespace-nowrap font-data text-[9.5px] font-bold',
+                          minutes > 60 ? 'text-red' : 'text-ink-muted'
                         )}
                       >
                         {minutes}m
                       </span>
-                      {tableOrder && (
-                        <span className="text-[10px] font-data text-foreground/75">
-                          {formatCurrency(tableOrder.total)}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </span>
+                  <span className="w-full min-w-0">
+                    <span className="block font-data text-[21px] font-bold leading-none text-ink">
+                      {table.number}
+                    </span>
+                    <span className="mt-1 block truncate font-data text-[9.5px] text-ink-soft">
+                      {occupied && tableOrder
+                        ? formatCurrency(tableOrder.total)
+                        : `${table.capacity} lug`}
+                    </span>
+                  </span>
+                </button>
               )
             })}
           </div>
@@ -371,7 +374,7 @@ export function MesasView({
 
         {/* Panel */}
         {selectedTable && (
-          <aside className="w-[340px] flex flex-col">
+          <aside data-pane="detail" className="flex w-[340px] shrink-0 flex-col border-l border-rule">
             <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
@@ -572,29 +575,6 @@ export function MesasView({
         </div>
       )}
     </div>
-  )
-}
-
-function StatusDot({
-  tone,
-}: {
-  tone: 'leaf' | 'warm' | 'stone' | 'primary'
-}) {
-  return (
-    <span className="relative flex shrink-0">
-      {tone === 'leaf' && (
-        <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping" />
-      )}
-      <span
-        className={cn(
-          'relative inline-flex rounded-full h-1.5 w-1.5',
-          tone === 'leaf' && 'bg-success',
-          tone === 'warm' && 'bg-accent',
-          tone === 'stone' && 'bg-stone',
-          tone === 'primary' && 'bg-primary'
-        )}
-      />
-    </span>
   )
 }
 

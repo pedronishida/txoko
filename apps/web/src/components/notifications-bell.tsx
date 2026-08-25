@@ -113,13 +113,13 @@ export function NotificationsBell({ restaurantId }: Props) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
+        className="relative flex h-8 w-8 items-center justify-center rounded-[9px] text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
         title="Notificacoes"
         aria-label="Notificacoes"
       >
         <Bell size={14} strokeWidth={1.75} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-teal" />
         )}
       </button>
 
