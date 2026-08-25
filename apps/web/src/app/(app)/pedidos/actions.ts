@@ -221,3 +221,90 @@ export async function splitOrderPayments(orderId: string, splits: SplitEntry[]) 
   revalidatePath('/financeiro')
   return { ok: true }
 }
+
+// -------------------------------------------------------------
+// Cancelamento com estorno e trilha
+// -------------------------------------------------------------
+
+export type OrderEvent = {
+  id: string
+  at: string
+  action: string
+  reason: string | null
+  actor_name: string | null
+  actor_role: string | null
+  metadata: Record<string, unknown>
+}
+
+/**
+ * Cancela o pedido, estorna os pagamentos aprovados e grava a trilha.
+ *
+ * O trabalho todo mora numa RPC: cancelar, estornar e registrar quem
+ * autorizou precisam acontecer na mesma transacao, senao da pra existir
+ * pedido cancelado sem trilha ou estorno sem cancelamento. A RPC tambem e
+ * quem recusa quem nao for owner ou manager — a checagem no cliente serve
+ * pra desabilitar o botao, nao pra proteger a operacao.
+ */
+export async function cancelOrderWithRefund(
+  orderId: string,
+  reason: string,
+  refund: boolean
+) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.rpc('cancel_order_with_refund', {
+    p_order_id: orderId,
+    p_reason: reason,
+    p_refund: refund,
+  })
+  if (error) return { error: error.message }
+
+  // Libera a mesa, como no restante do fluxo de fechamento.
+  const { data: order } = await supabase
+    .from('orders')
+    .select('table_id')
+    .eq('id', orderId)
+    .maybeSingle()
+  if (order?.table_id) {
+    await supabase
+      .from('tables')
+      .update({ status: 'available', occupied_at: null, current_order_id: null })
+      .eq('id', order.table_id)
+  }
+
+  revalidatePath('/pedidos')
+  revalidatePath('/mesas')
+  revalidatePath('/kds')
+  revalidatePath('/financeiro')
+
+  const result = (data ?? {}) as { refund_amount?: number | null }
+  return { ok: true as const, refundAmount: result.refund_amount ?? null }
+}
+
+/** A trilha do pedido, do mais antigo pro mais recente. */
+export async function listOrderEvents(orderId: string): Promise<OrderEvent[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('order_events')
+    .select('id, at, action, reason, actor_name, actor_role, metadata')
+    .eq('order_id', orderId)
+    .order('at', { ascending: true })
+  if (error) return []
+  return (data ?? []) as OrderEvent[]
+}
+
+/** Papel do usuario atual no restaurante ativo — gate do botao de cancelar. */
+export async function currentUserCanCancel(): Promise<boolean> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+  const { data } = await supabase
+    .from('restaurant_members')
+    .select('role')
+    .eq('user_id', user.id)
+  return (data ?? []).some(
+    (m: { role: string }) => m.role === 'owner' || m.role === 'manager'
+  )
+}

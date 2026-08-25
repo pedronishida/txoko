@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
 import { cn, formatCurrency } from '@/lib/utils'
 import { MetricBand } from '@/components/metric-band'
+import { EmptyState } from '@/components/states'
 
 export const dynamic = 'force-dynamic'
 
@@ -262,9 +263,11 @@ export default async function FinanceiroPage() {
             Vendas por metodo
           </h2>
           {methodRows.length === 0 ? (
-            <p className="text-[12px] text-muted tracking-tight">
-              Nenhum pagamento registrado este mes
-            </p>
+            <EmptyState
+              title="Nenhum pagamento registrado este mes"
+              hint="Os pagamentos aparecem aqui conforme as contas sao fechadas."
+              className="py-8"
+            />
           ) : (
             <div className="space-y-4">
               {methodRows.map((item) => (
@@ -351,9 +354,11 @@ export default async function FinanceiroPage() {
             Top produtos · mes atual
           </h2>
           {topProducts.length === 0 ? (
-            <p className="text-[12px] text-muted tracking-tight">
-              Nenhuma venda registrada este mes
-            </p>
+            <EmptyState
+              title="Nenhuma venda registrada este mes"
+              hint="O ranking de produtos comeca no primeiro pedido fechado."
+              className="py-8"
+            />
           ) : (
             <div className="divide-y divide-border">
               {topProducts.map((product, i) => (

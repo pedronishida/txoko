@@ -21,7 +21,7 @@ const toneColor: Record<string, string> = {
 export function ReportCard({ label, value, sub, tone = 'neutral', className }: ReportCardProps) {
   return (
     <div
-      className={cn('bg-bg-elevated rounded-lg p-4 border border-border hover-lift', className)}
+      className={cn('panel p-4 hover-lift', className)}
       style={{ boxShadow: 'var(--shadow-island)' }}
     >
       <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted mb-2">

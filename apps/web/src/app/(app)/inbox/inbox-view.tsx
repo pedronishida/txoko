@@ -116,6 +116,7 @@ import { getContactDetails } from './contact-actions'
 import type { ContactDetails } from './contact-actions'
 import { Toaster, toast } from '@/components/toaster'
 import { ContactPanel } from '@/components/inbox/contact-panel'
+import { EmptyState } from '@/components/states'
 
 // =============================================================
 // Inbox — dashboard de conversas (Linear / Raycast vibe)
@@ -859,9 +860,10 @@ function ConversationList({
   if (conversations.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center px-6 py-12 text-center">
-        <p className="text-[13px] text-muted-foreground tracking-tight">
-          Nenhuma conversa por aqui
-        </p>
+        <EmptyState
+          title="Nenhuma conversa por aqui"
+          hint="Mensagens novas do WhatsApp e do cardapio aparecem nesta lista."
+        />
       </div>
     )
   }
