@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   Plus,
@@ -426,9 +427,10 @@ export function FichasView({
 
       {/* Table rows */}
       {filtered.length === 0 ? (
-        <p className="py-12 text-center text-[13px] text-muted tracking-tight">
-          Nenhum produto ativo
-        </p>
+        <EmptyState
+              title="Nenhum produto ativo"
+              hint="Fichas tecnicas so aparecem para produtos ativos no Cardapio."
+            />
       ) : (
         <div className="divide-y divide-border">
           {filtered.map((ficha) => {

@@ -15,10 +15,15 @@ type TabBarProps = {
   active: string
   onChange: (key: string) => void
   /**
-   * `chip` — pilula de 44px para telas de servico (KDS, PDV, Pedidos, Mesas).
-   * `underline` — denso, para telas de mouse (Financeiro, Cardapio, Clientes).
+   * `chip` — pilula. `underline` — aba sublinhada, para navegacao de secao.
    */
   variant?: 'chip' | 'underline'
+  /**
+   * `service` — 44px, para PDV, KDS, Mesas, Pedidos e Reservas, que sao
+   * operadas com o dedo. `dense` — 40px, para Estoque, Avaliacoes, Cardapio,
+   * Clientes e Financeiro, que sao telas de mouse.
+   */
+  size?: 'service' | 'dense'
   className?: string
   'aria-label'?: string
 }
@@ -28,10 +33,12 @@ export function TabBar({
   active,
   onChange,
   variant = 'underline',
+  size = 'service',
   className,
   'aria-label': ariaLabel,
 }: TabBarProps) {
   if (variant === 'chip') {
+    const dense = size === 'dense'
     return (
       <div
         role="tablist"
@@ -51,7 +58,8 @@ export function TabBar({
               aria-selected={on}
               onClick={() => onChange(tab.key)}
               className={cn(
-                'flex h-11 shrink-0 items-center gap-[9px] whitespace-nowrap rounded-full border px-4 text-[13px] font-semibold transition-colors',
+                'flex shrink-0 items-center gap-[9px] whitespace-nowrap rounded-full border px-4 font-semibold transition-colors',
+                dense ? 'h-10 text-[12.5px]' : 'h-11 text-[13px]',
                 on
                   ? 'border-teal bg-teal-soft text-teal-deep'
                   : 'border-rule text-ink-soft hover:bg-sunken hover:text-ink'

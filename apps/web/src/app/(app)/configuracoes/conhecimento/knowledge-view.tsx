@@ -30,13 +30,13 @@ const CATEGORIES = [
 type CategoryValue = (typeof CATEGORIES)[number]['value']
 
 const CATEGORY_COLORS: Record<CategoryValue | 'default', string> = {
-  horarios: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  cardapio: 'bg-success/10 text-success border-success/20',
-  reserva: 'bg-accent/10 text-accent-foreground border-accent/20',
-  entrega: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  pagamento: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-  outros: 'bg-stone/10 text-muted border-stone/20',
-  default: 'bg-stone/10 text-muted border-stone/20',
+  horarios: 'bg-sunken text-ink-soft border-rule',
+  cardapio: 'bg-teal-soft text-teal-deep border-teal',
+  reserva: 'bg-sunken text-amber-text border-rule',
+  entrega: 'bg-teal-tint text-teal border-teal',
+  pagamento: 'bg-red-tint text-red border-red',
+  outros: 'bg-sunken text-ink-muted border-rule',
+  default: 'bg-sunken text-ink-muted border-rule',
 }
 
 function getCategoryColor(cat: string | null): string {

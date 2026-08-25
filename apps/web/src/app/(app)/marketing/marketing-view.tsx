@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn } from '@/lib/utils'
 import type {
   Campaign,
@@ -214,14 +215,11 @@ export function MarketingView({ campaigns, templates, audiences }: Props) {
         )}
 
         {campaigns.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-[14px] text-muted tracking-tight">
-              Nenhuma campanha criada ainda
-            </p>
-            <p className="text-[12px] text-muted tracking-tight mt-1.5">
-              Crie sua primeira campanha de WhatsApp, email ou SMS
-            </p>
-          </div>
+          <EmptyState
+            title="Nenhuma campanha criada ainda"
+            hint="Crie sua primeira campanha de WhatsApp, email ou SMS"
+            className="py-20"
+          />
         ) : (
           <div>
             <div className="grid grid-cols-[2fr_1fr_0.8fr_1fr_1fr_1fr_auto] gap-4 pb-3 border-b border-border text-[10px] font-medium uppercase tracking-[0.06em] text-muted">

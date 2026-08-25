@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn } from '@/lib/utils'
 import type { CampaignAudience } from '@txoko/shared'
 import { Plus, X } from 'lucide-react'
@@ -103,15 +104,11 @@ export function AudiencesView({ audiences, totalCustomers }: Props) {
         )}
 
         {audiences.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-[14px] text-muted tracking-tight">
-              Nenhuma audiencia criada
-            </p>
-            <p className="text-[12px] text-muted tracking-tight mt-1.5">
-              Audiencias filtram clientes por gasto, frequencia,
-              aniversario e mais
-            </p>
-          </div>
+          <EmptyState
+            title="Nenhuma audiencia criada"
+            hint="Audiencias filtram clientes por gasto, frequencia, aniversario e mais."
+            className="py-20"
+          />
         ) : (
           <div className="divide-y divide-border">
             {audiences.map((aud) => {
