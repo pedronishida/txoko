@@ -21,7 +21,6 @@ import {
   parseManualWeight,
   serviceModeLabel,
 } from '@/lib/format'
-import { BackgroundCameraScanner } from '@/components/camera-scanner'
 
 /**
  * Frente da estacao.
@@ -390,10 +389,6 @@ export default function StationPage() {
           }}
         />
       )}
-
-      {/* Camera sempre ativa em background. Enquanto a estacao roda em tablet
-          ela e o leitor; some quando virar terminal desktop com serial. */}
-      <BackgroundCameraScanner onScan={handleScan} />
 
       {pendingWeight != null && (
         <WeightGuard
