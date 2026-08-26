@@ -133,3 +133,31 @@ export async function resolveBarcode(barcode: string): Promise<BarcodeResolveRes
   if (error) throw new Error(error.message)
   return data as BarcodeResolveResult
 }
+
+export type ModeRate = {
+  /** Falso quando a modalidade nao esta cadastrada ou esta sem preco. */
+  ready: boolean
+  name: string | null
+  /** Preco por pessoa. So no "a vontade". */
+  price: number | null
+  /** Preco por quilo. Nas duas modalidades de peso. */
+  price_per_kg: number | null
+}
+
+export type StationRates = Record<ServiceMode, ModeRate>
+
+/**
+ * O que este restaurante cobra em cada modalidade.
+ *
+ * Existe porque a tela de escolha precisa mostrar os dois precos lado a lado
+ * antes de o cliente decidir — e as tarifas vivem em products.service_mode,
+ * que a estacao nao conseguia alcancar: nenhuma RPC devolvia o restaurante da
+ * comanda.
+ */
+export async function getRates(qrToken: string): Promise<StationRates> {
+  const { data, error } = await supabase.rpc('station_rates', {
+    p_qr_token: qrToken,
+  })
+  if (error) throw new Error(error.message)
+  return data as StationRates
+}
