@@ -6,13 +6,19 @@
   "start_url": "/",
   "scope": "/",
   "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
   "orientation": "landscape",
-  "background_color": "#0d1114",
-  "theme_color": "#0d1114",
+  "background_color": "#f4f6f8",
+  "theme_color": "#f4f6f8",
   "lang": "pt-BR",
   "dir": "ltr",
-  "categories": ["business", "food"],
+  "categories": [
+    "business",
+    "food"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",

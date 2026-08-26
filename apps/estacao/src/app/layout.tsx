@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { SWRegister } from '@/components/sw-register'
+import { KioskThemeToggle } from '@/components/kiosk-theme'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -14,8 +15,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  // --bg do tema escuro, que e o padrao do quiosque.
-  themeColor: '#0d1114',
+  // --bg do tema claro, que e o padrao do quiosque.
+  themeColor: '#f4f6f8',
 }
 
 export default function RootLayout({
@@ -26,6 +27,15 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        {/* Anti-flash do tema do quiosque. Claro e o padrao, entao so escreve
+            o atributo quando o terminal foi trocado pra escuro — e escreve
+            antes de qualquer conteudo ser analisado, senao a tela pisca clara
+            antes de escurecer. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("txoko-kiosk-theme")==="dark"){document.documentElement.setAttribute("data-kiosk","dark")}}catch(e){}`,
+          }}
+        />
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
@@ -42,6 +52,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <KioskThemeToggle />
         <SWRegister />
       </body>
     </html>

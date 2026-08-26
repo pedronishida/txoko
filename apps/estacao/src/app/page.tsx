@@ -41,11 +41,12 @@ import {
 
 type Toast = { id: number; kind: 'ok' | 'error'; text: string }
 
-// Teclas do teclado numerico -> modalidade
+// Teclas do teclado numerico -> modalidade, na ordem em que aparecem na tela.
+// A tecla nao e anunciada ali (o desenho nao mostra atalho nessa tela), mas
+// serve de acelerador pra quem opera o dia inteiro.
 const MODE_BY_KEY: Record<string, ServiceMode> = {
-  '1': 'avontade',
-  '2': 'por_kg',
-  '3': 'por_kg_2mix',
+  '1': 'por_kg',
+  '2': 'avontade',
 }
 
 // Acima disso pede confirmacao. Prato de self-service raramente passa de
@@ -312,7 +313,7 @@ export default function StationPage() {
       if (mode) {
         void applyMode(mode)
       } else {
-        pushToast('error', 'Aperte 1, 2 ou 3 pra escolher a modalidade')
+        pushToast('error', 'Toque em Por quilo ou À vontade')
       }
       return
     }
@@ -791,10 +792,17 @@ function breakEvenHint(rates: StationRates | null): string | null {
   return `Acima de ${grams.toLocaleString('pt-BR')} g o à vontade sai na frente`
 }
 
-const MODE_OPTIONS: { key: string; mode: ServiceMode; title: string; hint: string }[] = [
-  { key: '1', mode: 'avontade', title: 'À vontade', hint: 'Preço fixo, uma pessoa' },
-  { key: '2', mode: 'por_kg', title: 'Por quilo', hint: 'Pesa o prato' },
-  { key: '3', mode: 'por_kg_2mix', title: '2 misturas', hint: 'Por quilo, outro preço' },
+// Duas opções, na ordem do desenho: por quilo primeiro, porque é a que depende
+// do peso e a que o cliente decide olhando o prato. A modalidade de 2 misturas
+// existe no banco e continua valendo em comandas antigas, mas saiu da escolha
+// do cliente — três caminhos numa tela de autoatendimento é um a mais.
+const MODE_OPTIONS: {
+  mode: ServiceMode
+  title: string
+  tone: 'amber' | 'teal'
+}[] = [
+  { mode: 'por_kg', title: 'Por quilo', tone: 'amber' },
+  { mode: 'avontade', title: 'À vontade', tone: 'teal' },
 ]
 
 function ModePicker({
@@ -829,20 +837,22 @@ function ModePicker({
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-9 px-16">
+      <div className="flex flex-1 flex-col items-center justify-center gap-[38px] px-16">
         <p className="text-2xl text-ink-soft">Como o cliente vai pagar?</p>
 
-        {/* Cada opção com o número ao lado: a escolha deixa de ser às cegas. */}
+        {/* Duas colunas separadas por um fio de 1px, como no desenho: as
+            opções são irmãs, não cartões soltos. A régua colorida no topo é
+            o que distingue uma da outra — não há ícone. */}
         <div
-          className="grid w-full max-w-[880px] gap-px overflow-hidden rounded-[4px] border border-rule bg-rule"
-          style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}
+          className="grid w-full max-w-[760px] gap-px overflow-hidden rounded-[4px] border border-rule bg-rule"
+          style={{ gridTemplateColumns: '1fr 1fr' }}
         >
           {MODE_OPTIONS.map((opt) => {
             const rate = rates?.[opt.mode]
             // Sem tarifas carregadas ainda, a escolha segue liberada — quem
             // recusa modalidade sem produto é o lançamento, no servidor.
             const blocked = rates != null && rate?.ready === false
-            const teal = opt.mode === 'avontade'
+            const teal = opt.tone === 'teal'
             const price = teal
               ? rate?.price != null
                 ? formatCurrency(rate.price)
@@ -850,6 +860,11 @@ function ModePicker({
               : rate?.price_per_kg != null
                 ? `${formatCurrency(rate.price_per_kg)}/kg`
                 : null
+            const detail = blocked
+              ? 'Sem produto cadastrado'
+              : teal
+                ? 'Quanto comer quiser, uma pessoa'
+                : 'Pesa o prato na balança'
 
             return (
               <button
@@ -857,10 +872,9 @@ function ModePicker({
                 onClick={() => onPick(opt.mode)}
                 disabled={busy || blocked}
                 className={
-                  'flex flex-col items-start gap-3 border-t-[3px] bg-card px-7 pb-6 pt-7 text-left ' +
+                  'flex flex-col items-start gap-3 border-t-[3px] bg-card px-[30px] pb-[26px] pt-7 text-left ' +
                   (teal ? 'border-teal' : 'border-amber') +
-                  (blocked ? ' cursor-not-allowed opacity-40' : '') +
-                  (busy ? ' opacity-40' : '')
+                  (blocked || busy ? ' cursor-not-allowed opacity-40' : '')
                 }
               >
                 <span className="flex w-full items-baseline gap-3">
@@ -872,24 +886,20 @@ function ModePicker({
                   >
                     {opt.title}
                   </span>
-                  <span className="flex-1" />
-                  <span className="rounded-[4px] bg-bg px-2 py-1 font-mono text-sm font-bold text-ink-soft">
-                    {opt.key}
-                  </span>
                 </span>
-                <span className="font-mono text-[38px] font-bold leading-none tracking-[-0.04em]">
+                <span className="font-mono text-[48px] font-bold leading-none tracking-[-0.04em]">
                   {price ?? '—'}
                 </span>
                 <span className="text-[15px] leading-[1.4] text-ink-muted">
-                  {blocked ? 'Sem produto cadastrado' : opt.hint}
+                  {detail}
                 </span>
               </button>
             )
           })}
         </div>
 
-        <p className="m-0 min-h-6 text-[15px] text-ink-muted">
-          {breakEvenHint(rates) ?? 'Aperte 1, 2 ou 3 — ou toque na opção'}
+        <p className="m-0 min-h-[21px] text-[15px] text-ink-muted">
+          {breakEvenHint(rates) ?? 'Toque na opção'}
         </p>
       </div>
 
@@ -1052,8 +1062,10 @@ function Toasts({ toasts, inset }: { toasts: Toast[]; inset: boolean }) {
     <div
       className="pointer-events-none absolute bottom-[22px] left-0 z-50 flex flex-col items-center gap-2"
       // Centraliza na coluna de itens, não na tela: com a comanda aberta o
-      // trilho da direita ocupa 420px e o aviso ficaria torto sobre ele.
-      style={{ width: inset ? 'calc(100% - 420px)' : '100%' }}
+      // trilho da direita ocupa 420px e o aviso ficaria torto sobre ele. O
+      // desconto de 493 é o do desenho — um pouco além da largura do trilho,
+      // o que puxa o aviso pra esquerda do centro exato da coluna.
+      style={{ width: inset ? 'calc(100% - 493px)' : '100%' }}
     >
       {toasts.map((t) => (
         <div
