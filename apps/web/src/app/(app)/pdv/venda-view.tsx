@@ -23,16 +23,6 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { TabBar } from '@/components/tab-bar'
 import { EmptyState } from '@/components/states'
 
-// Camera fica ativa em background: o tablet do caixa nem sempre tem leitor
-// USB. Carrega so no cliente porque depende de getUserMedia.
-const BackgroundCameraScanner = dynamic(
-  () =>
-    import('@/components/caixa/camera-scanner').then(
-      (m) => m.BackgroundCameraScanner
-    ),
-  { ssr: false }
-)
-
 // Venda de balcao e comanda da estacao sao a mesma coisa aqui: um pedido
 // aberto que da pra editar e fechar sem trocar de tela.
 
@@ -672,10 +662,6 @@ export function VendaView({
           )}
         </aside>
       </div>
-
-      {/* Camera sempre ativa: le o codigo de barras do cartao e o das bebidas,
-          sem precisar de leitor USB */}
-      <BackgroundCameraScanner onScan={handleScan} />
 
       {feedback && (
         <div

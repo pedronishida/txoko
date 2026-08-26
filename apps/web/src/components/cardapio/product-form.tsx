@@ -1,20 +1,9 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { useState, useEffect, useTransition } from 'react'
 import type { Product, Category } from '@txoko/shared'
-import { ImagePlus, X, ScanLine } from 'lucide-react'
+import { ImagePlus, X } from 'lucide-react'
 import { uploadProductImage } from '@/app/(app)/cardapio/actions'
-
-// Cadastro de codigo de barras sem leitor USB: bipa pela camera do
-// tablet/celular. Client-only por causa do getUserMedia.
-const BackgroundCameraScanner = dynamic(
-  () =>
-    import('@/components/caixa/camera-scanner').then(
-      (m) => m.BackgroundCameraScanner
-    ),
-  { ssr: false }
-)
 
 interface ProductFormProps {
   product: Product | null
@@ -36,7 +25,6 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
   const [soldByWeight, setSoldByWeight] = useState(false)
   const [pricePerKg, setPricePerKg] = useState('')
   const [barcode, setBarcode] = useState('')
-  const [scanning, setScanning] = useState(false)
   const [uploading, startUpload] = useTransition()
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -239,41 +227,14 @@ export function ProductForm({ product, categories, onSave, onClose }: ProductFor
 
           <div>
             <label className={labelClass}>Codigo de barras</label>
-            <div className="flex gap-2">
-              <input
-                value={barcode}
-                onChange={e => setBarcode(e.target.value)}
-                placeholder="Escaneie ou digite o EAN"
-                className={`${inputClass} font-data`}
-              />
-              <button
-                type="button"
-                onClick={() => setScanning(s => !s)}
-                className={`shrink-0 h-10 px-3 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors ${
-                  scanning
-                    ? 'border-primary bg-primary/10 text-foreground'
-                    : 'border-border text-muted hover:text-foreground'
-                }`}
-              >
-                <ScanLine size={14} />
-                {scanning ? 'Cancelar' : 'Bipar'}
-              </button>
-            </div>
-
-            {scanning && (
-              <div className="mt-2 rounded-lg border border-border p-2">
-                <BackgroundCameraScanner
-                  preview
-                  onScan={code => {
-                    setBarcode(code)
-                    setScanning(false)
-                  }}
-                />
-                <p className="mt-1.5 text-xs text-muted">
-                  Aponte a camera pro codigo da embalagem.
-                </p>
-              </div>
-            )}
+            {/* O leitor de codigo digita no campo e manda Enter, entao basta
+                focar aqui e bipar a embalagem. */}
+            <input
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              placeholder="Bipe a embalagem ou digite o EAN"
+              className={`${inputClass} font-data`}
+            />
 
             <p className="mt-1 text-xs text-muted">
               Usado no PDV e na estacao pra lancar itens unitarios (refri, agua,

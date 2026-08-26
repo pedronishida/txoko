@@ -12,7 +12,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.46.1",
     "@txoko/shared": "*",
-    "@zxing/browser": "^0.1.5",
     "lucide-react": "^0.460",
     "next": "^15",
     "react": "^19",
