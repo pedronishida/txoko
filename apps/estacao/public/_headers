@@ -2,3 +2,12 @@
   Permissions-Policy: camera=(self)
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+
+# O worker e o manifest nunca podem ficar presos na borda. Um sw.js velho no
+# CDN trava o terminal numa versao antiga sem ninguem perceber — e o proprio
+# worker que decide quando atualizar, entao ele precisa chegar sempre fresco.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: no-cache
