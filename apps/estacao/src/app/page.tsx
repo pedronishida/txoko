@@ -4,16 +4,35 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { parseScan } from '@/lib/parse-scan'
 import {
   resolveBarcode,
-  addWeightItem,
-  addBarcodeItem,
   cancelItem,
   setServiceMode,
   getRates,
+  getCatalog,
+  sendWeightItem,
+  sendBarcodeItem,
   type StationSnapshot,
   type StationItem,
   type ServiceMode,
   type StationRates,
 } from '@/lib/supabase'
+import {
+  enfileirar,
+  listar,
+  listarTudo,
+  remover,
+  novaChave,
+  ehFalhaDeRede,
+  guardarCatalogo,
+  lerCatalogo,
+  guardarTarifas,
+  lerTarifas,
+  guardarComanda,
+  lerComandaRecente,
+  guardarTokenAtivo,
+  lerTokenAtivo,
+  type Pendente,
+  type ItemCatalogo,
+} from '@/lib/queue'
 import {
   formatCurrency,
   formatWeight,
@@ -54,6 +73,10 @@ const MODE_BY_KEY: Record<string, ServiceMode> = {
 // enquanto nao ha onde guardar, fica aqui.
 const WEIGHT_CONFIRM_THRESHOLD = 1500
 
+// Comanda mais velha que isto nao volta na tela depois de uma recarga: a essa
+// altura ja passou pelo caixa.
+const VALIDADE_DA_FOTO = 45 * 60 * 1000
+
 // Barras de largura variada — o cartao e lido por codigo de barras, nao QR.
 const BARCODE_WIDTHS = [
   3, 7, 2, 4, 9, 3, 2, 6, 4, 3, 8, 2, 5, 3, 7, 2, 9, 4, 3, 6, 2, 8, 3, 4, 2, 7,
@@ -80,7 +103,18 @@ export default function StationPage() {
   // Reabre o seletor quando a atendente aperta a modalidade errada
   const [changingMode, setChangingMode] = useState(false)
   const [rates, setRates] = useState<StationRates | null>(null)
+  const [catalogo, setCatalogo] = useState<ItemCatalogo[]>([])
+  const [pendentes, setPendentes] = useState<Pendente[]>([])
+  // Fila inteira, inclusive de comanda ja encerrada — e o que a tela de espera
+  // mostra pra ninguem apagar o aparelho com lancamento por subir.
+  const [pendentesTotal, setPendentesTotal] = useState(0)
+  const [confirmarFinal, setConfirmarFinal] = useState(false)
+  const [online, setOnline] = useState(true)
   const [clock, setClock] = useState('')
+  const escoandoRef = useRef(false)
+  // O escoamento roda solto no tempo e precisa saber qual comanda esta na tela
+  // agora, nao qual estava quando ele comecou.
+  const tokenRef = useRef<string | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const lastActivityRef = useRef<number>(Date.now())
@@ -114,16 +148,44 @@ export default function StationPage() {
     }
   }, [])
 
-  // Auto-encerra apos 5 minutos de inatividade (comanda segue aberta no DB)
+  /**
+   * Retoma a comanda depois de uma recarga.
+   *
+   * Recarregar acontece: o quiosque atualiza sozinho quando sai versao nova, e
+   * o operador as vezes puxa a tela. Sem isto, a comanda some do balcao e os
+   * itens da fila ficam orfaos — presos no aparelho, sem token na tela pra
+   * escoar.
+   *
+   * Nao pergunta ao servidor de proposito: a unica RPC que devolve a comanda
+   * pelo token e a que ABRE, e chama-la aqui criaria comanda vazia toda vez que
+   * o caixa ja tivesse fechado a anterior.
+   */
   useEffect(() => {
-    if (!session) return
-    const t = setInterval(() => {
-      if (Date.now() - lastActivityRef.current > 5 * 60 * 1000) {
-        finishSession()
+    let alive = true
+    void (async () => {
+      const salvo = await lerTokenAtivo()
+      if (!alive || !salvo) return
+      const foto = await lerComandaRecente<StationSnapshot>(salvo, VALIDADE_DA_FOTO)
+      if (!alive) return
+      if (foto) {
+        setSession(foto)
+        setToken(salvo)
+      } else {
+        // Some da tela, mas o que ficou na fila continua subindo: o pendente
+        // guarda o proprio token e vai parar no pedido certo.
+        void guardarTokenAtivo(null)
       }
-    }, 10000)
-    return () => clearInterval(t)
-  }, [session])
+      if (alive) setPendentesTotal((await listarTudo()).length)
+    })()
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
   const pushToast = useCallback((kind: Toast['kind'], text: string) => {
     const id = Date.now() + Math.random()
@@ -131,34 +193,47 @@ export default function StationPage() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500)
   }, [])
 
-  function finishSession() {
-    setSession(null)
-    setToken(null)
-    setCancelToken(null)
-    setBuffer('')
-    setPendingWeight(null)
-    setChangingMode(false)
-    setRates(null)
-  }
 
-  // As tarifas do restaurante, buscadas assim que a comanda abre. Sem elas a
-  // tela de escolha vira uma pergunta sem numero.
+  /**
+   * O que a estacao precisa saber pra funcionar sem rede: as tarifas (pra
+   * precificar a escolha e o prato) e o catalogo (pra nomear e precificar a
+   * bebida bipada). Busca do servidor e guarda; se o servidor nao responder,
+   * usa o que ficou guardado da ultima vez.
+   */
   useEffect(() => {
     if (!token) return
     let alive = true
-    void getRates(token)
-      .then((r) => {
-        if (alive) setRates(r)
-      })
-      .catch(() => {
-        // A escolha continua possivel sem preco na tela; o lancamento e quem
-        // recusa uma modalidade sem produto cadastrado.
-        if (alive) setRates(null)
-      })
+
+    void (async () => {
+      try {
+        const r = await getRates(token)
+        if (!alive) return
+        setRates(r)
+        void guardarTarifas(token, r)
+      } catch {
+        const guardado = await lerTarifas<StationRates>(token)
+        if (alive && guardado) setRates(guardado)
+      }
+      try {
+        const c = await getCatalog(token)
+        if (!alive) return
+        setCatalogo(c)
+        void guardarCatalogo(token, c)
+      } catch {
+        const guardado = await lerCatalogo(token)
+        if (alive && guardado) setCatalogo(guardado)
+      }
+      if (alive) {
+        setPendentes(await listar(token))
+        setPendentesTotal((await listarTudo()).length)
+      }
+    })()
+
     return () => {
       alive = false
     }
   }, [token])
+
 
   // Define a modalidade da comanda. Uma comanda por pessoa, entao o "a
   // vontade" e sempre 1 — nao ha quantidade pra ajustar na estacao.
@@ -170,9 +245,20 @@ export default function StationPage() {
         const snap = await setServiceMode(token, mode, 1)
         setSession(snap)
         setChangingMode(false)
+        setOnline(true)
+        void guardarComanda(token, snap)
         pushToast('ok', serviceModeLabel(mode))
       } catch (e) {
-        pushToast('error', e instanceof Error ? e.message : 'Erro ao definir modalidade')
+        const msg = e instanceof Error ? e.message : 'Erro ao definir modalidade'
+        // A modalidade tambem nao entra na fila: ela precifica tudo que vem
+        // depois, e um preco escolhido no aparelho nao vale nada se o servidor
+        // recusar a modalidade quando a rede voltar.
+        if (ehFalhaDeRede(msg)) {
+          setOnline(false)
+          pushToast('error', 'Sem rede — a modalidade precisa do servidor')
+        } else {
+          pushToast('error', msg)
+        }
       } finally {
         setBusy(false)
       }
@@ -180,21 +266,183 @@ export default function StationPage() {
     [token, pushToast]
   )
 
+  /**
+   * Envia o que estiver na fila, em ordem.
+   *
+   * Item que o servidor recusa sai da fila: ele nunca vai passar, e insistir
+   * travaria tudo que veio depois atras de um lancamento que jamais entra.
+   * Falha de rede, ao contrario, para o envio e mantem a ordem intacta.
+   */
+  const escoar = useCallback(async () => {
+    if (escoandoRef.current) return
+    escoandoRef.current = true
+    try {
+      // Toda a fila, nao so a da comanda na tela: o que ficou de uma comanda
+      // ja encerrada tambem precisa subir, e cada pendente sabe seu token.
+      const fila = await listarTudo()
+      for (const p of fila) {
+        const res =
+          p.kind === 'weight'
+            ? await sendWeightItem(p.token, p.weightGrams!, p.key)
+            : await sendBarcodeItem(p.token, p.barcode!, p.key)
+
+        if (res.ok) {
+          await remover(p.key)
+          setOnline(true)
+          void guardarComanda(p.token, res.snapshot)
+          // So repinta a tela se a foto for da comanda que esta nela.
+          if (p.token === tokenRef.current) setSession(res.snapshot)
+          continue
+        }
+        // A tentativa real vale mais que navigator.onLine: uma resposta que
+        // chegou prova que ha rede, e uma falha de rede prova que nao ha —
+        // mesmo com o Wi-Fi associado, que e o caso do salao.
+        if (ehFalhaDeRede(res.error)) {
+          setOnline(false)
+          break
+        }
+        setOnline(true)
+        await remover(p.key)
+        pushToast('error', `${p.nome}: ${res.error}`)
+      }
+    } finally {
+      escoandoRef.current = false
+      const t = tokenRef.current
+      setPendentes(t ? await listar(t) : [])
+      setPendentesTotal((await listarTudo()).length)
+    }
+  }, [pushToast])
+
+  /**
+   * Encerra a comanda na tela. A comanda segue aberta no banco — quem fecha e
+   * cobra e o caixa.
+   *
+   * Com item na fila, pede um segundo toque antes de encerrar. Barrar de vez
+   * seria pior: numa queda de rede a estacao ficaria presa no mesmo cliente e
+   * ninguem mais seria atendido, que e exatamente o travamento que a fila veio
+   * evitar. O risco do outro lado — o cliente chegar ao caixa antes do item
+   * subir — e real, entao nao passa em um toque so.
+   *
+   * A fila NAO e descartada: ela sobrevive a comanda e continua subindo em
+   * segundo plano, com o token de origem, ate entrar.
+   */
+  const finishSession = useCallback(
+    // `=== true` e nao `!forcado`: ligado direto num onClick, o React passa o
+    // evento aqui, e qualquer objeto e truthy — a guarda cairia sozinha.
+    (forcado = false) => {
+      if (forcado !== true && pendentes.length > 0 && !confirmarFinal) {
+        setConfirmarFinal(true)
+        pushToast(
+          'error',
+          `${pendentes.length} ${pendentes.length === 1 ? 'item ainda não subiu' : 'itens ainda não subiram'} — toque de novo para encerrar assim mesmo`
+        )
+        void escoar()
+        return
+      }
+      if (token) void guardarTokenAtivo(null)
+      setSession(null)
+      setToken(null)
+      setCancelToken(null)
+      setBuffer('')
+      setPendingWeight(null)
+      setChangingMode(false)
+      setConfirmarFinal(false)
+      setRates(null)
+      setCatalogo([])
+      setPendentes([])
+    },
+    [token, pendentes.length, confirmarFinal, pushToast, escoar]
+  )
+
+  // A confirmacao nao fica armada: se o operador desistiu e foi lancar outro
+  // prato, o proximo toque em Finalizar volta a avisar.
+  useEffect(() => {
+    if (!confirmarFinal) return
+    const t = setTimeout(() => setConfirmarFinal(false), 8000)
+    return () => clearTimeout(t)
+  }, [confirmarFinal])
+
+  // Auto-encerra apos 5 minutos de inatividade (comanda segue aberta no DB).
+  // Depende de finishSession e nao so de session: a versao capturada precisa
+  // enxergar a fila do momento, senao limparia a tela com item por subir.
+  useEffect(() => {
+    if (!session) return
+    const t = setInterval(() => {
+      if (Date.now() - lastActivityRef.current > 5 * 60 * 1000) {
+        finishSession()
+      }
+    }, 10000)
+    return () => clearInterval(t)
+  }, [session, finishSession])
+
+  /**
+   * Lanca um item.
+   *
+   * Entra na fila primeiro, aparece na comanda na hora e so depois vai pra
+   * rede. O operador nunca espera, e uma queda no meio nao perde o item —
+   * ele fica guardado e sobe quando a rede voltar.
+   */
+  const lancar = useCallback(
+    async (p: Omit<Pendente, 'key' | 'token' | 'at'>) => {
+      if (!token) return
+      const item: Pendente = {
+        ...p,
+        key: novaChave(),
+        token,
+        at: Date.now(),
+      }
+      await enfileirar(item)
+      setPendentes(await listar(token))
+      setPendentesTotal((await listarTudo()).length)
+      pushToast('ok', `+ ${p.qty}`)
+      void escoar()
+    },
+    [token, pushToast, escoar]
+  )
+
+  /**
+   * Estado da rede e reenvio.
+   *
+   * Volta a rede, escoa. E tenta de novo a cada 20 s enquanto houver fila:
+   * o evento `online` do navegador mente com frequencia — ele dispara com
+   * Wi-Fi associado mas sem internet de verdade, que e exatamente o cenario
+   * de rede fraca.
+   */
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine)
+    sync()
+    const aoVoltar = () => {
+      sync()
+      void escoar()
+    }
+    window.addEventListener('online', aoVoltar)
+    window.addEventListener('offline', sync)
+    const t = setInterval(() => {
+      if (pendentesTotal > 0) void escoar()
+    }, 20000)
+    return () => {
+      window.removeEventListener('online', aoVoltar)
+      window.removeEventListener('offline', sync)
+      clearInterval(t)
+    }
+  }, [escoar, pendentesTotal])
+
   const applyManualWeight = useCallback(
     async (grams: number) => {
       if (!token) return
-      try {
-        setBusy(true)
-        const snap = await addWeightItem(token, grams)
-        setSession(snap)
-        pushToast('ok', `+ ${formatWeight(grams)}`)
-      } catch (e) {
-        pushToast('error', e instanceof Error ? e.message : 'Erro ao lancar peso')
-      } finally {
-        setBusy(false)
-      }
+      const taxaKg = rates?.[session?.service_mode ?? 'por_kg']?.price_per_kg
+      await lancar({
+        kind: 'weight',
+        weightGrams: grams,
+        nome: 'Prato por quilo',
+        qty: formatWeight(grams),
+        taxa: taxaKg != null ? `${formatCurrency(taxaKg)}/kg` : '',
+        // Otimista: o servidor recalcula em numeric e a foto seguinte corrige
+        // qualquer centavo de diferenca.
+        total: taxaKg != null ? (taxaKg * grams) / 1000 : 0,
+      })
     },
-    [token, pushToast]
+    [token, lancar, rates, session]
   )
 
   const handleScan = useCallback(
@@ -228,10 +476,21 @@ export default function StationPage() {
           }
           setSession(res.session)
           setToken(res.qr_token)
+          setOnline(true)
+          void guardarTokenAtivo(res.qr_token)
+          void guardarComanda(res.qr_token, res.session)
           pushToast('ok', `Comanda ${res.session.comanda_card.card_number} aberta`)
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Erro ao abrir comanda'
-          pushToast('error', msg)
+          // Abrir comanda e a unica coisa que a estacao nao consegue adiar: o
+          // numero do pedido nasce no banco, e sem ele nao ha onde pendurar
+          // item nenhum.
+          if (ehFalhaDeRede(msg)) {
+            setOnline(false)
+            pushToast('error', 'Sem rede — não dá para abrir comanda agora')
+          } else {
+            pushToast('error', msg)
+          }
         } finally {
           setBusy(false)
         }
@@ -259,25 +518,33 @@ export default function StationPage() {
         return
       }
 
-      try {
-        setBusy(true)
-        let snap: StationSnapshot
-        if (scan.kind === 'weight') {
-          snap = await addWeightItem(token, scan.weightGrams)
-          pushToast('ok', `+ ${formatWeight(scan.weightGrams)}`)
-        } else {
-          snap = await addBarcodeItem(token, scan.code)
-          pushToast('ok', 'Item adicionado')
-        }
-        setSession(snap)
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Erro ao adicionar item'
-        pushToast('error', msg)
-      } finally {
-        setBusy(false)
+      if (scan.kind === 'weight') {
+        const taxaKg = rates?.[session.service_mode ?? 'por_kg']?.price_per_kg
+        await lancar({
+          kind: 'weight',
+          weightGrams: scan.weightGrams,
+          nome: 'Prato por quilo',
+          qty: formatWeight(scan.weightGrams),
+          taxa: taxaKg != null ? `${formatCurrency(taxaKg)}/kg` : '',
+          total: taxaKg != null ? (taxaKg * scan.weightGrams) / 1000 : 0,
+        })
+        return
       }
+
+      // O codigo de barras e resolvido no servidor, entao offline o nome e o
+      // preco saem do catalogo guardado. Sem catalogo ainda, o item entra na
+      // fila mesmo assim — o que nao da e fingir um preco que nao se sabe.
+      const doCatalogo = catalogo.find((c) => c.barcode === scan.code)
+      await lancar({
+        kind: 'barcode',
+        barcode: scan.code,
+        nome: doCatalogo?.name ?? `Codigo ${scan.code}`,
+        qty: '1 un',
+        taxa: doCatalogo ? `${formatCurrency(doCatalogo.price)} cada` : '',
+        total: doCatalogo?.price ?? 0,
+      })
     },
-    [session, token, pushToast]
+    [session, token, pushToast, lancar, rates, catalogo]
   )
 
   // O leitor HID "digita" no input + Enter ao final. Um input so atende tudo:
@@ -343,7 +610,12 @@ export default function StationPage() {
     <main className="fixed inset-0 flex flex-col bg-bg text-ink">
       {!session ? (
         <>
-          <IdleView clock={clock} busy={busy} />
+          <IdleView
+            clock={clock}
+            busy={busy}
+            online={online}
+            naFila={pendentesTotal}
+          />
           <input
             ref={inputRef}
             autoFocus
@@ -358,8 +630,11 @@ export default function StationPage() {
         <ActiveView
           session={session}
           rates={rates}
+          pendentes={pendentes}
+          online={online}
           busy={busy}
-          onFinish={finishSession}
+          onFinish={() => finishSession()}
+          confirmarFinal={confirmarFinal}
           inputRef={inputRef}
           buffer={buffer}
           setBuffer={setBuffer}
@@ -377,10 +652,19 @@ export default function StationPage() {
               setBusy(true)
               const snap = await cancelItem(cancelToken, session.order_id, itemId)
               setSession(snap)
+              setOnline(true)
+              if (token) void guardarComanda(token, snap)
               pushToast('ok', 'Item cancelado')
             } catch (e) {
               const msg = e instanceof Error ? e.message : 'Erro ao cancelar'
-              pushToast('error', msg)
+              // Cancelar nao entra na fila: tirar da tela sem tirar do banco
+              // faria o caixa cobrar um item que o cliente viu sumir.
+              if (ehFalhaDeRede(msg)) {
+                setOnline(false)
+                pushToast('error', 'Sem rede — não dá para cancelar agora')
+              } else {
+                pushToast('error', msg)
+              }
             } finally {
               setBusy(false)
               setTimeout(() => {
@@ -411,7 +695,17 @@ export default function StationPage() {
 
 /* ---------------------------------------------------------------- */
 
-function IdleView({ clock, busy }: { clock: string; busy: boolean }) {
+function IdleView({
+  clock,
+  busy,
+  online,
+  naFila,
+}: {
+  clock: string
+  busy: boolean
+  online: boolean
+  naFila: number
+}) {
   return (
     <>
       <div className="flex flex-1 flex-col items-center justify-center gap-11 px-16">
@@ -439,14 +733,32 @@ function IdleView({ clock, busy }: { clock: string; busy: boolean }) {
         </div>
       </div>
       <div className="flex h-[76px] shrink-0 items-center gap-4 border-t border-rule px-10">
+        {/* O aviso mora aqui, e não num alerta no meio da tela: sem rede o
+            leitor continua lendo, o que não dá é nascer comanda nova. */}
         <span
-          className="h-[9px] w-[9px] shrink-0 rounded-full bg-teal"
+          className={
+            'h-[9px] w-[9px] shrink-0 rounded-full ' +
+            (online ? 'bg-teal' : 'bg-amber')
+          }
           style={{ animation: 'est-breathe 2s ease-in-out infinite' }}
         />
         <span className="text-[15px] text-ink-muted">
-          {busy ? 'Abrindo comanda…' : 'Leitor pronto'}
+          {busy
+            ? 'Abrindo comanda…'
+            : online
+              ? 'Leitor pronto'
+              : 'Sem rede — comanda nova só quando a conexão voltar'}
         </span>
         <div className="flex-1" />
+        {/* Fila que sobrou de comanda já encerrada. Aparece aqui para ninguém
+            desligar o aparelho com lançamento por subir. */}
+        {naFila > 0 && (
+          <span className="rounded-[4px] border border-amber-edge bg-amber-soft px-3 py-1.5 text-[13px] font-semibold text-amber">
+            {naFila === 1
+              ? '1 lançamento ainda subindo'
+              : `${naFila} lançamentos ainda subindo`}
+          </span>
+        )}
         <span className="text-[15px] text-ink-muted">Txoko · Estação</span>
         <span className="font-mono text-[15px] text-ink-soft">{clock}</span>
       </div>
@@ -459,8 +771,11 @@ function IdleView({ clock, busy }: { clock: string; busy: boolean }) {
 function ActiveView({
   session,
   rates,
+  pendentes,
+  online,
   busy,
   onFinish,
+  confirmarFinal,
   inputRef,
   buffer,
   setBuffer,
@@ -474,8 +789,11 @@ function ActiveView({
 }: {
   session: StationSnapshot
   rates: StationRates | null
+  pendentes: Pendente[]
+  online: boolean
   busy: boolean
   onFinish: () => void
+  confirmarFinal: boolean
   inputRef: React.RefObject<HTMLInputElement | null>
   buffer: string
   setBuffer: (v: string) => void
@@ -496,7 +814,7 @@ function ActiveView({
       top: scrollRef.current.scrollHeight,
       behavior: 'smooth',
     })
-  }, [session.items.length])
+  }, [session.items.length, pendentes.length])
 
   const comandaLabel = String(session.comanda_card.card_number).padStart(3, '0')
 
@@ -517,6 +835,12 @@ function ActiveView({
   }
 
   const porKg = isPorKg(mode)
+
+  // O que a comanda vale hoje, incluindo o que ainda nao subiu. Mostrar so o
+  // total confirmado enquanto ha item na fila daria um numero menor que o
+  // prato que o cliente ja tem na mao.
+  const totalComPendentes =
+    session.total + pendentes.reduce((soma, p) => soma + p.total, 0)
 
   // A taxa vigente ao lado da modalidade: e ela que precifica tudo que entra
   // depois, entao vem antes do numero da comanda.
@@ -555,6 +879,23 @@ function ActiveView({
           </p>
         </div>
         <div className="flex-1" />
+        {/* Só aparece quando há o que dizer. Um indicador permanente de rede
+            vira parte do cenário e ninguém repara nele quando muda. */}
+        {(!online || pendentes.length > 0) && (
+          <div
+            role="status"
+            className="rounded-[4px] border border-amber-edge bg-amber-soft px-4 py-2 text-right"
+          >
+            <p className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-amber">
+              {online ? 'Enviando' : 'Sem rede'}
+            </p>
+            <p className="mt-0.5 font-mono text-[13px] text-ink-soft">
+              {pendentes.length === 0
+                ? 'comanda em dia'
+                : `${pendentes.length} ${pendentes.length === 1 ? 'item na fila' : 'itens na fila'}`}
+            </p>
+          </div>
+        )}
         <button
           onClick={onStartChangeMode}
           disabled={busy}
@@ -562,11 +903,18 @@ function ActiveView({
         >
           Trocar modalidade
         </button>
+        {/* Com item na fila o botão muda de rótulo e de cor: quem encerra
+            assim está tomando uma decisão, não repetindo um gesto. */}
         <button
           onClick={onFinish}
-          className="min-h-12 rounded-[4px] bg-teal px-6 text-base font-bold text-on-accent"
+          className={
+            'min-h-12 rounded-[4px] px-6 text-base font-bold ' +
+            (confirmarFinal
+              ? 'bg-amber text-on-amber'
+              : 'bg-teal text-on-accent')
+          }
         >
-          Finalizar
+          {confirmarFinal ? 'Encerrar assim mesmo' : 'Finalizar'}
         </button>
       </div>
 
@@ -578,14 +926,14 @@ function ActiveView({
               Itens da comanda
             </p>
             <span className="font-mono text-[13px] text-ink-muted">
-              {itemCountLabel(session.items.length)}
+              {itemCountLabel(session.items.length + pendentes.length)}
             </span>
           </div>
           <div
             ref={scrollRef}
             className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-11 pb-6"
           >
-            {session.items.length === 0 ? (
+            {session.items.length === 0 && pendentes.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-3.5 text-center">
                 <p className="text-[21px] font-medium text-ink-soft">
                   Nenhum item ainda
@@ -597,13 +945,28 @@ function ActiveView({
                 </p>
               </div>
             ) : (
-              session.items.map((item, i) => (
-                <ComandaRow
-                  key={item.id}
-                  item={item}
-                  isLast={i === session.items.length - 1}
-                />
-              ))
+              <>
+                {session.items.map((item, i) => (
+                  <ComandaRow
+                    key={item.id}
+                    item={item}
+                    isLast={
+                      pendentes.length === 0 && i === session.items.length - 1
+                    }
+                  />
+                ))}
+                {/* Pendentes entram na mesma comanda, na mesma linha, com o
+                    mesmo peso visual — porque para o cliente ja entraram. O
+                    que muda e a etiqueta: quem opera precisa saber o que ainda
+                    nao subiu antes de mandar a pessoa pro caixa. */}
+                {pendentes.map((p, i) => (
+                  <PendenteRow
+                    key={p.key}
+                    p={p}
+                    isLast={i === pendentes.length - 1}
+                  />
+                ))}
+              </>
             )}
           </div>
         </section>
@@ -655,7 +1018,7 @@ function ActiveView({
               Total
             </span>
             <p className="mt-2.5 font-mono text-[62px] font-bold leading-none tracking-[-0.045em] text-ink">
-              {formatCurrency(session.total)}
+              {formatCurrency(totalComPendentes)}
             </p>
           </div>
         </aside>
@@ -669,6 +1032,42 @@ function ActiveView({
           onClose={onCloseCancelMode}
         />
       )}
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
+/**
+ * Linha de item que ainda nao subiu.
+ *
+ * Mesma grade e mesmo corpo do item confirmado: para o cliente ele ja entrou,
+ * e uma linha menor ou apagada sugeriria o contrario. O que distingue e a
+ * etiqueta e o ambar — a cor que a tela ja usa pra "ainda nao resolvido".
+ */
+function PendenteRow({ p, isLast }: { p: Pendente; isLast: boolean }) {
+  return (
+    <div
+      className="grid grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint py-[17px]"
+      style={isLast ? { animation: 'est-land .22s ease-out' } : undefined}
+    >
+      <span className="text-right font-mono text-lg font-bold text-amber">
+        {p.qty}
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-baseline gap-2.5">
+          <span className="truncate text-[19px] font-medium">{p.nome}</span>
+          <span className="shrink-0 text-[11.5px] font-bold uppercase tracking-[0.09em] text-amber">
+            na fila
+          </span>
+        </span>
+        <span className="mt-[3px] block font-mono text-[13.5px] text-ink-muted">
+          {p.taxa || 'valor confirma quando subir'}
+        </span>
+      </span>
+      <span className="font-mono text-[22px] font-bold tracking-[-0.01em] text-amber">
+        {p.total > 0 ? formatCurrency(p.total) : '—'}
+      </span>
     </div>
   )
 }

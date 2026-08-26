@@ -16,7 +16,7 @@
  * Este arquivo so garante que a tela abre.
  */
 
-const VERSION = 'estacao-v3'
+const VERSION = 'estacao-v4'
 const SHELL = `${VERSION}-shell`
 
 // O que precisa existir pra tela abrir sem rede.
