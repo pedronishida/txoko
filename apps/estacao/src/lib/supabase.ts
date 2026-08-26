@@ -161,3 +161,54 @@ export async function getRates(qrToken: string): Promise<StationRates> {
   if (error) throw new Error(error.message)
   return data as StationRates
 }
+
+export type CatalogItem = { barcode: string; name: string; price: number }
+
+/** Produtos de unidade com codigo de barras — o que a estacao precisa em maos
+ *  pra saber nome e preco de uma bebida quando a rede cai. */
+export async function getCatalog(qrToken: string): Promise<CatalogItem[]> {
+  const { data, error } = await supabase.rpc('station_catalog', {
+    p_qr_token: qrToken,
+  })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as CatalogItem[]
+}
+
+/**
+ * Lancamentos com chave de idempotencia.
+ *
+ * Devolvem { snapshot } ou { error }, em vez de lancar: a fila precisa
+ * distinguir falha de rede de recusa do servidor, e excecao apaga essa
+ * diferenca.
+ */
+export type EnvioResultado =
+  | { ok: true; snapshot: StationSnapshot }
+  | { ok: false; error: string }
+
+export async function sendWeightItem(
+  qrToken: string,
+  weightGrams: number,
+  clientKey: string
+): Promise<EnvioResultado> {
+  const { data, error } = await supabase.rpc('station_add_weight_item', {
+    p_qr_token: qrToken,
+    p_weight_grams: weightGrams,
+    p_client_key: clientKey,
+  })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, snapshot: data as StationSnapshot }
+}
+
+export async function sendBarcodeItem(
+  qrToken: string,
+  barcode: string,
+  clientKey: string
+): Promise<EnvioResultado> {
+  const { data, error } = await supabase.rpc('station_add_barcode_item', {
+    p_qr_token: qrToken,
+    p_barcode: barcode,
+    p_client_key: clientKey,
+  })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, snapshot: data as StationSnapshot }
+}
