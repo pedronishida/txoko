@@ -16,7 +16,7 @@
  * Este arquivo so garante que a tela abre.
  */
 
-const VERSION = 'estacao-v2'
+const VERSION = 'estacao-v3'
 const SHELL = `${VERSION}-shell`
 
 // O que precisa existir pra tela abrir sem rede.
@@ -68,36 +68,34 @@ self.addEventListener('fetch', (event) => {
   // problema que o no-cache do _headers evita na borda do CDN.
   if (url.pathname === '/sw.js') return
 
-  // Navegacao: cache primeiro, com a rede atualizando por baixo. E o que faz
-  // a estacao abrir instantaneamente e continuar abrindo sem internet.
+  // Navegacao: rede primeiro, cache so como rede de seguranca.
+  //
+  // Cache primeiro parece mais rapido e esta errado aqui: o HTML e o indice
+  // que aponta pros chunks com hash no nome. Servir o HTML velho depois de um
+  // deploy manda o navegador buscar chunks que nao existem mais — 404 em
+  // cascata, ChunkLoadError e tela sem estilo. O HTML e pequeno; um round trip
+  // por carga custa menos que uma tela quebrada por deploy.
   if (request.mode === 'navigate') {
-    event.respondWith(shellFirst(event))
+    event.respondWith(networkFirstShell(request))
     return
   }
 
   event.respondWith(cacheFirst(request))
 })
 
-async function shellFirst(event) {
+async function networkFirstShell(request) {
   const cache = await caches.open(SHELL)
-  const cached =
-    (await cache.match(event.request)) || (await cache.match('/index.html'))
-
-  const network = fetch(event.request)
-    .then((response) => {
-      if (response && response.ok) cache.put('/index.html', response.clone())
-      return response
-    })
-    .catch(() => null)
-
-  // Com cache, responde na hora e revalida em segundo plano. O waitUntil
-  // mantem o worker vivo ate a revalidacao terminar, sem prender a resposta.
-  if (cached) {
-    event.waitUntil(network)
-    return cached
+  try {
+    const response = await fetch(request)
+    if (response && response.ok) cache.put('/index.html', response.clone())
+    return response
+  } catch {
+    // Sem rede: o HTML guardado aponta pros chunks que tambem estao no cache,
+    // entao o par continua coerente e a estacao abre.
+    const cached =
+      (await cache.match(request)) || (await cache.match('/index.html'))
+    return cached || new Response('Estacao indisponivel', { status: 503 })
   }
-  const fresh = await network
-  return fresh || new Response('Estacao indisponivel', { status: 503 })
 }
 
 async function cacheFirst(request) {
