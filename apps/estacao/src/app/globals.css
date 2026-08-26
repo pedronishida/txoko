@@ -1,29 +1,121 @@
 @import "tailwindcss";
 
-/* Design tokens — dark-first pra kiosk */
+/* =============================================================
+   Estacao — camada de tokens (Fase 04)
+
+   Conjunto proprio, deliberadamente diferente do painel: aqui e um
+   terminal de quiosque, entao o escuro e o padrao e nao preferencia.
+   O claro existe para balcao muito iluminado e entra por
+   data-kiosk="light" no <html>.
+
+   Canvas de referencia: 1280x800.
+============================================================= */
+
 :root {
-  --bg: #0A0A0A;
-  --bg-card: #141414;
-  --border: #262626;
-  --border-strong: #3A3A3A;
+  color-scheme: dark;
+  --bg: oklch(13% 0.01 250);
+  --card: oklch(19% 0.012 250);
+  --card-2: oklch(23% 0.013 250);
+  --rule: oklch(28% 0.012 250);
+  --rule-faint: oklch(22% 0.012 250);
+  --rule-strong: oklch(38% 0.014 250);
+  --ink: oklch(97% 0.005 250);
+  --ink-soft: oklch(80% 0.012 250);
+  --ink-muted: oklch(66% 0.012 250);
+  --placeholder: oklch(59% 0.012 250);
+  --teal: oklch(74% 0.15 165);
+  --teal-soft: oklch(29% 0.06 165);
+  --teal-edge: oklch(45% 0.10 165);
+  --amber: oklch(80% 0.15 80);
+  --amber-soft: oklch(30% 0.06 80);
+  --amber-edge: oklch(48% 0.11 80);
+  --red: oklch(70% 0.19 25);
+  --red-soft: oklch(30% 0.08 25);
+  --on-accent: oklch(16% 0.03 165);
+  --on-amber: oklch(18% 0.04 80);
+  --on-amber-soft: oklch(37% 0.06 80);
+  /* Veu atras dos estados privilegiados (aviso de peso, cancelamento). */
+  --scrim: oklch(8% 0.008 250 / .84);
+  --scrim-soft: oklch(8% 0.008 250 / .78);
+}
 
-  --fg: #FAFAF8;
-  --fg-muted: #A8A29E;
-  --fg-subtle: #57534E;
+[data-kiosk="light"] {
+  color-scheme: light;
+  --bg: oklch(97% 0.004 250);
+  --card: oklch(99.5% 0.002 250);
+  --card-2: oklch(100% 0 0);
+  --rule: oklch(90% 0.006 250);
+  --rule-faint: oklch(93% 0.005 250);
+  --rule-strong: oklch(78% 0.008 250);
+  --ink: oklch(22% 0.014 250);
+  --ink-soft: oklch(42% 0.016 250);
+  --ink-muted: oklch(48% 0.014 250);
+  --placeholder: oklch(53% 0.012 250);
+  --teal: oklch(48% 0.11 165);
+  --teal-soft: oklch(94% 0.045 165);
+  --teal-edge: oklch(70% 0.09 165);
+  --amber: oklch(50% 0.13 75);
+  --amber-soft: oklch(95% 0.045 80);
+  --amber-edge: oklch(70% 0.11 80);
+  --red: oklch(50% 0.19 25);
+  --red-soft: oklch(95% 0.04 25);
+  --on-accent: oklch(99% 0.01 165);
+  --on-amber: oklch(99% 0.01 80);
+  --on-amber-soft: oklch(97% 0.03 80);
+  --scrim: oklch(32% 0.02 250 / .38);
+  --scrim-soft: oklch(32% 0.02 250 / .3);
+}
 
-  --primary: #4ADE80;
-  --primary-hover: #22C55E;
-  --primary-soft: rgba(74, 222, 128, 0.1);
+/* =============================================================
+   Compatibilidade
 
-  --warm: #F59E0B;
-  --warm-soft: rgba(245, 158, 11, 0.12);
-
-  --coral: #EF4444;
-  --coral-soft: rgba(239, 68, 68, 0.12);
+   Os nomes que a tela de diagnostico da balanca ja usa, remapeados
+   sobre os tokens novos. Ela nao tem prancheta no redesign, entao
+   segue como esta e continua acompanhando o tema.
+   Repetido em [data-kiosk="light"]: var() resolve no elemento onde e
+   declarado.
+============================================================= */
+:root,
+[data-kiosk="light"] {
+  --bg-card: var(--card);
+  --border: var(--rule);
+  --border-strong: var(--rule-strong);
+  --fg: var(--ink);
+  --fg-muted: var(--ink-soft);
+  --fg-subtle: var(--ink-muted);
+  --primary: var(--teal);
+  --primary-hover: var(--teal-edge);
+  --primary-soft: var(--teal-soft);
+  --warm: var(--amber);
+  --warm-soft: var(--amber-soft);
+  --coral: var(--red);
+  --coral-soft: var(--red-soft);
 }
 
 @theme inline {
+  /* Tokens da estacao */
   --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-rule: var(--rule);
+  --color-rule-faint: var(--rule-faint);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-teal-edge: var(--teal-edge);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-edge: var(--amber-edge);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-on-accent: var(--on-accent);
+  --color-on-amber: var(--on-amber);
+  --color-on-amber-soft: var(--on-amber-soft);
+
+  /* Nomes antigos, mantidos para a tela de diagnostico */
   --color-bg-card: var(--bg-card);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
@@ -38,20 +130,20 @@
   --color-coral: var(--coral);
   --color-coral-soft: var(--coral-soft);
 
-  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-sans: Archivo, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: 'Space Mono', 'Roboto Mono', ui-monospace, monospace;
 }
 
 html, body {
   background: var(--bg);
-  color: var(--fg);
+  color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   height: 100%;
 }
 
 body {
-  /* Kiosk: desabilita seleção e context menu acidentais */
+  /* Quiosque: nao ha o que selecionar nem menu de contexto a abrir. */
   user-select: none;
   -webkit-user-select: none;
   overflow: hidden;
@@ -62,6 +154,36 @@ input, textarea {
   -webkit-user-select: text;
 }
 
+input::placeholder { color: var(--placeholder); }
+
+/* Anel mais grosso que o do painel: aqui a tela fica longe do olho e o
+   operador nao esta sentado. */
+:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 3px;
+}
+
+::selection { background: var(--teal); color: var(--on-accent); }
+
 /* Esconde scrollbars sem quebrar scroll */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* O codigo de barras da tela de espera respira; o item recem-lancado
+   assenta. Nada mais anima. */
+@keyframes est-breathe {
+  0%, 100% { opacity: .35; }
+  50% { opacity: 1; }
+}
+@keyframes est-land {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

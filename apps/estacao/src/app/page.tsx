@@ -1,21 +1,44 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { QrCode, ScanLine, Scale, Package, X, CheckCircle2, AlertCircle, ChefHat, Ban, Trash2 } from 'lucide-react'
 import { parseScan } from '@/lib/parse-scan'
 import {
-  resolveScan,
   resolveBarcode,
   addWeightItem,
   addBarcodeItem,
   cancelItem,
   setServiceMode,
+  getRates,
   type StationSnapshot,
   type StationItem,
   type ServiceMode,
+  type StationRates,
 } from '@/lib/supabase'
-import { formatCurrency, formatWeight, serviceModeLabel } from '@/lib/format'
+import {
+  formatCurrency,
+  formatWeight,
+  formatWeightProse,
+  parseManualWeight,
+  serviceModeLabel,
+} from '@/lib/format'
 import { BackgroundCameraScanner } from '@/components/camera-scanner'
+
+/**
+ * Frente da estacao.
+ *
+ * Zero icones, de proposito. Numa tela que ja mostra peso e preco em corpo
+ * grande, o glifo nao informa nada — a distincao entre um prato pesado e uma
+ * bebida sai da tipografia, da regua colorida e do fio que separa as linhas.
+ *
+ * A lista de itens e uma comanda, nao um cartao por item: mono alinhada a
+ * direita, nome, taxa, preco, linhas separadas por fio de 1px. Raios de 4px,
+ * densidade de terminal.
+ *
+ * A leitura automatica da balanca (Web Serial, Toledo Prix IV) ainda nao
+ * existe — falta o cabo. Ate la o peso entra a mao, que no desenho e via de
+ * excecao de primeira classe e nao gambiarra: o campo mora no trilho da
+ * comanda ativa, entao pratos 2..n tem caminho sem sair da tela.
+ */
 
 type Toast = { id: number; kind: 'ok' | 'error'; text: string }
 
@@ -26,33 +49,23 @@ const MODE_BY_KEY: Record<string, ServiceMode> = {
   '3': 'por_kg_2mix',
 }
 
-// Acima disso pede confirmacao: protege do erro de digitar 4850 no lugar de
-// 485. Prato de self-service raramente passa de 1,5 kg.
+// Acima disso pede confirmacao. Prato de self-service raramente passa de
+// 1,5 kg. O desenho preve isto configuravel por restaurante (max 3.000 g);
+// enquanto nao ha onde guardar, fica aqui.
 const WEIGHT_CONFIRM_THRESHOLD = 1500
+
+// Barras de largura variada — o cartao e lido por codigo de barras, nao QR.
+const BARCODE_WIDTHS = [
+  3, 7, 2, 4, 9, 3, 2, 6, 4, 3, 8, 2, 5, 3, 7, 2, 9, 4, 3, 6, 2, 8, 3, 4, 2, 7,
+]
 
 function isPorKg(mode: ServiceMode | null): boolean {
   return mode === 'por_kg' || mode === 'por_kg_2mix'
 }
 
-/**
- * Le o peso do jeito que a atendente digitar, olhando pro visor da balanca:
- *   "485" / "485g" / "485 G"  -> 485 g
- *   "0,485" / "0.485" / "1,5" -> quilos, vira 485 g / 1500 g
- * Retorna null quando nao e peso (ai o texto segue pro leitor de barras).
- */
-function parseManualWeight(raw: string): number | null {
-  const s = raw.trim().toLowerCase().replace(/\s+/g, '')
-
-  const grams = s.match(/^(\d{1,4})g?$/)
-  if (grams) return Number(grams[1])
-
-  const kilos = s.match(/^(\d{1,2})[.,](\d{1,3})(?:kg)?$/)
-  if (kilos) {
-    const decimals = kilos[2].padEnd(3, '0')
-    return Number(kilos[1]) * 1000 + Number(decimals)
-  }
-
-  return null
+function itemCountLabel(n: number): string {
+  if (n === 0) return 'nenhum item'
+  return n === 1 ? '1 item' : `${n} itens`
 }
 
 export default function StationPage() {
@@ -66,11 +79,28 @@ export default function StationPage() {
   const [pendingWeight, setPendingWeight] = useState<number | null>(null)
   // Reabre o seletor quando a atendente aperta a modalidade errada
   const [changingMode, setChangingMode] = useState(false)
+  const [rates, setRates] = useState<StationRates | null>(null)
+  const [clock, setClock] = useState('')
 
   const inputRef = useRef<HTMLInputElement>(null)
   const lastActivityRef = useRef<number>(Date.now())
   const lastScanRef = useRef<{ value: string; ts: number } | null>(null)
   const cancelInFlightRef = useRef<boolean>(false)
+
+  // Relogio do rodape da tela de espera. So depois da hidratacao, senao o
+  // servidor renderiza um horario e o cliente outro.
+  useEffect(() => {
+    const tick = () =>
+      setClock(
+        new Date().toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      )
+    tick()
+    const t = setInterval(tick, 20000)
+    return () => clearInterval(t)
+  }, [])
 
   // Auto-focus no input sempre que clicar em qualquer lugar
   useEffect(() => {
@@ -84,7 +114,7 @@ export default function StationPage() {
     }
   }, [])
 
-  // Auto-encerra no tablet apos 5 minutos de inatividade (comanda segue aberta no DB)
+  // Auto-encerra apos 5 minutos de inatividade (comanda segue aberta no DB)
   useEffect(() => {
     if (!session) return
     const t = setInterval(() => {
@@ -108,7 +138,27 @@ export default function StationPage() {
     setBuffer('')
     setPendingWeight(null)
     setChangingMode(false)
+    setRates(null)
   }
+
+  // As tarifas do restaurante, buscadas assim que a comanda abre. Sem elas a
+  // tela de escolha vira uma pergunta sem numero.
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    void getRates(token)
+      .then((r) => {
+        if (alive) setRates(r)
+      })
+      .catch(() => {
+        // A escolha continua possivel sem preco na tela; o lancamento e quem
+        // recusa uma modalidade sem produto cadastrado.
+        if (alive) setRates(null)
+      })
+    return () => {
+      alive = false
+    }
+  }, [token])
 
   // Define a modalidade da comanda. Uma comanda por pessoa, entao o "a
   // vontade" e sempre 1 — nao ha quantidade pra ajustar na estacao.
@@ -130,7 +180,6 @@ export default function StationPage() {
     [token, pushToast]
   )
 
-  // Peso digitado a mao (balanca do piloto nao imprime etiqueta)
   const applyManualWeight = useCallback(
     async (grams: number) => {
       if (!token) return
@@ -164,8 +213,7 @@ export default function StationPage() {
         return
       }
 
-      // Sem comanda aberta: so cartao de cliente entra. Cartao de
-      // cancelamento sem comanda nao faz sentido.
+      // Sem comanda aberta: so cartao de cliente entra.
       if (!session) {
         if (scan.kind !== 'card_barcode') {
           pushToast('error', 'Bipe o codigo de barras do cartao primeiro')
@@ -190,7 +238,6 @@ export default function StationPage() {
         return
       }
 
-      // Comanda aberta — lanca item OU entra em modo cancelamento
       if (!token) return
 
       if (scan.kind === 'card_barcode') {
@@ -198,13 +245,9 @@ export default function StationPage() {
           setBusy(true)
           const res = await resolveBarcode(scan.barcode)
           if (res.kind === 'cancel') {
-            // O cartao de cancelamento tambem e identificado por codigo de
-            // barras; guardamos o token dele, que e o que a RPC recebe.
             setCancelToken(res.qr_token)
             pushToast('ok', 'Modo cancelamento — toque no item pra cancelar')
           } else {
-            // Cartao de outro cliente: nao troca por acidente no meio do
-            // atendimento.
             pushToast('error', 'Ja existe uma comanda aberta — finalize antes')
           }
         } catch (e) {
@@ -234,13 +277,12 @@ export default function StationPage() {
         setBusy(false)
       }
     },
-    [session, token, pushToast],
+    [session, token, pushToast]
   )
 
-  // O leitor HID "digita" no input + Enter ao final. Interceptamos via onKeyDown.
-  // Um input so atende tudo: leitor HID, modalidade, pessoas e peso digitado.
-  // Nao ha colisao — o leitor manda 8+ digitos (ou 32 hex do QR) e a digitacao
-  // manual e sempre curta (1 a 4 digitos).
+  // O leitor HID "digita" no input + Enter ao final. Um input so atende tudo:
+  // leitor, modalidade, e peso digitado. Nao ha colisao — o leitor manda 8+
+  // digitos e a digitacao manual e sempre curta.
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape' && pendingWeight != null) {
       e.preventDefault()
@@ -277,8 +319,6 @@ export default function StationPage() {
     }
 
     // 3) "Por quilo": peso digitado (gramas ou quilos)
-    //    (no "a vontade" nao ha digitacao: e uma comanda por pessoa, entao o
-    //     valor fixo ja entrou sozinho ao escolher a modalidade)
     if (session && isPorKg(session.service_mode)) {
       const grams = parseManualWeight(v)
       if (grams != null) {
@@ -295,30 +335,29 @@ export default function StationPage() {
       }
     }
 
-    // 5) Resto e scan (QR do cartao, etiqueta de peso, codigo de barras)
+    // 4) Resto e scan
     handleScan(v)
   }
 
   return (
-    <main className="fixed inset-0 flex flex-col bg-bg">
-      {/* Conteudo principal */}
+    <main className="fixed inset-0 flex flex-col bg-bg text-ink">
       {!session ? (
         <>
-          <IdleView busy={busy} />
-          {/* Input invisivel pra capturar HID scanner no idle */}
+          <IdleView clock={clock} busy={busy} />
           <input
             ref={inputRef}
             autoFocus
             value={buffer}
             onChange={(e) => setBuffer(e.target.value)}
             onKeyDown={onInputKeyDown}
-            className="absolute opacity-0 w-0 h-0 pointer-events-none"
-            aria-hidden
+            className="absolute h-0 w-0 opacity-0"
+            aria-label="Leitor de codigo de barras"
           />
         </>
       ) : (
         <ActiveView
           session={session}
+          rates={rates}
           busy={busy}
           onFinish={finishSession}
           inputRef={inputRef}
@@ -332,7 +371,6 @@ export default function StationPage() {
           onCloseCancelMode={() => setCancelToken(null)}
           onCancelItem={async (itemId) => {
             if (!cancelToken) return
-            // Guard contra double-fire de touch (mobile dispara touchend + click)
             if (cancelInFlightRef.current) return
             cancelInFlightRef.current = true
             try {
@@ -345,7 +383,6 @@ export default function StationPage() {
               pushToast('error', msg)
             } finally {
               setBusy(false)
-              // Libera apos 300ms — evita tap acidental em seguida
               setTimeout(() => {
                 cancelInFlightRef.current = false
               }, 300)
@@ -354,84 +391,78 @@ export default function StationPage() {
         />
       )}
 
-      {/* Camera sempre ativa em background — dispara handleScan sem UI */}
+      {/* Camera sempre ativa em background. Enquanto a estacao roda em tablet
+          ela e o leitor; some quando virar terminal desktop com serial. */}
       <BackgroundCameraScanner onScan={handleScan} />
 
-      {/* Confirmacao de peso alto — protege do erro de digitacao */}
       {pendingWeight != null && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-8">
-          <div className="bg-bg-card border-2 border-warm rounded-2xl px-10 py-8 text-center max-w-lg">
-            <AlertCircle size={44} className="text-warm mx-auto mb-4" />
-            <div className="text-6xl font-mono font-bold text-fg tabular-nums mb-2">
-              {pendingWeight} g
-            </div>
-            <p className="text-lg text-fg-muted mb-6">
-              Peso acima do normal. Confira o visor da balanca antes de lancar.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => setPendingWeight(null)}
-                className="px-6 h-14 rounded-xl border-2 border-border text-fg-muted font-semibold text-lg"
-              >
-                Corrigir (Esc)
-              </button>
-              <button
-                onClick={() => {
-                  const grams = pendingWeight
-                  setPendingWeight(null)
-                  void applyManualWeight(grams)
-                }}
-                className="px-6 h-14 rounded-xl bg-warm text-black font-semibold text-lg"
-              >
-                Confirmar (Enter)
-              </button>
-            </div>
-          </div>
-        </div>
+        <WeightGuard
+          grams={pendingWeight}
+          threshold={WEIGHT_CONFIRM_THRESHOLD}
+          onCorrigir={() => setPendingWeight(null)}
+          onAceitar={() => {
+            const grams = pendingWeight
+            setPendingWeight(null)
+            void applyManualWeight(grams)
+          }}
+        />
       )}
 
-      {/* Toasts */}
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50 pointer-events-none">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={
-              'flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl backdrop-blur-sm font-medium ' +
-              (t.kind === 'ok'
-                ? 'bg-primary-soft text-primary border border-primary/30'
-                : 'bg-coral-soft text-coral border border-coral/30')
-            }
-          >
-            {t.kind === 'ok' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-            <span className="text-base">{t.text}</span>
-          </div>
-        ))}
-      </div>
+      <Toasts toasts={toasts} inset={!!session} />
     </main>
   )
 }
 
-function IdleView({ busy }: { busy: boolean }) {
+/* ---------------------------------------------------------------- */
+
+function IdleView({ clock, busy }: { clock: string; busy: boolean }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-8 px-8">
-      <div className="w-48 h-48 rounded-3xl border-2 border-dashed border-border-strong flex items-center justify-center">
-        <QrCode size={120} strokeWidth={1.25} className="text-fg-muted" />
+    <>
+      <div className="flex flex-1 flex-col items-center justify-center gap-11 px-16">
+        <div className="flex h-[132px] items-end gap-[5px]" aria-hidden>
+          {BARCODE_WIDTHS.map((w, i) => (
+            <span
+              key={i}
+              className="h-full rounded-[2px] bg-teal"
+              style={{
+                width: `${w}px`,
+                opacity: i % 3 === 0 ? 0.9 : i % 3 === 1 ? 0.55 : 0.75,
+                animation: 'est-breathe 2.4s ease-in-out infinite',
+                animationDelay: `${i * 60}ms`,
+              }}
+            />
+          ))}
+        </div>
+        <div className="text-center">
+          <h1 className="m-0 text-[62px] font-semibold leading-[1.02] tracking-[-0.03em]">
+            Bipe seu cartão
+          </h1>
+          <p className="mt-3.5 text-2xl leading-[1.4] text-ink-soft">
+            Passe o código de barras no leitor para abrir a comanda
+          </p>
+        </div>
       </div>
-      <div className="text-center space-y-2">
-        <h1 className="text-4xl font-semibold tracking-tight text-fg">
-          Bipe seu cartao
-        </h1>
-        <p className="text-lg text-fg-muted">
-          Bipe o codigo de barras do cartao pra abrir sua comanda
-        </p>
+      <div className="flex h-[76px] shrink-0 items-center gap-4 border-t border-rule px-10">
+        <span
+          className="h-[9px] w-[9px] shrink-0 rounded-full bg-teal"
+          style={{ animation: 'est-breathe 2s ease-in-out infinite' }}
+        />
+        <span className="text-[15px] text-ink-muted">
+          {busy ? 'Abrindo comanda…' : 'Leitor pronto'}
+        </span>
+        <div className="flex-1" />
+        <span className="text-[15px] text-ink-muted">Txoko · Estação</span>
+        <span className="font-mono text-[15px] text-ink-soft">{clock}</span>
       </div>
-      {busy && <div className="text-fg-muted text-sm">Abrindo...</div>}
-    </div>
+    </>
   )
 }
 
+/* ---------------------------------------------------------------- */
+
 function ActiveView({
   session,
+  rates,
   busy,
   onFinish,
   inputRef,
@@ -446,6 +477,7 @@ function ActiveView({
   onCancelItem,
 }: {
   session: StationSnapshot
+  rates: StationRates | null
   busy: boolean
   onFinish: () => void
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -461,163 +493,180 @@ function ActiveView({
 }) {
   const mode = session.service_mode
   const scrollRef = useRef<HTMLDivElement>(null)
+  const pickingMode = mode == null || changingMode
 
-  // Auto-scroll pro ultimo item
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    })
   }, [session.items.length])
 
+  const comandaLabel = String(session.comanda_card.card_number).padStart(3, '0')
+
+  if (pickingMode) {
+    return (
+      <ModePicker
+        comandaLabel={comandaLabel}
+        rates={rates}
+        busy={busy}
+        trocando={changingMode}
+        onPick={onPickMode}
+        inputRef={inputRef}
+        buffer={buffer}
+        setBuffer={setBuffer}
+        onInputKeyDown={onInputKeyDown}
+      />
+    )
+  }
+
+  const porKg = isPorKg(mode)
+
+  // A taxa vigente ao lado da modalidade: e ela que precifica tudo que entra
+  // depois, entao vem antes do numero da comanda.
+  const rate = mode ? rates?.[mode] : null
+  const activeRate = porKg
+    ? rate?.price_per_kg != null
+      ? `${formatCurrency(rate.price_per_kg)}/kg`
+      : null
+    : rate?.price != null
+      ? `${formatCurrency(rate.price)} por pessoa`
+      : null
+
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-8 py-5 border-b border-border">
-        <div className="flex items-center gap-4">
-          <div
-            className={
-              'w-12 h-12 rounded-xl flex items-center justify-center ' +
-              (mode === 'avontade'
-                ? 'bg-primary-soft'
-                : mode == null
-                  ? 'bg-bg-card border border-border'
-                  : 'bg-warm-soft')
-            }
-          >
-            {mode === 'avontade' ? (
-              <ChefHat size={22} className="text-primary" />
-            ) : (
-              <Scale size={22} className={mode == null ? 'text-fg-muted' : 'text-warm'} />
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Cabeçalho: a modalidade e a taxa vêm antes do número da comanda,
+          porque é o que muda o preço de tudo que entra depois. */}
+      <div className="flex h-[92px] shrink-0 items-center gap-5 border-b border-rule px-11">
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-3">
+            <span
+              className={
+                'text-xs font-bold uppercase tracking-[0.12em] ' +
+                (porKg ? 'text-amber' : 'text-teal')
+              }
+            >
+              {serviceModeLabel(mode)}
+            </span>
+            {activeRate && (
+              <span className="font-mono text-[13px] text-ink-muted">
+                {activeRate}
+              </span>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-fg-muted">
-                {serviceModeLabel(mode)}
-              </span>
-              {mode != null && !changingMode && (
-                <button
-                  onClick={onStartChangeMode}
-                  disabled={busy}
-                  className="text-[11px] uppercase tracking-wide px-2 py-0.5 rounded-md border border-border text-fg-muted hover:text-fg hover:border-fg-muted transition-colors"
-                >
-                  Trocar
-                </button>
-              )}
-            </div>
-            <div className="text-2xl font-semibold">
-              Comanda #{String(session.comanda_card.card_number).padStart(3, '0')}
-            </div>
-          </div>
-
+          <p className="mt-1 text-[26px] font-semibold tracking-[-0.02em]">
+            Comanda <span className="font-mono font-bold">#{comandaLabel}</span>
+          </p>
         </div>
-
+        <div className="flex-1" />
+        <button
+          onClick={onStartChangeMode}
+          disabled={busy}
+          className="min-h-12 rounded-[4px] border border-rule-strong px-5 text-[15px] font-semibold text-ink-soft disabled:opacity-40"
+        >
+          Trocar modalidade
+        </button>
         <button
           onClick={onFinish}
-          className="flex items-center gap-2 px-4 h-11 rounded-xl border-2 border-primary text-primary hover:bg-primary-soft text-sm font-semibold"
+          className="min-h-12 rounded-[4px] bg-teal px-6 text-base font-bold text-on-accent"
         >
-          <CheckCircle2 size={16} />
           Finalizar
         </button>
-      </header>
-
-      {/* Items — ou o seletor de modalidade, que vem antes de tudo */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-8 py-4">
-        {mode == null || changingMode ? (
-          <ModePicker busy={busy} onPick={onPickMode} trocando={changingMode} />
-        ) : session.items.length === 0 ? (
-          <EmptyHint mode={mode} />
-        ) : (
-          <ul className="space-y-2">
-            {session.items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-4 px-5 py-4 rounded-xl bg-bg-card border border-border"
-              >
-                <div
-                  className={
-                    'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' +
-                    (item.weight_grams != null ? 'bg-warm-soft' : 'bg-primary-soft')
-                  }
-                >
-                  {item.weight_grams != null ? (
-                    <Scale size={18} className="text-warm" />
-                  ) : (
-                    <Package size={18} className="text-primary" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-fg truncate">{item.product_name}</div>
-                  <div className="text-sm text-fg-muted font-mono">
-                    {item.weight_grams != null
-                      ? `${formatWeight(item.weight_grams)} × ${formatCurrency(item.unit_price)}/kg`
-                      : `${item.quantity} × ${formatCurrency(item.unit_price)}`}
-                  </div>
-                </div>
-                <div className="font-mono font-semibold text-fg text-lg shrink-0">
-                  {formatCurrency(item.total_price)}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
-      {/* Footer: peso digitado (por quilo) + total */}
-      <footer className="border-t border-border px-8 py-5 bg-bg-card">
-        <div className="flex items-end justify-between gap-6">
-          <div className="flex-1 min-w-0">
-            {isPorKg(mode) && (
-              <div className="mb-3">
-                <div className="flex items-center gap-2 text-fg-muted mb-1">
-                  <Scale size={14} />
-                  <span className="text-xs uppercase tracking-wide">Peso em gramas</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-mono font-bold tabular-nums text-fg leading-none">
-                    {parseManualWeight(buffer) ?? '—'}
-                  </span>
-                  <span className="text-2xl font-mono text-fg-muted">g</span>
-                </div>
-                <div className="text-xs text-fg-muted mt-1">
-                  Digite em gramas (485) ou quilos (0,485) e Enter
-                </div>
+      <div className="flex min-h-0 flex-1">
+        {/* Coluna dos itens — comanda, não cartões */}
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-baseline gap-3 px-11 pb-2.5 pt-6">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
+              Itens da comanda
+            </p>
+            <span className="font-mono text-[13px] text-ink-muted">
+              {itemCountLabel(session.items.length)}
+            </span>
+          </div>
+          <div
+            ref={scrollRef}
+            className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-11 pb-6"
+          >
+            {session.items.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3.5 text-center">
+                <p className="text-[21px] font-medium text-ink-soft">
+                  Nenhum item ainda
+                </p>
+                <p className="max-w-[380px] text-[17px] text-ink-muted">
+                  {porKg
+                    ? 'Digite o peso do prato ou passe a bebida no leitor.'
+                    : 'Passe a bebida no leitor.'}
+                </p>
               </div>
+            ) : (
+              session.items.map((item, i) => (
+                <ComandaRow
+                  key={item.id}
+                  item={item}
+                  isLast={i === session.items.length - 1}
+                />
+              ))
             )}
+          </div>
+        </section>
 
-            <div className="flex items-center gap-2 text-fg-muted mb-2">
-              <ScanLine size={14} />
-              <span className="text-xs">
-                {busy
-                  ? 'Processando...'
-                  : mode == null
-                    ? 'Aperte 1, 2 ou 3 pra escolher a modalidade'
-                    : mode === 'avontade'
-                        ? 'Escaneie as bebidas do cliente'
-                      : 'Escaneie bebidas — ou digite o peso + Enter'}
-              </span>
-            </div>
-            <input
-              ref={inputRef}
-              autoFocus
-              value={buffer}
-              onChange={(e) => setBuffer(e.target.value)}
-              onKeyDown={onInputKeyDown}
-              placeholder="Codigo (QR, EAN, barcode)"
-              className="w-full max-w-md px-4 h-11 bg-bg border border-border rounded-lg font-mono text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:border-primary"
-              autoComplete="off"
-              spellCheck={false}
+        {/* Trilho: o peso (ou o preço por pessoa) e o total */}
+        <aside className="flex w-[420px] shrink-0 flex-col border-l border-rule px-9 pb-8 pt-6">
+          {porKg ? (
+            <WeightRail
+              inputRef={inputRef}
+              buffer={buffer}
+              setBuffer={setBuffer}
+              onInputKeyDown={onInputKeyDown}
             />
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-xs uppercase tracking-wide text-fg-muted">Total</div>
-            <div className="text-4xl font-mono font-bold text-fg">
-              {formatCurrency(session.total)}
+          ) : (
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal">
+                Preço por pessoa
+              </span>
+              <p className="mt-3 font-mono text-[52px] font-bold leading-none tracking-[-0.035em]">
+                {formatCurrency(session.subtotal)}
+              </p>
+              <p className="mt-3 text-[15px] leading-[1.45] text-ink-muted">
+                Já lançado na comanda. Bebidas entram pelo leitor.
+              </p>
+              <input
+                ref={inputRef}
+                autoFocus
+                value={buffer}
+                onChange={(e) => setBuffer(e.target.value)}
+                onKeyDown={onInputKeyDown}
+                className="absolute h-0 w-0 opacity-0"
+                aria-label="Leitor de código de barras"
+              />
             </div>
+          )}
+
+          <div className="flex-1" />
+
+          <p className="mb-[22px] border-t border-rule pt-5 text-sm leading-[1.4] text-ink-soft">
+            {porKg
+              ? 'Passe a bebida no leitor · o peso do prato entra à mão'
+              : 'Passe as bebidas no leitor'}
+          </p>
+
+          {/* Total em bloco próprio: é o número que o cliente lê do outro
+              lado do balcão. */}
+          <div className="rounded-[4px] bg-teal-soft px-6 pb-6 pt-[22px]">
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal">
+              Total
+            </span>
+            <p className="mt-2.5 font-mono text-[62px] font-bold leading-none tracking-[-0.045em] text-ink">
+              {formatCurrency(session.total)}
+            </p>
           </div>
-        </div>
-      </footer>
+        </aside>
+      </div>
 
       {cancelToken && (
-        <CancelDrawer
+        <CancelSheet
           items={session.items}
           busy={busy}
           onCancelItem={onCancelItem}
@@ -628,63 +677,299 @@ function ActiveView({
   )
 }
 
-const MODE_OPTIONS: {
-  key: string
-  mode: ServiceMode
-  title: string
-  hint: string
-}[] = [
-  { key: '1', mode: 'avontade', title: 'A Vontade', hint: 'Preco fixo por pessoa' },
-  { key: '2', mode: 'por_kg', title: 'Por Quilo', hint: 'Pesa o prato' },
-  { key: '3', mode: 'por_kg_2mix', title: '2 Misturas', hint: 'Por quilo, outro preco' },
+/* ---------------------------------------------------------------- */
+
+function ComandaRow({ item, isLast }: { item: StationItem; isLast: boolean }) {
+  const isWeight = item.weight_grams != null
+  return (
+    <div
+      className="grid grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint py-[17px]"
+      style={isLast ? { animation: 'est-land .22s ease-out' } : undefined}
+    >
+      <span
+        className={
+          'text-right font-mono text-lg font-bold ' +
+          (isWeight ? 'text-amber' : 'text-ink-soft')
+        }
+      >
+        {isWeight ? formatWeight(item.weight_grams) : `${item.quantity} un`}
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-baseline gap-2.5">
+          <span className="truncate text-[19px] font-medium">
+            {item.product_name}
+          </span>
+          {isLast && (
+            <span className="shrink-0 text-[11.5px] font-bold uppercase tracking-[0.09em] text-teal">
+              lançado
+            </span>
+          )}
+        </span>
+        <span className="mt-[3px] block font-mono text-[13.5px] text-ink-muted">
+          {isWeight
+            ? `${formatCurrency(item.unit_price)}/kg`
+            : `${formatCurrency(item.unit_price)} cada`}
+        </span>
+      </span>
+      <span className="font-mono text-[22px] font-bold tracking-[-0.01em]">
+        {formatCurrency(item.total_price)}
+      </span>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
+function WeightRail({
+  inputRef,
+  buffer,
+  setBuffer,
+  onInputKeyDown,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>
+  buffer: string
+  setBuffer: (v: string) => void
+  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+}) {
+  const parsed = parseManualWeight(buffer)
+  const willLaunch = parsed != null && parsed > 0
+
+  return (
+    <div>
+      {/* Sem cabo serial a balança está muda, e este é o estado normal —
+          não um erro. O peso digitado é conferido contra o visor da balança,
+          então é o segundo maior número da tela. */}
+      <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber">
+        Balança desconectada
+      </span>
+      <div className="mt-3 flex items-baseline gap-2.5">
+        <span
+          className={
+            'font-mono text-[68px] font-bold leading-none tracking-[-0.04em] ' +
+            (willLaunch ? 'text-ink' : 'text-ink-muted')
+          }
+        >
+          {willLaunch ? parsed : '—'}
+        </span>
+        <span className="font-mono text-2xl text-ink-muted">g</span>
+      </div>
+      <p className="mt-3 min-h-10 text-sm leading-[1.45] text-ink-muted">
+        {willLaunch
+          ? `${formatWeight(parsed)} entra na comanda com Enter`
+          : 'Sem leitura da balança. Digite o peso do próximo prato.'}
+      </p>
+      <input
+        ref={inputRef}
+        autoFocus
+        value={buffer}
+        onChange={(e) => setBuffer(e.target.value)}
+        onKeyDown={onInputKeyDown}
+        placeholder="485"
+        aria-label="Peso do prato em gramas ou quilos"
+        autoComplete="off"
+        spellCheck={false}
+        className="mt-1 h-[52px] w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[19px] text-ink"
+      />
+      <p className="mt-2 text-[13px] leading-[1.35] text-ink-soft">
+        Em gramas (<span className="font-mono">485</span>) ou quilos (
+        <span className="font-mono">0,485</span>)
+      </p>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
+/**
+ * O peso a partir do qual o a vontade fica mais barato que o por quilo.
+ *
+ * Sai so das duas tarifas, sem depender da balanca — e a informacao que faz a
+ * escolha deixar de ser as cegas enquanto nao ha leitura automatica. Com
+ * R$ 59,90 fixos contra R$ 79,90/kg, o ponto e 750 g.
+ */
+function breakEvenHint(rates: StationRates | null): string | null {
+  const buffet = rates?.avontade?.price
+  const perKg = rates?.por_kg?.price_per_kg
+  if (!rates?.avontade?.ready || !rates?.por_kg?.ready) return null
+  if (buffet == null || perKg == null || perKg <= 0) return null
+  const grams = Math.round((buffet / perKg) * 1000)
+  return `Acima de ${grams.toLocaleString('pt-BR')} g o à vontade sai na frente`
+}
+
+const MODE_OPTIONS: { key: string; mode: ServiceMode; title: string; hint: string }[] = [
+  { key: '1', mode: 'avontade', title: 'À vontade', hint: 'Preço fixo, uma pessoa' },
+  { key: '2', mode: 'por_kg', title: 'Por quilo', hint: 'Pesa o prato' },
+  { key: '3', mode: 'por_kg_2mix', title: '2 misturas', hint: 'Por quilo, outro preço' },
 ]
 
 function ModePicker({
+  comandaLabel,
+  rates,
   busy,
-  onPick,
   trocando,
+  onPick,
+  inputRef,
+  buffer,
+  setBuffer,
+  onInputKeyDown,
 }: {
+  comandaLabel: string
+  rates: StationRates | null
   busy: boolean
+  trocando: boolean
   onPick: (mode: ServiceMode) => void
-  trocando?: boolean
+  inputRef: React.RefObject<HTMLInputElement | null>
+  buffer: string
+  setBuffer: (v: string) => void
+  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-8">
-      <div className="text-center space-y-1">
-        <h2 className="text-3xl font-semibold tracking-tight text-fg">
-          {trocando ? 'Trocar modalidade' : 'Qual a modalidade?'}
-        </h2>
-        <p className="text-fg-muted">Aperte 1, 2 ou 3 — ou toque na opcao</p>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-[92px] shrink-0 items-baseline gap-3.5 border-b border-rule px-11">
+        <p className="m-0 text-[26px] font-semibold tracking-[-0.02em]">
+          Comanda <span className="font-mono font-bold">#{comandaLabel}</span>
+        </p>
+        <span className="text-xs font-bold uppercase tracking-[0.1em] text-teal">
+          {trocando ? 'trocando modalidade' : 'aberta'}
+        </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 w-full max-w-4xl">
-        {MODE_OPTIONS.map((opt) => (
+      <div className="flex flex-1 flex-col items-center justify-center gap-9 px-16">
+        <p className="text-2xl text-ink-soft">Como o cliente vai pagar?</p>
+
+        {/* Cada opção com o número ao lado: a escolha deixa de ser às cegas. */}
+        <div
+          className="grid w-full max-w-[880px] gap-px overflow-hidden rounded-[4px] border border-rule bg-rule"
+          style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}
+        >
+          {MODE_OPTIONS.map((opt) => {
+            const rate = rates?.[opt.mode]
+            // Sem tarifas carregadas ainda, a escolha segue liberada — quem
+            // recusa modalidade sem produto é o lançamento, no servidor.
+            const blocked = rates != null && rate?.ready === false
+            const teal = opt.mode === 'avontade'
+            const price = teal
+              ? rate?.price != null
+                ? formatCurrency(rate.price)
+                : null
+              : rate?.price_per_kg != null
+                ? `${formatCurrency(rate.price_per_kg)}/kg`
+                : null
+
+            return (
+              <button
+                key={opt.mode}
+                onClick={() => onPick(opt.mode)}
+                disabled={busy || blocked}
+                className={
+                  'flex flex-col items-start gap-3 border-t-[3px] bg-card px-7 pb-6 pt-7 text-left ' +
+                  (teal ? 'border-teal' : 'border-amber') +
+                  (blocked ? ' cursor-not-allowed opacity-40' : '') +
+                  (busy ? ' opacity-40' : '')
+                }
+              >
+                <span className="flex w-full items-baseline gap-3">
+                  <span
+                    className={
+                      'text-xs font-bold uppercase tracking-[0.12em] ' +
+                      (teal ? 'text-teal' : 'text-amber')
+                    }
+                  >
+                    {opt.title}
+                  </span>
+                  <span className="flex-1" />
+                  <span className="rounded-[4px] bg-bg px-2 py-1 font-mono text-sm font-bold text-ink-soft">
+                    {opt.key}
+                  </span>
+                </span>
+                <span className="font-mono text-[38px] font-bold leading-none tracking-[-0.04em]">
+                  {price ?? '—'}
+                </span>
+                <span className="text-[15px] leading-[1.4] text-ink-muted">
+                  {blocked ? 'Sem produto cadastrado' : opt.hint}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <p className="m-0 min-h-6 text-[15px] text-ink-muted">
+          {breakEvenHint(rates) ?? 'Aperte 1, 2 ou 3 — ou toque na opção'}
+        </p>
+      </div>
+
+      <input
+        ref={inputRef}
+        autoFocus
+        value={buffer}
+        onChange={(e) => setBuffer(e.target.value)}
+        onKeyDown={onInputKeyDown}
+        className="absolute h-0 w-0 opacity-0"
+        aria-label="Modalidade"
+      />
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
+function WeightGuard({
+  grams,
+  threshold,
+  onCorrigir,
+  onAceitar,
+}: {
+  grams: number
+  threshold: number
+  onCorrigir: () => void
+  onAceitar: () => void
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Peso fora do normal"
+      className="absolute inset-0 z-40 flex items-center justify-center px-16"
+      style={{ background: 'var(--scrim)' }}
+    >
+      <div className="w-full max-w-[620px] rounded-[4px] border-t-4 border-amber bg-card-2 px-11 pb-9 pt-10 text-center">
+        <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber">
+          Peso fora do normal
+        </span>
+        <p className="mt-[18px] font-mono text-[84px] font-bold leading-[0.92] tracking-[-0.05em] text-amber">
+          {grams.toLocaleString('pt-BR')} g
+        </p>
+        <p className="mt-4 text-[21px] font-semibold">
+          Isso é <span className="font-mono">{formatWeightProse(grams)}</span> — o
+          normal vai até {formatWeightProse(threshold)}.
+        </p>
+        <p className="mb-[30px] mt-2.5 text-[17px] leading-[1.45] text-ink-soft">
+          Confira se há mais de um prato na balança, ou algo apoiado nela.
+        </p>
+        <div className="flex justify-center gap-3">
+          {/* Sem balança conectada não há o que repesar: o conserto é apagar
+              e digitar de novo. */}
           <button
-            key={opt.mode}
-            onClick={() => onPick(opt.mode)}
-            disabled={busy}
-            className="flex flex-col items-center gap-3 px-6 py-8 rounded-2xl bg-bg-card border-2 border-border hover:border-primary active:scale-[0.98] transition disabled:opacity-40"
+            onClick={onCorrigir}
+            className="min-h-[60px] rounded-[4px] border border-rule-strong px-7 text-[17px] font-semibold text-ink"
           >
-            <div className="w-14 h-14 rounded-xl bg-bg border border-border flex items-center justify-center text-3xl font-mono font-bold text-fg">
-              {opt.key}
-            </div>
-            {opt.mode === 'avontade' ? (
-              <ChefHat size={30} className="text-primary" />
-            ) : (
-              <Scale size={30} className="text-warm" />
-            )}
-            <div className="text-center">
-              <div className="text-xl font-semibold text-fg leading-tight">{opt.title}</div>
-              <div className="text-sm text-fg-muted">{opt.hint}</div>
-            </div>
+            Corrigir
           </button>
-        ))}
+          <button
+            onClick={onAceitar}
+            className="min-h-[60px] rounded-[4px] bg-amber px-7 text-[17px] font-bold text-on-amber"
+          >
+            Lançar assim mesmo
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-function CancelDrawer({
+/* ---------------------------------------------------------------- */
+
+function CancelSheet({
   items,
   busy,
   onCancelItem,
@@ -696,77 +981,67 @@ function CancelDrawer({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60" />
+    <div
+      className="absolute inset-0 z-40 flex flex-col justify-end"
+      style={{ background: 'var(--scrim-soft)' }}
+      onClick={onClose}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-h-[85vh] bg-bg-card border-t-2 border-coral rounded-t-2xl shadow-2xl flex flex-col"
+        className="flex max-h-[660px] flex-col border-t-4 border-red bg-card-2"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-coral/15 flex items-center justify-center">
-              <Ban size={18} className="text-coral" />
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wide text-coral font-semibold">
-                Modo cancelamento (caixa)
-              </div>
-              <div className="text-sm text-fg-muted">
-                Toque no item pra cancelar. Unitario {'>'} 1 decrementa.
-              </div>
-            </div>
+        <div className="flex shrink-0 items-center gap-5 border-b border-rule px-11 py-[26px]">
+          <div className="min-w-0">
+            <p className="m-0 text-xs font-bold uppercase tracking-[0.1em] text-red">
+              Modo cancelamento · cartão do caixa
+            </p>
+            <p className="mt-1.5 text-[19px] text-ink-soft">
+              Toque no item para cancelar. Unitário acima de 1 decrementa.
+            </p>
           </div>
+          <div className="flex-1" />
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-4 h-10 rounded-xl border border-border text-fg-muted hover:text-fg hover:bg-border text-sm"
+            className="min-h-[52px] shrink-0 rounded-[4px] border border-rule-strong px-5 text-base font-semibold text-ink-soft"
           >
-            <X size={16} />
             Sair do modo
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-11 pb-7 pt-2">
           {items.length === 0 ? (
-            <div className="py-12 text-center text-fg-muted text-sm">
-              Comanda vazia — nada pra cancelar
-            </div>
+            <p className="py-12 text-center text-[17px] text-ink-muted">
+              Comanda vazia — nada para cancelar
+            </p>
           ) : (
-            <ul className="space-y-2">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <button
-                    disabled={busy}
-                    onClick={() => onCancelItem(item.id)}
-                    className="w-full flex items-center gap-4 px-5 py-4 rounded-xl bg-bg border border-border hover:border-coral hover:bg-coral/5 disabled:opacity-50 text-left transition-colors"
-                  >
-                    <div
-                      className={
-                        'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ' +
-                        (item.weight_grams != null ? 'bg-warm-soft' : 'bg-primary-soft')
-                      }
-                    >
-                      {item.weight_grams != null ? (
-                        <Scale size={18} className="text-warm" />
-                      ) : (
-                        <Package size={18} className="text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-fg truncate">{item.product_name}</div>
-                      <div className="text-sm text-fg-muted font-mono">
-                        {item.weight_grams != null
-                          ? `${formatWeight(item.weight_grams)} × ${formatCurrency(item.unit_price)}/kg`
-                          : `${item.quantity} × ${formatCurrency(item.unit_price)}`}
-                      </div>
-                    </div>
-                    <div className="font-mono font-semibold text-fg text-lg shrink-0">
-                      {formatCurrency(item.total_price)}
-                    </div>
-                    <Trash2 size={18} className="text-coral shrink-0" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            items.map((item) => {
+              const isWeight = item.weight_grams != null
+              return (
+                <button
+                  key={item.id}
+                  disabled={busy}
+                  onClick={() => onCancelItem(item.id)}
+                  className="-mx-3 grid w-[calc(100%+1.5rem)] grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint px-3 py-[17px] text-left hover:bg-red-soft disabled:opacity-50"
+                >
+                  <span className="text-right font-mono text-lg font-bold text-ink-muted">
+                    {isWeight ? formatWeight(item.weight_grams) : `${item.quantity} un`}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[19px] font-medium">
+                      {item.product_name}
+                    </span>
+                    <span className="mt-[3px] block font-mono text-[13.5px] text-ink-muted">
+                      {isWeight
+                        ? `${formatCurrency(item.unit_price)}/kg`
+                        : `${formatCurrency(item.unit_price)} cada`}
+                    </span>
+                  </span>
+                  <span className="font-mono text-[22px] font-bold tracking-[-0.01em]">
+                    {formatCurrency(item.total_price)}
+                  </span>
+                </button>
+              )
+            })
           )}
         </div>
       </div>
@@ -774,34 +1049,34 @@ function CancelDrawer({
   )
 }
 
-function EmptyHint({ mode }: { mode: ServiceMode }) {
+/* ---------------------------------------------------------------- */
+
+function Toasts({ toasts, inset }: { toasts: Toast[]; inset: boolean }) {
+  if (toasts.length === 0) return null
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center gap-4 py-12">
-      <div className="flex gap-3">
-        {isPorKg(mode) && (
-          <div className="flex flex-col items-center gap-2 px-6 py-5 rounded-xl bg-bg-card border border-border min-w-[180px]">
-            <Scale size={32} className="text-warm" />
-            <div className="text-sm text-fg-muted leading-tight">
-              Peso em gramas
-              <br />
-              digitado ou etiqueta
-            </div>
-          </div>
-        )}
-        <div className="flex flex-col items-center gap-2 px-6 py-5 rounded-xl bg-bg-card border border-border min-w-[180px]">
-          <Package size={32} className="text-primary" />
-          <div className="text-sm text-fg-muted leading-tight">
-            Codigo de barras
-            <br />
-            do produto
-          </div>
+    <div
+      className="pointer-events-none absolute bottom-[22px] left-0 z-50 flex flex-col items-center gap-2"
+      // Centraliza na coluna de itens, não na tela: com a comanda aberta o
+      // trilho da direita ocupa 420px e o aviso ficaria torto sobre ele.
+      style={{ width: inset ? 'calc(100% - 420px)' : '100%' }}
+    >
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          role="status"
+          className={
+            'flex items-center gap-3 rounded-[4px] border-l-[3px] px-[22px] py-3.5 ' +
+            (t.kind === 'ok'
+              ? 'border-teal-edge bg-teal-soft text-teal'
+              : 'border-red bg-red-soft text-red')
+          }
+          style={{ animation: 'est-land .18s ease-out' }}
+        >
+          <span className="whitespace-nowrap text-[17px] font-semibold">
+            {t.text}
+          </span>
         </div>
-      </div>
-      <p className="text-fg-muted text-sm mt-2">
-        {isPorKg(mode)
-          ? 'Digite o peso do prato ou escaneie as bebidas.'
-          : 'Escaneie as bebidas que o cliente pedir.'}
-      </p>
+      ))}
     </div>
   )
 }
