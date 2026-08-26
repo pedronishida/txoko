@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { SWRegister } from '@/components/sw-register'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -39,7 +40,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <SWRegister />
+      </body>
     </html>
   )
 }
