@@ -7,6 +7,7 @@ import { TabBar } from '@/components/tab-bar'
 const TABS = [
   { key: '/estoque', label: 'Insumos' },
   { key: '/estoque/produtos', label: 'Produtos' },
+  { key: '/estoque/contagem', label: 'Contagem' },
   { key: '/estoque/fornecedores', label: 'Fornecedores' },
   { key: '/estoque/fichas', label: 'Fichas tecnicas' },
 ]
