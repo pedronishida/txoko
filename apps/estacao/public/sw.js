@@ -16,7 +16,7 @@
  * Este arquivo so garante que a tela abre.
  */
 
-const VERSION = 'estacao-v1'
+const VERSION = 'estacao-v2'
 const SHELL = `${VERSION}-shell`
 
 // O que precisa existir pra tela abrir sem rede.
@@ -61,6 +61,12 @@ self.addEventListener('fetch', (event) => {
 
   // Supabase e qualquer outra origem: sempre rede. Sem fallback de cache.
   if (url.origin !== self.location.origin) return
+
+  // O proprio worker nunca entra no cache. O navegador busca /sw.js por um
+  // caminho proprio pra decidir se atualiza; se uma copia velha ficar guardada
+  // aqui e for servida, o terminal gruda numa versao antiga — que e o mesmo
+  // problema que o no-cache do _headers evita na borda do CDN.
+  if (url.pathname === '/sw.js') return
 
   // Navegacao: cache primeiro, com a rede atualizando por baixo. E o que faz
   // a estacao abrir instantaneamente e continuar abrindo sem internet.
