@@ -7,6 +7,7 @@ import { switchRestaurant, type Membership } from '@/lib/server/restaurant'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationsBell } from '@/components/notifications-bell'
+import { ConnectionStatus } from '@/components/connection-status'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -47,25 +48,31 @@ export function Header({ user, memberships, activeRestaurantId }: Props) {
   }
 
   return (
-    <header className="bg-bg-elevated border-b border-border flex items-center px-4 gap-3 h-12 relative z-30">
+    <header className="island relative z-30 flex h-[60px] items-center gap-3.5 rounded-[18px] px-[18px]">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 h-full pr-3 border-r border-border">
-        <Logo size={20} />
-        <span className="text-[14px] font-semibold tracking-tight hidden sm:inline">
-          Txoko
+      <div
+        data-brand
+        className="flex items-center gap-2.5 border-r border-rule pr-3.5"
+      >
+        <Logo size={26} />
+        <span
+          data-wordmark
+          className="text-[15px] font-semibold tracking-tight"
+        >
+          txoko
         </span>
       </div>
 
       {active && (
-        <div className="relative">
+        <div data-org-switch className="relative">
           <button
             onClick={() => setOpen(!open)}
             disabled={memberships.length < 2}
             className={cn(
-              'flex items-center gap-1.5 h-7 text-[12.5px] font-semibold rounded-md transition-colors',
+              'flex h-8 items-center gap-1.5 rounded-[9px] text-[13px] font-semibold transition-colors',
               memberships.length < 2
-                ? 'text-foreground cursor-default'
-                : 'text-foreground hover:text-primary px-2 -ml-2 hover:bg-surface-hover'
+                ? 'cursor-default text-ink'
+                : '-ml-2.5 px-2.5 text-ink hover:bg-sunken'
             )}
           >
             <span className="truncate max-w-[200px]">
@@ -124,50 +131,54 @@ export function Header({ user, memberships, activeRestaurantId }: Props) {
         </div>
       )}
 
+      {/* Conexao: pilula, nao faixa. Aparece sem empurrar o layout. */}
+      <ConnectionStatus />
+
       {/* Busca global */}
       <button
+        data-header-search
         onClick={openCommandPalette}
-        className="flex items-center gap-2 h-7 flex-1 max-w-[400px] px-2.5 rounded-md text-muted bg-muted-subtle border border-border hover:bg-surface-hover transition-colors"
+        className="flex h-[34px] min-w-0 max-w-[420px] flex-1 items-center gap-2 rounded-[10px] border border-rule bg-field px-3 text-ink-muted transition-colors hover:bg-sunken"
       >
-        <Search size={11} strokeWidth={1.6} className="flex-shrink-0" />
-        <span className="flex-1 text-[12.5px] truncate text-left">
+        <Search size={13} strokeWidth={2} className="flex-shrink-0" />
+        <span className="min-w-0 flex-1 truncate text-left text-[12.5px]">
           Pesquisar pedido, mesa, cliente…
         </span>
-        <kbd className="text-[10px] font-data px-1.5 py-0.5 rounded bg-bg-elevated border border-border">
+        <kbd className="shrink-0 rounded-[5px] bg-sunken px-1.5 py-0.5 font-data text-[10px]">
           ⌘K
         </kbd>
       </button>
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <button
-          className="flex items-center gap-1.5 h-7 px-2 rounded-md text-[12px] font-medium hover:bg-surface-hover transition-colors"
+          className="flex h-8 items-center gap-1.5 rounded-[9px] bg-teal-soft px-3 transition-colors hover:bg-teal-soft-hover"
           aria-label="Agente IA"
         >
-          <Sparkles size={13} strokeWidth={1.8} className="text-primary" />
-          <span className="text-primary font-semibold">Agente IA</span>
+          <Sparkles size={13} strokeWidth={2} className="text-teal-deep" />
+          <span className="text-[12.5px] font-semibold text-teal-deep">
+            Agente IA
+          </span>
         </button>
         <button
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-surface-hover transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-sunken"
           aria-label="Ajuda"
         >
-          <CircleHelp size={14} strokeWidth={1.6} className="text-foreground/75" />
+          <CircleHelp size={14} strokeWidth={1.8} className="text-ink-soft" />
         </button>
         <ThemeToggle />
         {activeRestaurantId && (
           <NotificationsBell restaurantId={activeRestaurantId} />
         )}
-        <div className="w-px h-[18px] bg-border mx-1" />
-        <div className="flex items-center gap-2.5 h-8">
-          <div className="w-7 h-7 rounded-full bg-primary-soft border border-border flex items-center justify-center text-[11px] font-semibold text-primary">
+        <div className="mx-0.5 h-5 w-px bg-rule" />
+        <div className="flex h-8 items-center gap-2.5">
+          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-teal-soft text-xs font-bold text-teal-deep">
             {initial}
           </div>
-          <div className="hidden sm:flex flex-col justify-center leading-none">
-            <p className="text-[12px] font-semibold text-foreground">
-              {shortEmail}
-            </p>
-            <p className="text-[10px] text-muted capitalize mt-0.5">
+          <div data-user-meta className="flex flex-col justify-center leading-[1.3]">
+            <p className="text-[12.5px] font-semibold text-ink">{shortEmail}</p>
+            <p className="text-[10.5px] capitalize text-ink-muted">
               {active?.role ?? 'membro'}
             </p>
           </div>
@@ -175,10 +186,10 @@ export function Header({ user, memberships, activeRestaurantId }: Props) {
             <button
               type="submit"
               title="Sair"
-              className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-destructive hover:bg-surface-hover transition-colors"
+              className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] text-ink-soft transition-colors hover:bg-sunken hover:text-red"
               aria-label="Sair"
             >
-              <LogOut size={13} strokeWidth={1.75} />
+              <LogOut size={13} strokeWidth={1.8} />
             </button>
           </form>
         </div>

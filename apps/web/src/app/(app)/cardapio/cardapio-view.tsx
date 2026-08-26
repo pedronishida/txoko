@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/cardapio/product-card'
 import { ProductForm } from '@/components/cardapio/product-form'
 import { createCategory, saveProduct, toggleProductActive } from './actions'
 import { PageHeader } from '@/components/page-header'
+import { EmptyState } from '@/components/states'
 
 type Props = {
   products: Product[]
@@ -194,9 +195,10 @@ export function CardapioView({ products, categories }: Props) {
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <p className="py-16 text-center text-[13px] text-muted tracking-tight">
-          Nenhum produto encontrado
-        </p>
+        <EmptyState
+          title="Nenhum produto encontrado"
+          hint="Troque a categoria ou limpe a busca. Itens novos entram pelo botao de cadastrar."
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
           {filtered.map((product) => (

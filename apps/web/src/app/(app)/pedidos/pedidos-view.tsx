@@ -7,6 +7,9 @@ import { PageHeader } from '@/components/page-header'
 import { TabBar } from '@/components/tab-bar'
 import { EditOrderModal } from '@/components/pedidos/edit-order-modal'
 import { SplitBillModal } from '@/components/pedidos/split-bill-modal'
+import { CancelOrderModal } from '@/components/pedidos/cancel-order-modal'
+import { OrderTrail } from '@/components/pedidos/order-trail'
+import { EmptyState } from '@/components/states'
 import type {
   Address,
   Order,
@@ -17,7 +20,7 @@ import type {
   Table,
 } from '@txoko/shared'
 import { Pencil, SplitSquareVertical, Printer, X } from 'lucide-react'
-import { setOrderStatus } from './actions'
+import { setOrderStatus, currentUserCanCancel } from './actions'
 import { closeOrderWithPayment } from '@/lib/server/payments'
 import type { PaymentMethod } from '@txoko/shared'
 
@@ -97,6 +100,16 @@ export function PedidosView({
   const [pending, startTransition] = useTransition()
   const [editOrderId, setEditOrderId] = useState<string | null>(null)
   const [splitOrderId, setSplitOrderId] = useState<string | null>(null)
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
+  // Recarrega a trilha depois de um cancelamento, sem recarregar a tela.
+  const [trailKey, setTrailKey] = useState(0)
+  // Gate do botao de cancelar. A RPC tambem recusa quem nao pode — isto aqui
+  // so evita oferecer uma acao que vai falhar.
+  const [canCancel, setCanCancel] = useState(false)
+
+  useEffect(() => {
+    void currentUserCanCancel().then(setCanCancel)
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -211,6 +224,9 @@ export function PedidosView({
 
   const splitOrder = splitOrderId ? orders.find((o) => o.id === splitOrderId) : null
   const splitItems = splitOrderId ? (itemsByOrder[splitOrderId] ?? []) : []
+  const cancelTarget = cancelOrderId
+    ? (orders.find((o) => o.id === cancelOrderId) ?? null)
+    : null
 
   function doSetStatus(id: string, status: OrderStatus) {
     startTransition(() => {
@@ -267,6 +283,8 @@ export function PedidosView({
         />
         <div className="flex items-end justify-between gap-4">
           <TabBar
+            variant="chip"
+            aria-label="Situacao do pedido"
             tabs={STATUS_FILTERS.map((s) => ({
               key: s.key,
               label: s.label,
@@ -297,11 +315,12 @@ export function PedidosView({
 
       <div className="flex min-h-[calc(100vh-14rem)]">
         {/* List */}
-        <section className={cn('flex-1 min-w-0', selectedOrder && 'border-r border-border')}>
+        <section className={cn('min-w-0 flex-1')}>
           {filtered.length === 0 ? (
-            <p className="py-16 text-center text-[13px] text-muted tracking-tight">
-              Nenhum pedido encontrado
-            </p>
+            <EmptyState
+              title="Nenhum pedido neste filtro"
+              hint="Troque o status ou o tipo de pedido para ver os outros."
+            />
           ) : (
             <div className="divide-y divide-border">
               {filtered.map((order) => {
@@ -419,7 +438,7 @@ export function PedidosView({
 
         {/* Detail panel */}
         {selectedOrder && (
-          <aside className="w-[360px] flex flex-col">
+          <aside data-pane="detail" className="flex w-[360px] shrink-0 flex-col border-l border-rule">
             <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
@@ -501,7 +520,16 @@ export function PedidosView({
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto thin-scroll">
+              {/* Trilha: o cancelamento e o estorno so valem alguma coisa se
+                  sobreviver o registro de quem autorizou e por que. */}
+              <div className="border-b border-rule px-6 py-4">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.08em] text-ink-muted">
+                  Trilha
+                </p>
+                <OrderTrail orderId={selectedOrder.id} refreshKey={trailKey} />
+              </div>
+
               <div className="px-6 py-4">
                 <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
                   Itens
@@ -627,9 +655,12 @@ export function PedidosView({
                           Fechar conta
                         </button>
                       )}
+                      {/* Cancelar deixou de ser uma troca de status solta: agora
+                          pede motivo, decide o estorno e registra quem
+                          autorizou. */}
                       <button
-                        onClick={() => doSetStatus(selectedOrder.id, 'cancelled')}
-                        className="w-full h-9 text-primary text-[12px] font-medium rounded-md hover:bg-primary/10 transition-colors tracking-tight"
+                        onClick={() => setCancelOrderId(selectedOrder.id)}
+                        className="h-11 w-full rounded-[11px] border border-rule text-[12.5px] font-semibold text-red transition-colors hover:bg-red-tint"
                       >
                         Cancelar pedido
                       </button>
@@ -704,6 +735,22 @@ export function PedidosView({
           onDone={() => {
             setSplitOrderId(null)
             setSelectedOrderId(null)
+          }}
+        />
+      )}
+
+      {/* Cancelamento com estorno e trilha */}
+      {cancelTarget && (
+        <CancelOrderModal
+          orderId={cancelTarget.id}
+          orderStatus={cancelTarget.status}
+          orderTotal={cancelTarget.total}
+          sourceLabel={SOURCE_LABEL[cancelTarget.source] ?? cancelTarget.source}
+          canCancel={canCancel}
+          onClose={() => setCancelOrderId(null)}
+          onCancelled={() => {
+            setCancelOrderId(null)
+            setTrailKey((k) => k + 1)
           }}
         />
       )}

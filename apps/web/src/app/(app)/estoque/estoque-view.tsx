@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { Ingredient, Supplier } from '@txoko/shared'
 import { Plus, X } from 'lucide-react'
@@ -166,6 +167,9 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
 
       <div className="mb-6">
         <TabBar
+          variant="chip"
+          size="dense"
+          aria-label="Local de estoque"
           tabs={locationTabs}
           active={filterLocation ?? ''}
           onChange={(k) => setFilterLocation(k === '' ? null : k)}
@@ -186,9 +190,10 @@ export function EstoqueView({ ingredients, suppliers }: Props) {
         </div>
         <div className="divide-y divide-border">
           {filtered.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
-              Nenhum insumo cadastrado
-            </p>
+            <EmptyState
+              title="Nenhum insumo neste filtro"
+              hint="Troque a categoria ou limpe a busca. Insumos novos entram pelo botao de cadastrar."
+            />
           ) : (
             filtered.map((ing) => {
               const status = getStatus(ing)

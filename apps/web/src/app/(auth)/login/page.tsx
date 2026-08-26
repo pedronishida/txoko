@@ -37,7 +37,7 @@ export default function LoginPage() {
             type="email"
             required
             placeholder="voce@restaurante.com"
-            className="w-full h-11 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
+            className="h-11 w-full rounded-[11px] border border-rule bg-field px-3.5 text-[13px] text-ink placeholder:text-ink-muted transition-colors"
           />
         </div>
 
@@ -55,7 +55,7 @@ export default function LoginPage() {
             required
             minLength={6}
             placeholder="Minimo 6 caracteres"
-            className="w-full h-11 px-3.5 bg-night border border-border rounded-md text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-stone-dark transition-colors"
+            className="h-11 w-full rounded-[11px] border border-rule bg-field px-3.5 text-[13px] text-ink placeholder:text-ink-muted transition-colors"
           />
         </div>
 

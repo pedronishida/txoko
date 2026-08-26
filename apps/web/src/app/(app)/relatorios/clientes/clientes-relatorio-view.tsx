@@ -49,8 +49,8 @@ const SEGMENT_CONFIG: Record<
   },
   new: {
     label: 'Novos',
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/20',
+    color: 'text-teal-deep',
+    bg: 'bg-teal-soft',
     desc: 'Primeira compra recente, nutrir relacionamento',
   },
 }

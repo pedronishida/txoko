@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Logo } from '@/components/logo'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard,
@@ -15,8 +14,6 @@ import {
   Package,
   Users,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   Monitor,
   ChefHat,
   Sparkles,
@@ -62,16 +59,12 @@ const navigation: NavItem[] = [
   { name: 'Base IA', href: '/configuracoes/conhecimento', icon: BookOpen, group: 'config' },
 ]
 
+const GROUP_ORDER: NavItem['group'][] = ['work', 'manage', 'config']
+
 const GROUP_LABEL: Record<NavItem['group'], string> = {
   work: 'Operacao',
   manage: 'Gestao',
   config: 'Sistema',
-}
-
-interface SidebarProps {
-  collapsed: boolean
-  onToggle: () => void
-  restaurantId: string | null
 }
 
 function useInboxUnreadCount(restaurantId: string | null) {
@@ -124,60 +117,36 @@ function useInboxUnreadCount(restaurantId: string | null) {
   return count
 }
 
-export function Sidebar({ collapsed, onToggle, restaurantId }: SidebarProps) {
+/**
+ * Navegacao lateral.
+ *
+ * Abaixo de 1240px vira trilho de icones por CSS (ver globals.css). Nao ha
+ * mais estado de recolhimento nem botao de alternar: o rotulo de cada link
+ * continua no DOM, recortado para fora da tela, entao o trilho mantem os 19
+ * nomes acessiveis e o alvo de 44x44 em vez de encolher junto.
+ */
+export function Sidebar({ restaurantId }: { restaurantId: string | null }) {
   const pathname = usePathname()
   const inboxUnread = useInboxUnreadCount(restaurantId)
 
-  // Agrupa navigation preservando ordem
-  const groups = navigation.reduce<Record<string, NavItem[]>>((acc, item) => {
-    if (!acc[item.group]) acc[item.group] = []
-    acc[item.group]!.push(item)
-    return acc
-  }, {})
-
   return (
-    <aside className="group island flex flex-col p-2 gap-1.5 overflow-visible relative">
-      {/* Toggle flutuante de recolher */}
-      <button
-        onClick={onToggle}
-        className="absolute z-20 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-bg-elevated border border-border flex items-center justify-center text-foreground/80 hover:bg-surface-hover"
-        style={{ top: '20px', right: '-12px', boxShadow: '0 2px 6px rgba(15,14,12,0.08)' }}
-        aria-label={collapsed ? 'Expandir' : 'Recolher'}
-      >
-        {collapsed ? (
-          <ChevronRight size={13} strokeWidth={2} />
-        ) : (
-          <ChevronLeft size={13} strokeWidth={2} />
-        )}
-      </button>
+    <aside data-nav-rail className="island thin-scroll flex flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-[20px] px-2.5 py-4">
+      <nav className="flex flex-col gap-0.5" aria-label="Navegacao principal">
+        {GROUP_ORDER.map((group, groupIdx) => (
+          <div key={group} className="flex flex-col gap-0.5">
+            <p
+              data-nav-group
+              className={cn(
+                'mx-2.5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-ink-muted',
+                groupIdx === 0 ? 'mt-1' : 'mt-3.5'
+              )}
+            >
+              {GROUP_LABEL[group]}
+            </p>
 
-      {/* Brand */}
-      <Link
-        href="/home"
-        className={cn(
-          'flex items-center gap-2 px-2 pt-1 pb-2',
-          collapsed && 'justify-center px-0'
-        )}
-      >
-        <Logo size={20} />
-        {!collapsed && (
-          <span className="text-[14px] font-semibold tracking-tight">Txoko</span>
-        )}
-      </Link>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-px">
-        {(Object.keys(groups) as NavItem['group'][]).map((group, groupIdx) => (
-          <div key={group} className={cn(groupIdx > 0 && 'mt-3')}>
-            {!collapsed && (
-              <div className="px-2.5 pb-1">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
-                  {GROUP_LABEL[group]}
-                </span>
-              </div>
-            )}
-            <div className="flex flex-col gap-px">
-              {groups[group]!.map((item) => {
+            {navigation
+              .filter((item) => item.group === group)
+              .map((item) => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== '/home' && pathname.startsWith(item.href))
@@ -188,35 +157,40 @@ export function Sidebar({ collapsed, onToggle, restaurantId }: SidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    data-nav-link
+                    title={item.name}
+                    aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'relative flex items-center gap-2.5 rounded-md text-[13px] transition-colors',
-                      collapsed ? 'justify-center px-0 py-1.5' : 'px-2.5 py-1.5',
+                      // 44px tambem no desktop: o Handoff lista a navegacao
+                      // lateral entre as superficies de alvo minimo, junto com
+                      // PDV, KDS, Mesas, Pedidos e Reservas. O denso de 32-38px
+                      // fica para Financeiro, Cardapio e Clientes.
+                      'flex min-h-11 items-center gap-2.5 rounded-[10px] px-2.5 py-[9px] text-[13px] transition-colors',
                       isActive
-                        ? 'bg-primary-soft text-foreground font-semibold'
-                        : 'text-foreground/75 font-medium hover:bg-surface-hover hover:text-foreground'
+                        ? 'bg-teal-tint-2 font-semibold text-teal-deep'
+                        : 'font-medium text-ink-soft hover:bg-sunken hover:text-ink'
                     )}
-                    title={collapsed ? item.name : undefined}
                   >
-                    <span className="relative flex-shrink-0">
-                      <item.icon size={14.5} strokeWidth={isActive ? 2 : 1.85} />
-                      {badge > 0 && collapsed && (
-                        <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-destructive" />
-                      )}
+                    <item.icon
+                      size={15}
+                      strokeWidth={2}
+                      className="shrink-0"
+                      aria-hidden
+                    />
+                    <span data-nav-label className="flex-1 truncate">
+                      {item.name}
                     </span>
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1 truncate">{item.name}</span>
-                        {badge > 0 && (
-                          <span className="bg-accent text-foreground text-[9.5px] font-bold px-1.5 py-0.5 rounded-sm tabular-nums">
-                            {badge > 99 ? '99+' : badge}
-                          </span>
-                        )}
-                      </>
+                    {badge > 0 && (
+                      <span
+                        data-nav-badge
+                        className="rounded-[5px] bg-amber px-1.5 py-0.5 font-data text-[9.5px] font-bold text-on-amber"
+                      >
+                        {badge > 99 ? '99+' : badge}
+                      </span>
                     )}
                   </Link>
                 )
               })}
-            </div>
           </div>
         ))}
       </nav>

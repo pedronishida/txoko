@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveRestaurantId } from '@/lib/server/restaurant'
 import { cn, formatCurrency } from '@/lib/utils'
+import { MetricCards } from '@/components/metric-card'
+import { EmptyState } from '@/components/states'
 
 export const dynamic = 'force-dynamic'
 
@@ -241,38 +243,21 @@ export default async function HomePage() {
       </header>
 
       {/* KPI band */}
-      <section className="px-8 py-8 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-8">
-          {metrics.map((m) => (
-            <div key={m.label}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted">
-                {m.label}
-              </p>
-              <div className="flex items-baseline gap-2.5 mt-3">
-                <p className="text-[28px] font-semibold text-foreground tracking-[-0.03em] leading-none font-data">
-                  {m.value}
-                </p>
-                {m.delta && m.trend && (
-                  <span
-                    className={cn(
-                      'text-[11px] font-semibold tracking-tight',
-                      m.trend === 'up' && 'text-success',
-                      m.trend === 'down' && 'text-destructive',
-                      m.trend === 'flat' && 'text-muted'
-                    )}
-                  >
-                    {m.delta}
-                  </span>
-                )}
-              </div>
-              {m.caption && (
-                <p className="text-[11px] text-muted mt-2 tracking-tight">
-                  {m.caption}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
+      <section className="border-b border-rule px-8 py-8">
+        <MetricCards
+          metrics={metrics.map((m) => ({
+            label: m.label,
+            value: m.value,
+            delta: m.delta ?? null,
+            caption: m.caption,
+            tone:
+              m.trend === 'up'
+                ? 'positive'
+                : m.trend === 'down'
+                  ? 'negative'
+                  : 'neutral',
+          }))}
+        />
       </section>
 
       <div className="px-8 py-10 grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-10">
@@ -291,9 +276,11 @@ export default async function HomePage() {
           </div>
 
           {recentOrders.length === 0 ? (
-            <p className="py-10 text-[13px] text-muted">
-              Nenhum pedido ainda
-            </p>
+            <EmptyState
+              title="Nenhum pedido ainda"
+              hint="Os pedidos do dia aparecem aqui assim que o primeiro entrar pelo PDV, pelo cardapio ou pela estacao."
+              className="py-10"
+            />
           ) : (
             <div className="divide-y divide-border">
               {recentOrders.map((order) => {
@@ -353,9 +340,11 @@ export default async function HomePage() {
             </div>
 
             {recentReviews.length === 0 ? (
-              <p className="py-6 text-[12px] text-muted">
-                Sem avaliacoes ainda
-              </p>
+              <EmptyState
+                title="Sem avaliacoes ainda"
+                hint="As avaliacoes chegam pelo link enviado depois do pedido."
+                className="py-6"
+              />
             ) : (
               <div className="space-y-5">
                 {recentReviews.map((r) => (

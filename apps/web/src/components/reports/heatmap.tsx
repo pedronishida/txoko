@@ -13,15 +13,12 @@ type HeatmapProps = {
   className?: string
 }
 
-function lerp(a: number, b: number, t: number) {
-  return Math.round(a + (b - a) * t)
-}
-
+// A rampa vai de --sunken (nada) ate --teal (pico), misturada em oklab para o
+// meio nao passar por um cinza sujo. Como os dois extremos continuam sendo
+// tokens, o heatmap acompanha o tema sem precisar de uma segunda paleta.
 function interpolateColor(t: number): string {
-  // dark (low) → green (high)
-  const rA = 26, gA = 26, bA = 26    // #1A1A1A
-  const rB = 74, gB = 222, bB = 128  // #4ADE80
-  return `rgb(${lerp(rA, rB, t)},${lerp(gA, gB, t)},${lerp(bA, bB, t)})`
+  const pct = Math.round(Math.min(1, Math.max(0, t)) * 100)
+  return `color-mix(in oklab, var(--teal) ${pct}%, var(--sunken))`
 }
 
 export function Heatmap({

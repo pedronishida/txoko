@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { Customer } from '@txoko/shared'
 import { BookmarkPlus, Download, MessageSquare, Megaphone, Plus, X } from 'lucide-react'
@@ -352,9 +353,10 @@ export function ClientesView({ customers }: Props) {
           </div>
           <div className="divide-y divide-border">
             {filtered.length === 0 ? (
-              <p className="py-12 text-center text-[13px] text-muted tracking-tight">
-                Nenhum cliente encontrado
-              </p>
+              <EmptyState
+                title="Nenhum cliente encontrado"
+                hint="Troque o segmento ou limpe a busca."
+              />
             ) : (
               filtered.map((c) => {
                 const seg = getSegment(c)

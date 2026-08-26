@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { Customer, Review, ReviewSentiment } from '@txoko/shared'
@@ -253,6 +254,9 @@ export function AvaliacoesView({
         <section>
           <div className="mb-6">
             <TabBar
+              variant="chip"
+              size="dense"
+              aria-label="Sentimento"
               tabs={sentimentTabs}
               active={sentimentFilter}
               onChange={(k) => setSentimentFilter(k as SentimentFilter)}
@@ -260,9 +264,10 @@ export function AvaliacoesView({
           </div>
 
           {filtered.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
-              Nenhuma avaliacao ainda
-            </p>
+            <EmptyState
+              title="Nenhuma avaliacao nesta origem"
+              hint="Troque a origem ou o periodo. As avaliacoes chegam pelo link enviado depois do pedido."
+            />
           ) : (
             <div className="divide-y divide-border">
               {filtered.map((review) => (

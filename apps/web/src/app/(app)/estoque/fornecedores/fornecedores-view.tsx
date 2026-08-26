@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { EmptyState } from '@/components/states'
 import { cn } from '@/lib/utils'
 import type { Ingredient, Supplier } from '@txoko/shared'
 import { Plus, X } from 'lucide-react'
@@ -107,9 +108,10 @@ export function FornecedoresView({ suppliers, ingredients }: Props) {
       <div className="flex gap-8">
         <section className="flex-1 min-w-0">
           {suppliers.length === 0 ? (
-            <p className="py-12 text-center text-[13px] text-muted tracking-tight">
-              Nenhum fornecedor cadastrado
-            </p>
+            <EmptyState
+              title="Nenhum fornecedor cadastrado"
+              hint="Cadastre um fornecedor para vincular insumos e acompanhar compras."
+            />
           ) : (
             <div className="divide-y divide-border">
               {suppliers.map((sup) => {

@@ -1,10 +1,6 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
 import { Header } from '@/components/header'
 import { CommandPalette } from '@/components/command-palette'
-import { OfflineBanner } from '@/components/offline-banner'
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt'
 import type { Membership } from '@/lib/server/restaurant'
 
@@ -15,51 +11,45 @@ type Props = {
   children: React.ReactNode
 }
 
+/**
+ * Header, sidebar e conteudo como paineis independentes sobre o fundo.
+ *
+ * O recolhimento da sidebar deixou de ser estado de React: e uma media query
+ * em globals.css sobre [data-shell] e [data-nav-*]. Alem de dispensar o
+ * matchMedia, e o que permite manter o rotulo de cada link na arvore de
+ * acessibilidade quando a sidebar vira trilho — recortado da tela, nao
+ * removido do DOM.
+ *
+ * A ilha de conteudo usa --e2: ela apenas repousa sobre o fundo. Header e
+ * sidebar flutuam acima dela, em --e3.
+ */
 export function DashboardShell({
   user,
   memberships,
   activeRestaurantId,
   children,
 }: Props) {
-  const [collapsed, setCollapsed] = useState(false)
-
-  // Recolhe o sidebar automaticamente em telas menores
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 1023px)')
-    const sync = () => setCollapsed(mediaQuery.matches)
-    sync()
-    mediaQuery.addEventListener('change', sync)
-    return () => mediaQuery.removeEventListener('change', sync)
-  }, [])
-
-  const sidebarWidth = collapsed ? 56 : 232
-
+  // As colunas vivem em globals.css sob [data-shell]: em style inline elas
+  // venceriam a media query e o trilho de icones nunca colapsaria.
   return (
-    <div
-      className="h-screen grid gap-3 px-3 pb-3 overflow-hidden bg-bg"
-      style={{
-        gridTemplateColumns: `${sidebarWidth}px 1fr`,
-        gridTemplateRows: 'auto 1fr',
-      }}
-    >
-      <div className="col-span-2 -mx-3">
-        <OfflineBanner />
+    <div data-shell className="grid h-screen gap-4 overflow-hidden bg-bg p-4">
+      <div className="col-span-2">
         <Header
           user={user}
           memberships={memberships}
           activeRestaurantId={activeRestaurantId}
         />
       </div>
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((value) => !value)}
-        restaurantId={activeRestaurantId}
-      />
-      <main className="island flex flex-col overflow-hidden min-w-0 animate-fade-in">
-        <div className="flex-1 overflow-y-auto thin-scroll px-8 py-6">
-          {children}
-        </div>
+
+      <Sidebar restaurantId={activeRestaurantId} />
+
+      {/* Sem animacao de entrada: trocar de tela custava 420ms por clique
+          numa ferramenta que troca de tela o turno inteiro, e o transform
+          fazia o painel transbordar. */}
+      <main className="island-content thin-scroll relative flex min-w-0 flex-col overflow-x-hidden overflow-y-auto rounded-[20px]">
+        <div className="flex-1 px-8 py-6">{children}</div>
       </main>
+
       <CommandPalette />
       <PwaInstallPrompt />
     </div>

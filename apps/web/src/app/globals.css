@@ -1,150 +1,268 @@
 @import "tailwindcss";
 
-/* Dark mode via .dark class (controlado por next-themes) */
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* =============================================================
-   Design tokens — mapeamento semantico pra light + dark mode
-   Paleta: iFood x 99Food fusion
-   - Primary: iFood red (vermelho vibrante, CTAs)
-   - Accent: 99 yellow (destaque, promocao)
-   - Neutros: escala de cinza sofisticada
+   Txoko — camada de tokens do redesign (Fase 01)
+
+   Portado de tokens.css. Todo valor de cor do produto sai daqui:
+   nenhuma tela declara oklch() literal — e isso que faz os dois
+   temas continuarem corretos sem revisao dupla.
+
+   Tema claro por padrao; escuro e preferencia do usuario. O app
+   grava "light" ou "dark" em localStorage txoko-theme e escreve
+   data-theme no <html> (next-themes, com o script anti-flash dele).
 ============================================================= */
 
+/* A variante dark do Tailwind segue o atributo, nao mais a classe .dark */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
-  /* Base */
-  --bg: #F6F4EE;
-  --bg-elevated: #FFFFFF;
-  --surface: #FFFFFF;
-  --surface-hover: #EDEAE3;
-  --border: #E8E4DA;
-  --border-strong: #D8D5CB;
-
-  /* Texto */
-  --foreground: #0F0E0C;
-  --foreground-muted: #4A4744;
-  --muted: #6B6862;
-  --muted-soft: #8C8885;
-  --muted-subtle: #EDEAE3;
-
-  /* Brand */
-  --primary: #1B3FCB;
-  --primary-hover: #1632A8;
-  --primary-soft: #E8EDFA;
-  --primary-muted: #F0F3FC;
-
-  /* Accent */
-  --accent: #F2C94C;
-  --accent-hover: #E6B838;
-  --accent-soft: #FCF0CC;
-  --accent-muted: #FEF8DD;
-
-  /* Success */
-  --success: #16A34A;
-  --success-soft: #DCFCE7;
-
-  /* Warning */
-  --warning: #F59E0B;
-  --warning-soft: #FEF3C7;
-
-  /* Destructive */
-  --destructive: #D63A37;
-  --destructive-hover: #B82E2B;
-  --destructive-soft: #FDEDEC;
-
-  /* Foreground sobre cores fortes */
-  --primary-foreground: #FFFFFF;
-  --accent-foreground: #0F0E0C;
-  --success-foreground: #FFFFFF;
-  --destructive-foreground: #FFFFFF;
-
-  /* Sombras */
-  --shadow-island: 0 4px 6px -4px #00000014, 0 0 0 1px #0F0E0C0A;
-  --shadow-popup: 0 16px 40px -8px #0F0E0C1F, 0 4px 8px 0 #0F0E0C0A;
+  color-scheme: light;
+  --bg: oklch(95% 0.008 250);
+  --island: oklch(99% 0.003 250 / .68);
+  --panel: oklch(99% 0.003 250 / .8);
+  --panel-solid: oklch(99% 0.003 250 / .85);
+  --panel-veil: oklch(99% 0.004 250 / .6);
+  --field: oklch(99% 0.002 250 / .7);
+  --raise: oklch(96% 0.005 250);
+  --sunken: oklch(93% 0.006 250);
+  --rule-faint: oklch(92% 0.006 250);
+  --rule: oklch(89% 0.008 250);
+  --scroll-thumb: oklch(85% 0.01 250);
+  --menu-bg: oklch(98% 0.004 250);
+  --menu-bar: oklch(98% 0.004 250 / .92);
+  --auth-card: oklch(99% 0.003 250 / .78);
+  --ink: oklch(21% 0.014 250);
+  --ink-soft: oklch(46% 0.016 250);
+  --ink-muted: oklch(50% 0.014 250);
+  --ink-pending: oklch(54% 0.012 250);
+  --strip-bg: oklch(21% 0.014 250 / .92);
+  --strip-pill: oklch(34% 0.014 250);
+  --strip-on: oklch(98% 0.006 250);
+  --strip-off: oklch(72% 0.01 250);
+  --teal: oklch(50% 0.11 165);
+  --teal-deep: oklch(40% 0.09 165);
+  --teal-soft: oklch(94% 0.045 165);
+  --teal-soft-hover: oklch(91% 0.05 165);
+  --teal-tint: oklch(97% 0.02 165);
+  --teal-tint-2: oklch(97% 0.025 165);
+  --teal-ring: oklch(50% 0.11 165 / .25);
+  --on-teal: #fff;
+  --amber: oklch(72% 0.15 75);
+  --amber-text: oklch(46% 0.15 75);
+  --on-amber: oklch(24% 0.06 75);
+  --red: oklch(50% 0.20 25);
+  --red-tint: oklch(94% 0.05 25 / .55);
+  --scrim: oklch(32% 0.02 250 / .34);
+  --overlay: oklch(99.5% 0.002 250);
+  --on-red: #fff;
+  --edge: rgba(255,255,255,.5);
+  --edge-hi: rgba(255,255,255,.6);
+  --e1: 0 1px 2px rgba(20,30,45,.05), 0 10px 24px -16px rgba(20,30,45,.16);
+  --e2: 0 1px 1px rgba(20,30,45,.04), 0 14px 30px -20px rgba(20,30,45,.16);
+  --e3: 0 1px 1px rgba(20,30,45,.05), 0 28px 60px -28px rgba(20,30,45,.34);
 }
 
-/* Forca tema light em um subtree (usado no menu publico) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(16% 0.012 250);
+  --island: oklch(24% 0.012 250 / .74);
+  --panel: oklch(27% 0.013 250 / .82);
+  --panel-solid: oklch(27% 0.013 250 / .88);
+  --panel-veil: oklch(22% 0.012 250 / .6);
+  --field: oklch(18% 0.012 250 / .8);
+  --raise: oklch(29% 0.013 250);
+  --sunken: oklch(32% 0.013 250);
+  --rule-faint: oklch(30% 0.012 250);
+  --rule: oklch(35% 0.014 250);
+  --scroll-thumb: oklch(42% 0.014 250);
+  --menu-bg: oklch(19% 0.012 250);
+  --menu-bar: oklch(19% 0.012 250 / .92);
+  --auth-card: oklch(25% 0.013 250 / .8);
+  --ink: oklch(96% 0.006 250);
+  --ink-soft: oklch(78% 0.012 250);
+  --ink-muted: oklch(70% 0.012 250);
+  --ink-pending: oklch(63% 0.012 250);
+  --strip-bg: oklch(11% 0.012 250 / .94);
+  --strip-pill: oklch(32% 0.014 250);
+  --teal: oklch(66% 0.13 165);
+  --teal-deep: oklch(78% 0.12 165);
+  --teal-soft: oklch(31% 0.05 165);
+  --teal-soft-hover: oklch(36% 0.06 165);
+  --teal-tint: oklch(26% 0.035 165);
+  --teal-tint-2: oklch(28% 0.04 165);
+  --teal-ring: oklch(66% 0.13 165 / .32);
+  --on-teal: oklch(15% 0.03 165);
+  --amber: oklch(76% 0.15 75);
+  --amber-text: oklch(82% 0.13 75);
+  --on-amber: oklch(24% 0.06 75);
+  --red: oklch(76% 0.16 25);
+  --red-tint: oklch(32% 0.07 25 / .5);
+  --scrim: oklch(8% 0.01 250 / .62);
+  --overlay: oklch(23% 0.013 250);
+  --on-red: oklch(16% 0.04 25);
+  --edge: rgba(255,255,255,.08);
+  --edge-hi: rgba(255,255,255,.10);
+  --e1: 0 1px 2px rgba(0,0,0,.35), 0 10px 24px -16px rgba(0,0,0,.6);
+  --e2: 0 1px 1px rgba(0,0,0,.3), 0 14px 30px -20px rgba(0,0,0,.55);
+  --e3: 0 1px 1px rgba(0,0,0,.4), 0 28px 60px -28px rgba(0,0,0,.85);
+}
+
+/* Forca tema claro num subtree — menu publico, landing, error, not-found.
+   Redeclara a paleta clara inteira pra continuar valendo dentro do escuro. */
 .theme-light {
   color-scheme: light;
-  --bg: #FFFFFF;
-  --bg-elevated: #FAFAFA;
-  --surface: #F6F6F5;
-  --surface-hover: #EFEEEC;
-  --border: #E8E6E3;
-  --border-strong: #D4D1CD;
-  --foreground: #0F0E0C;
-  --foreground-muted: #4A4744;
-  --muted: #6B6862;
-  --muted-soft: #8C8885;
-  --muted-subtle: #E8E6E3;
-  --primary: #1B3FCB;
-  --primary-hover: #1632A8;
-  --primary-soft: #E8EDFA;
-  --primary-muted: #F0F3FC;
-  --accent: #F2C94C;
-  --accent-hover: #E6B838;
-  --accent-soft: #FCF0CC;
-  --success: #16A34A;
-  --success-soft: #DCFCE7;
-  --warning: #F59E0B;
-  --warning-soft: #FEF3C7;
-  --destructive: #D63A37;
-  --destructive-hover: #B82E2B;
-  --destructive-soft: #FDEDEC;
-  --primary-foreground: #FFFFFF;
-  --accent-foreground: #0F0E0C;
-}
-
-.dark {
-  --bg: #14121E;
-  --bg-elevated: #1D1A2B;
-  --surface: #1D1A2B;
-  --surface-hover: #252235;
-  --border: #2E2A3F;
-  --border-strong: #3D3A52;
-
-  --foreground: #F0EEF8;
-  --foreground-muted: #C2BFD0;
-  --muted: #7A7890;
-  --muted-soft: #5F5D75;
-  --muted-subtle: #2E2A3F;
-
-  --primary: #6B8AE8;
-  --primary-hover: #88A0EE;
-  --primary-soft: #1F2540;
-  --primary-muted: #16192E;
-
-  --accent: #F2C94C;
-  --accent-hover: #FFD66B;
-  --accent-soft: #2D2614;
-  --accent-muted: #1F1B0E;
-
-  --success: #22C55E;
-  --success-soft: #0A2013;
-
-  --warning: #FBBF24;
-  --warning-soft: #2A1F08;
-
-  --destructive: #EF5350;
-  --destructive-hover: #F87171;
-  --destructive-soft: #2A0A0A;
-
-  --primary-foreground: #FFFFFF;
-  --accent-foreground: #0F0E0C;
-  --success-foreground: #FFFFFF;
-  --destructive-foreground: #FFFFFF;
-
-  --shadow-island: 0 4px 6px -4px #0006, 0 0 0 1px #FFFFFF0A;
-  --shadow-popup: 0 16px 40px -8px #0009, 0 4px 8px 0 #0003;
+  --bg: oklch(95% 0.008 250);
+  --island: oklch(99% 0.003 250 / .68);
+  --panel: oklch(99% 0.003 250 / .8);
+  --panel-solid: oklch(99% 0.003 250 / .85);
+  --panel-veil: oklch(99% 0.004 250 / .6);
+  --field: oklch(99% 0.002 250 / .7);
+  --raise: oklch(96% 0.005 250);
+  --sunken: oklch(93% 0.006 250);
+  --rule-faint: oklch(92% 0.006 250);
+  --rule: oklch(89% 0.008 250);
+  --scroll-thumb: oklch(85% 0.01 250);
+  --menu-bg: oklch(98% 0.004 250);
+  --menu-bar: oklch(98% 0.004 250 / .92);
+  --auth-card: oklch(99% 0.003 250 / .78);
+  --ink: oklch(21% 0.014 250);
+  --ink-soft: oklch(46% 0.016 250);
+  --ink-muted: oklch(50% 0.014 250);
+  --ink-pending: oklch(54% 0.012 250);
+  --strip-bg: oklch(21% 0.014 250 / .92);
+  --strip-pill: oklch(34% 0.014 250);
+  --strip-on: oklch(98% 0.006 250);
+  --strip-off: oklch(72% 0.01 250);
+  --teal: oklch(50% 0.11 165);
+  --teal-deep: oklch(40% 0.09 165);
+  --teal-soft: oklch(94% 0.045 165);
+  --teal-soft-hover: oklch(91% 0.05 165);
+  --teal-tint: oklch(97% 0.02 165);
+  --teal-tint-2: oklch(97% 0.025 165);
+  --teal-ring: oklch(50% 0.11 165 / .25);
+  --on-teal: #fff;
+  --amber: oklch(72% 0.15 75);
+  --amber-text: oklch(46% 0.15 75);
+  --on-amber: oklch(24% 0.06 75);
+  --red: oklch(50% 0.20 25);
+  --red-tint: oklch(94% 0.05 25 / .55);
+  --scrim: oklch(32% 0.02 250 / .34);
+  --overlay: oklch(99.5% 0.002 250);
+  --on-red: #fff;
+  --edge: rgba(255,255,255,.5);
+  --edge-hi: rgba(255,255,255,.6);
+  --e1: 0 1px 2px rgba(20,30,45,.05), 0 10px 24px -16px rgba(20,30,45,.16);
+  --e2: 0 1px 1px rgba(20,30,45,.04), 0 14px 30px -20px rgba(20,30,45,.16);
+  --e3: 0 1px 1px rgba(20,30,45,.05), 0 28px 60px -28px rgba(20,30,45,.34);
 }
 
 /* =============================================================
-   Tailwind theme — mapeia tokens antigos pros novos mantendo
-   compatibilidade com todas as classes existentes no codigo
+   Compatibilidade
+
+   Os nomes que as telas ja existentes usam, remapeados sobre os
+   tokens do redesign. Sem isso, ~20.000 linhas de tela perdem cor.
+   Precisa repetir em .theme-light: var() resolve no elemento onde
+   e declarado, entao o mapeamento tem de existir nos dois escopos.
+============================================================= */
+:root,
+.theme-light {
+  /* Base */
+  --bg-elevated: var(--island);
+  --surface: var(--panel);
+  --surface-hover: var(--sunken);
+  --border: var(--rule-faint);
+  --border-strong: var(--rule);
+
+  /* Texto */
+  --foreground: var(--ink);
+  --foreground-muted: var(--ink-soft);
+  --muted: var(--ink-muted);
+  --muted-soft: var(--ink-pending);
+  --muted-subtle: var(--sunken);
+
+  /* Brand — o teal do redesign no lugar do azul */
+  --primary: var(--teal);
+  --primary-hover: var(--teal-deep);
+  --primary-soft: var(--teal-soft);
+  --primary-muted: var(--teal-tint);
+  --primary-foreground: var(--on-teal);
+
+  /* Accent / warning — ambar dividido em decorativo e legivel */
+  --accent: var(--amber);
+  --accent-hover: var(--amber);
+  --accent-soft: var(--sunken);
+  --accent-muted: var(--sunken);
+  --accent-foreground: var(--on-amber);
+  --warning: var(--amber);
+  --warning-soft: var(--sunken);
+
+  /* Success — o redesign nao tem verde proprio; o teal carrega sucesso */
+  --success: var(--teal);
+  --success-soft: var(--teal-soft);
+  --success-foreground: var(--on-teal);
+
+  /* Destructive */
+  --destructive: var(--red);
+  --destructive-hover: var(--red);
+  --destructive-soft: var(--red-tint);
+  --destructive-foreground: var(--on-red);
+
+  /* Sombras — as duas antigas apontam pra escala de tres */
+  --shadow-island: var(--e2);
+  --shadow-popup: var(--e3);
+}
+
+/* =============================================================
+   Tailwind theme
 ============================================================= */
 
 @theme inline {
-  /* Tokens novos semanticos (use em codigo novo) */
+  /* --- Tokens do redesign (use em codigo novo) --- */
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-pending: var(--ink-pending);
+  --color-island: var(--island);
+  --color-panel: var(--panel);
+  --color-panel-solid: var(--panel-solid);
+  --color-panel-veil: var(--panel-veil);
+  --color-field: var(--field);
+  --color-raise: var(--raise);
+  --color-sunken: var(--sunken);
+  --color-rule: var(--rule);
+  --color-rule-faint: var(--rule-faint);
+  --color-menu-bg: var(--menu-bg);
+  --color-menu-bar: var(--menu-bar);
+  --color-auth-card: var(--auth-card);
+  --color-strip-bg: var(--strip-bg);
+  --color-strip-pill: var(--strip-pill);
+  --color-strip-on: var(--strip-on);
+  --color-strip-off: var(--strip-off);
+  --color-teal: var(--teal);
+  --color-teal-deep: var(--teal-deep);
+  --color-teal-soft: var(--teal-soft);
+  --color-teal-soft-hover: var(--teal-soft-hover);
+  --color-teal-tint: var(--teal-tint);
+  --color-teal-tint-2: var(--teal-tint-2);
+  --color-teal-ring: var(--teal-ring);
+  --color-on-teal: var(--on-teal);
+  --color-amber: var(--amber);
+  --color-amber-text: var(--amber-text);
+  --color-on-amber: var(--on-amber);
+  --color-red: var(--red);
+  --color-red-tint: var(--red-tint);
+  --color-on-red: var(--on-red);
+  --color-scrim: var(--scrim);
+  --color-overlay: var(--overlay);
+  --color-edge: var(--edge);
+  --color-edge-hi: var(--edge-hi);
+
+  /* Escala de elevacao em tres niveis — nada de sombra ad hoc */
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
+
+  /* --- Nomes semanticos ja usados nas telas --- */
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
@@ -195,8 +313,8 @@
   --color-coral-dark: var(--destructive-hover);
   --color-coral-light: var(--destructive-soft);
 
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-sans: var(--font-archivo), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
@@ -214,14 +332,6 @@
     border-color: var(--border);
   }
 
-  html {
-    color-scheme: light;
-  }
-
-  html.dark {
-    color-scheme: dark;
-  }
-
   body {
     background-color: var(--bg);
     color: var(--foreground);
@@ -231,12 +341,36 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  ::selection {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+  a {
+    color: var(--teal);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--teal-deep);
   }
 
-  /* Scrollbar polido */
+  ::selection {
+    background-color: var(--teal);
+    color: var(--on-teal);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink-muted);
+  }
+
+  /* Foco visivel em tudo que e operavel. PDV e KDS sao telas de teclado —
+     isso nao e opcional e nao se remove por questao estetica. */
+  :focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+  button:focus-visible,
+  a:focus-visible {
+    border-radius: 10px;
+  }
+
+  /* Scrollbar polido — agora com token, entao segue o tema */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -245,15 +379,117 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #e0dcc8;
+    background: var(--scroll-thumb);
     border-radius: 9999px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #c8c3b0;
+}
+
+/* =============================================================
+   Larguras (Fase 02)
+
+   Regras fora de @layer, entao vencem qualquer utilitario do Tailwind
+   sem precisar de !important. Casam por data-attribute porque o alvo
+   e a peca de layout, nao uma classe solta.
+============================================================= */
+
+/* A grade do shell mora aqui, e nao num style inline no componente: estilo
+   inline vence regra de folha sem !important, entao com a largura inline o
+   trilho de icones nunca colapsaria. */
+[data-shell] {
+  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* Tablet paisagem: a sidebar vira trilho de icones e o header solta o
+   que e secundario. Devolve cerca de 170px a coluna de trabalho. */
+@media (max-width: 1240px) {
+  [data-shell] {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  [data-nav-note],
+  [data-nav-group] {
+    display: none;
+  }
+  /* O rotulo sai da tela sem sair da arvore de acessibilidade. Com
+     display:none seriam 19 links sem nome. */
+  [data-nav-label] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    flex: none;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* Cada item mede 44x44. E a superficie mais tocada em tablet: se
+     encolher junto com a sidebar, vira o menor alvo do produto. */
+  [data-nav-rail] {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  [data-nav-link] {
+    position: relative;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  [data-nav-badge] {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+  }
+  [data-header-search],
+  [data-user-meta],
+  [data-wordmark],
+  [data-org-switch] {
+    display: none;
+  }
+  [data-brand] {
+    padding-right: 0;
+    border-right: 0;
+  }
+}
+
+/* Tablet retrato: os paineis de detalhe cedem largura. A coluna
+   principal e a que precisa de espaco. */
+@media (max-width: 1024px) {
+  [data-pane="pdv"] { width: 296px; }
+  [data-pane="detail"] { width: 244px; padding: 18px; }
+  [data-pane="inbox"] { width: 196px; }
+  [data-pane="cfg"] { padding-left: 10px; padding-right: 10px; width: 164px; }
+}
+
+/* Tres colunas deixam de caber com dignidade: o KDS passa a rolar na
+   horizontal com faixa minima de 264px, em vez de espremer as tres. */
+@media (max-width: 860px) {
+  [data-kds-cols] {
+    display: flex;
+    overflow-x: auto;
+  }
+  [data-kds-cols] > * {
+    flex: 1 0 264px;
+  }
+}
+
+/* Desliga animacao e transicao pra quem pediu menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 @layer utilities {
+  /* Mono restrito a numero: valores, codigos, horarios e duracoes.
+     Nunca em texto corrido, nunca em rotulo. */
   .font-data {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
@@ -272,11 +508,11 @@
     scrollbar-width: none;
   }
 
-  /* ========== Scrollbar fina (main do shell) ========== */
+  /* ========== Scrollbar fina (paineis internos) ========== */
 
   .thin-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #d8d5cb transparent;
+    scrollbar-color: var(--scroll-thumb) transparent;
   }
   .thin-scroll::-webkit-scrollbar {
     width: 6px;
@@ -286,24 +522,70 @@
     background: transparent;
   }
   .thin-scroll::-webkit-scrollbar-thumb {
-    background: #e0dcc8;
+    background: var(--scroll-thumb);
     border-radius: 9999px;
   }
-  .thin-scroll::-webkit-scrollbar-thumb:hover {
-    background: #c8c3b0;
+
+  /* ========== Esqueleto de carregamento ========== */
+
+  @keyframes txoko-shimmer {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+
+  .skeleton {
+    background: var(--sunken);
+    border-radius: 6px;
+    animation: txoko-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+      opacity: 0.75;
+    }
   }
 
   /* ========== Islands ========== */
 
-  .island {
-    background-color: var(--bg-elevated);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-island);
+  /* As tres superficies do redesign.
+
+     .island        o que flutua: header e sidebar            --e3
+     .island-content a ilha de conteudo, que so repousa        --e2
+     .panel          cartoes dentro do conteudo               --e1 */
+
+  /* Sem border-radius aqui de proposito: o header usa 18px e sidebar e
+     conteudo usam 20px. Cada um declara o seu, pra nao depender da ordem
+     em que o Tailwind emite utilitarios da mesma camada. */
+  .island,
+  .island-content {
+    background-color: var(--island);
+    /* Sem o prefixo -webkit- a mao: escrever os dois faz o Lightning CSS
+       colapsar o par e manter so o prefixado, e ai o Firefox perde o blur.
+       Deixando so a propriedade padrao, ele prefixa sozinho quando precisa. */
+    backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--edge);
   }
+  .island {
+    box-shadow: var(--e3), inset 0 1px 0 var(--edge-hi);
+  }
+  .island-content {
+    box-shadow: var(--e2), inset 0 1px 0 var(--edge-hi);
+  }
+
+  .panel {
+    background-color: var(--panel);
+    border: 1px solid var(--edge-hi);
+    border-radius: 16px;
+    box-shadow: var(--e1);
+  }
+
+  /* Modais e popovers: opacos, nunca translucidos. */
   .island-popup {
-    background-color: var(--bg-elevated);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-popup);
+    background-color: var(--overlay);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    box-shadow: var(--e3);
   }
 
   /* ========== Micro-interacoes ========== */
@@ -315,9 +597,7 @@
   }
   .hover-lift:hover {
     transform: translateY(-1px);
-    box-shadow:
-      0 8px 16px -8px #0000001f,
-      0 0 0 1px #0f0e0c0f;
+    box-shadow: var(--e2);
   }
   .hover-lift:active {
     transition-duration: 80ms;
@@ -343,7 +623,9 @@
     }
   }
 
-  /* ========== Animacoes de entrada ========== */
+  /* ========== Animacoes de entrada ==========
+     Continuam definidas para quem ja as usa. O Handoff pede que TROCAR
+     DE TELA nao anime — isso sai na Fase 02, junto com as telas. */
 
   @keyframes txoko-fade-in {
     from { opacity: 0; }

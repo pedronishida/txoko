@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase/client'
 import { PageHeader } from '@/components/page-header'
 import { MetricBand } from '@/components/metric-band'
 import { TabBar } from '@/components/tab-bar'
+import { EmptyState } from '@/components/states'
 import { cn } from '@/lib/utils'
 import type { Reservation, Table, Customer, TableStatus } from '@txoko/shared'
 import {
@@ -73,22 +74,26 @@ const STATUS_LABEL: Record<string, string> = {
   no_show: 'Nao compareceu',
 }
 
+// Sentada e o estado teal, nao confirmada: teal marca o que ja aconteceu no
+// salao. Confirmada e so uma reserva no papel, entao fica neutra. Antes o
+// sentada usava blue-400, cor crua do Tailwind que nao existe no sistema e
+// nao acompanha o tema.
 const STATUS_COLOR: Record<string, string> = {
-  pending: 'text-accent-foreground bg-accent/10 border-accent/20',
-  confirmed: 'text-success bg-success/10 border-success/20',
-  seated: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  completed: 'text-muted bg-stone/10 border-stone/20',
-  cancelled: 'text-destructive bg-destructive/10 border-destructive/20',
-  no_show: 'text-destructive bg-destructive/10 border-destructive/20',
+  pending: 'text-amber-text bg-sunken border-rule',
+  confirmed: 'text-ink-soft bg-sunken border-rule',
+  seated: 'text-teal-deep bg-teal-soft border-teal',
+  completed: 'text-ink-muted bg-sunken border-rule',
+  cancelled: 'text-red bg-red-tint border-red',
+  no_show: 'text-red bg-red-tint border-red',
 }
 
 const STATUS_DOT: Record<string, string> = {
-  pending: 'bg-accent',
-  confirmed: 'bg-success',
-  seated: 'bg-blue-400',
-  completed: 'bg-stone',
-  cancelled: 'bg-destructive',
-  no_show: 'bg-destructive',
+  pending: 'bg-amber',
+  confirmed: 'bg-ink-muted',
+  seated: 'bg-teal',
+  completed: 'bg-ink-muted',
+  cancelled: 'bg-red',
+  no_show: 'bg-red',
 }
 
 const TIMELINE_HOURS = Array.from({ length: 13 }, (_, i) => i + 10) // 10h-22h
@@ -246,8 +251,11 @@ export function ReservasView({
           <tbody>
             {filteredReservations.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-muted text-[12px]">
-                  Nenhuma reserva encontrada
+                <td colSpan={6} className="p-0">
+                  <EmptyState
+                    title="Nenhuma reserva neste dia"
+                    hint="Troque o dia ou a situacao para ver as outras."
+                  />
                 </td>
               </tr>
             )}
@@ -307,7 +315,7 @@ export function ReservasView({
                       <button
                         onClick={() => handleAction(() => seatReservation({ id: r.id, tableId: r.table_id }))}
                         disabled={actionLoading === r.id}
-                        className="text-[10px] px-2 py-0.5 rounded bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 border border-blue-400/20 transition-colors"
+                        className="text-[10px] px-2 py-0.5 rounded bg-teal-soft text-teal-deep hover:bg-teal-soft-hover border border-teal transition-colors"
                       >
                         Sentar
                       </button>
@@ -468,7 +476,7 @@ export function ReservasView({
         </div>
 
         {/* Day detail */}
-        <div className="w-[260px] shrink-0">
+        <div data-pane="detail" className="w-[260px] shrink-0">
           <div className="text-[12px] font-medium text-foreground mb-3 capitalize">
             {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
           </div>
@@ -521,7 +529,7 @@ export function ReservasView({
                     {(r.status === 'pending' || r.status === 'confirmed') && (
                       <button
                         onClick={() => handleAction(() => seatReservation({ id: r.id, tableId: r.table_id }))}
-                        className="text-[9px] px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20"
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-teal-soft text-teal-deep border border-teal"
                       >
                         Sentar
                       </button>
@@ -1107,6 +1115,8 @@ export function ReservasView({
       {/* View mode selector */}
       <div className="flex items-center justify-between mb-4">
         <TabBar
+          variant="chip"
+          aria-label="Situacao da reserva"
           tabs={viewTabs}
           active={activeTab}
           onChange={(k) => setActiveTab(k as TabKey)}
