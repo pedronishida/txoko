@@ -24,10 +24,15 @@ export function NumericKeypad({
   busy,
   onConfirm,
   onClose,
+  altLabel,
+  onAlt,
 }: {
   busy: boolean
   onConfirm: (grams: number) => void
   onClose: () => void
+  /** Atalho secundario abaixo do confirmar (ex.: a vontade, sem pesar). */
+  altLabel?: string
+  onAlt?: () => void
 }) {
   const [digits, setDigits] = useState('')
   const grams = digits === '' ? null : Number(digits)
@@ -124,6 +129,16 @@ export function NumericKeypad({
         >
           {ok ? `Lançar ${formatWeight(grams)}` : 'Digite o peso em gramas'}
         </button>
+
+        {onAlt != null && altLabel != null && (
+          <button
+            disabled={busy}
+            onClick={onAlt}
+            className="mt-2 h-14 w-full rounded-[4px] border border-rule-strong text-base font-semibold text-ink-soft disabled:opacity-40"
+          >
+            {altLabel}
+          </button>
+        )}
       </div>
     </div>
   )
