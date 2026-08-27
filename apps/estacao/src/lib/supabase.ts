@@ -22,6 +22,9 @@ export type StationItem = {
   unit_price: number
   total_price: number
   created_at: string
+  // De que modalidade o produto veio (null = item comum, ex. bebida).
+  // Opcional porque fotos guardadas antes desta versao nao trazem o campo.
+  service_mode?: string | null
 }
 
 export type ServiceMode = 'avontade' | 'por_kg' | 'por_kg_2mix'
@@ -111,6 +114,23 @@ export async function cancelItem(
   const { data, error } = await supabase.rpc('station_cancel_item', {
     p_cancel_token: cancelToken,
     p_order_id: orderId,
+    p_item_id: itemId,
+  })
+  if (error) throw new Error(error.message)
+  return data as StationSnapshot
+}
+
+/**
+ * A propria comanda desfaz um lancamento recente (janela de 15 min no
+ * servidor). Nao serve pro item fixo da modalidade — esse e assunto da
+ * troca de modalidade e do numero de pessoas.
+ */
+export async function cancelOwnItem(
+  qrToken: string,
+  itemId: string
+): Promise<StationSnapshot> {
+  const { data, error } = await supabase.rpc('station_cancel_own_item', {
+    p_qr_token: qrToken,
     p_item_id: itemId,
   })
   if (error) throw new Error(error.message)
