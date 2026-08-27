@@ -40,6 +40,7 @@ import {
   parseManualWeight,
   serviceModeLabel,
 } from '@/lib/format'
+import { NumericKeypad } from '@/components/numeric-keypad'
 
 /**
  * Frente da estacao.
@@ -55,7 +56,10 @@ import {
  * A leitura automatica da balanca (Web Serial, Toledo Prix IV) ainda nao
  * existe — falta o cabo. Ate la o peso entra a mao, que no desenho e via de
  * excecao de primeira classe e nao gambiarra: o campo mora no trilho da
- * comanda ativa, entao pratos 2..n tem caminho sem sair da tela.
+ * comanda ativa, entao pratos 2..n tem caminho sem sair da tela. E como o
+ * aparelho e uma tela touch sem teclado fisico, tocar em qualquer campo de
+ * peso abre um teclado numerico na tela — no seletor de modalidade, o peso
+ * confirmado ja escolhe o por quilo e lanca o prato num gesto so.
  */
 
 type Toast = { id: number; kind: 'ok' | 'error'; text: string }
@@ -100,6 +104,9 @@ export default function StationPage() {
   const [toasts, setToasts] = useState<Toast[]>([])
   // Peso alto aguardando confirmacao (null = nada pendente)
   const [pendingWeight, setPendingWeight] = useState<number | null>(null)
+  // Teclado numerico aberto, e de onde: o do seletor tambem escolhe o por
+  // quilo; o do trilho so lanca o peso.
+  const [weightPad, setWeightPad] = useState<'picker' | 'rail' | null>(null)
   // Reabre o seletor quando a atendente aperta a modalidade errada
   const [changingMode, setChangingMode] = useState(false)
   const [rates, setRates] = useState<StationRates | null>(null)
@@ -345,6 +352,7 @@ export default function StationPage() {
       setCancelToken(null)
       setBuffer('')
       setPendingWeight(null)
+      setWeightPad(null)
       setChangingMode(false)
       setConfirmarFinal(false)
       setRates(null)
@@ -443,6 +451,56 @@ export default function StationPage() {
       })
     },
     [token, lancar, rates, session]
+  )
+
+  // Valida e lanca um peso digitado, de qualquer origem — Enter no campo ou
+  // teclado na tela. Peso alto para no WeightGuard antes de entrar.
+  const submitManualWeight = useCallback(
+    (grams: number) => {
+      if (grams <= 0) {
+        pushToast('error', 'Peso invalido')
+        return
+      }
+      if (grams > WEIGHT_CONFIRM_THRESHOLD) {
+        setPendingWeight(grams)
+        return
+      }
+      void applyManualWeight(grams)
+    },
+    [applyManualWeight, pushToast]
+  )
+
+  /**
+   * Peso digitado ainda no seletor de modalidade: escolhe o por quilo e ja
+   * lanca o prato num gesto so. A modalidade continua fora da fila — ela
+   * precifica tudo que vem depois e precisa do servidor — entao o peso so
+   * entra depois dela aceita.
+   */
+  const lancarPesoDoSeletor = useCallback(
+    async (grams: number) => {
+      if (!token) return
+      try {
+        setBusy(true)
+        const snap = await setServiceMode(token, 'por_kg', 1)
+        setSession(snap)
+        setChangingMode(false)
+        setOnline(true)
+        void guardarComanda(token, snap)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Erro ao definir modalidade'
+        if (ehFalhaDeRede(msg)) {
+          setOnline(false)
+          pushToast('error', 'Sem rede — a modalidade precisa do servidor')
+        } else {
+          pushToast('error', msg)
+        }
+        return
+      } finally {
+        setBusy(false)
+      }
+      submitManualWeight(grams)
+    },
+    [token, pushToast, submitManualWeight]
   )
 
   const handleScan = useCallback(
@@ -551,6 +609,11 @@ export default function StationPage() {
   // leitor, modalidade, e peso digitado. Nao ha colisao — o leitor manda 8+
   // digitos e a digitacao manual e sempre curta.
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Escape' && weightPad != null) {
+      e.preventDefault()
+      setWeightPad(null)
+      return
+    }
     if (e.key === 'Escape' && pendingWeight != null) {
       e.preventDefault()
       setPendingWeight(null)
@@ -589,15 +652,7 @@ export default function StationPage() {
     if (session && isPorKg(session.service_mode)) {
       const grams = parseManualWeight(v)
       if (grams != null) {
-        if (grams <= 0) {
-          pushToast('error', 'Peso invalido')
-          return
-        }
-        if (grams > WEIGHT_CONFIRM_THRESHOLD) {
-          setPendingWeight(grams)
-          return
-        }
-        void applyManualWeight(grams)
+        submitManualWeight(grams)
         return
       }
     }
@@ -622,6 +677,7 @@ export default function StationPage() {
             value={buffer}
             onChange={(e) => setBuffer(e.target.value)}
             onKeyDown={onInputKeyDown}
+            inputMode="none"
             className="absolute h-0 w-0 opacity-0"
             aria-label="Leitor de codigo de barras"
           />
@@ -640,6 +696,10 @@ export default function StationPage() {
           setBuffer={setBuffer}
           onInputKeyDown={onInputKeyDown}
           onPickMode={(m) => void applyMode(m)}
+          onOpenKeypad={(from) => {
+            lastActivityRef.current = Date.now()
+            setWeightPad(from)
+          }}
           changingMode={changingMode}
           onStartChangeMode={() => setChangingMode(true)}
           cancelToken={cancelToken}
@@ -671,6 +731,20 @@ export default function StationPage() {
                 cancelInFlightRef.current = false
               }, 300)
             }
+          }}
+        />
+      )}
+
+      {weightPad != null && (
+        <NumericKeypad
+          busy={busy}
+          onClose={() => setWeightPad(null)}
+          onConfirm={(grams) => {
+            const origem = weightPad
+            setWeightPad(null)
+            lastActivityRef.current = Date.now()
+            if (origem === 'picker') void lancarPesoDoSeletor(grams)
+            else submitManualWeight(grams)
           }}
         />
       )}
@@ -781,6 +855,7 @@ function ActiveView({
   setBuffer,
   onInputKeyDown,
   onPickMode,
+  onOpenKeypad,
   changingMode,
   onStartChangeMode,
   cancelToken,
@@ -799,6 +874,7 @@ function ActiveView({
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onPickMode: (mode: ServiceMode) => void
+  onOpenKeypad: (from: 'picker' | 'rail') => void
   changingMode: boolean
   onStartChangeMode: () => void
   cancelToken: string | null
@@ -826,6 +902,7 @@ function ActiveView({
         busy={busy}
         trocando={changingMode}
         onPick={onPickMode}
+        onOpenKeypad={() => onOpenKeypad('picker')}
         inputRef={inputRef}
         buffer={buffer}
         setBuffer={setBuffer}
@@ -979,6 +1056,7 @@ function ActiveView({
               buffer={buffer}
               setBuffer={setBuffer}
               onInputKeyDown={onInputKeyDown}
+              onOpenKeypad={() => onOpenKeypad('rail')}
             />
           ) : (
             <div>
@@ -997,6 +1075,7 @@ function ActiveView({
                 value={buffer}
                 onChange={(e) => setBuffer(e.target.value)}
                 onKeyDown={onInputKeyDown}
+                inputMode="none"
                 className="absolute h-0 w-0 opacity-0"
                 aria-label="Leitor de código de barras"
               />
@@ -1120,11 +1199,13 @@ function WeightRail({
   buffer,
   setBuffer,
   onInputKeyDown,
+  onOpenKeypad,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>
   buffer: string
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  onOpenKeypad: () => void
 }) {
   const parsed = parseManualWeight(buffer)
   const willLaunch = parsed != null && parsed > 0
@@ -1153,12 +1234,17 @@ function WeightRail({
           ? `${formatWeight(parsed)} entra na comanda com Enter`
           : 'Sem leitura da balança. Digite o peso do próximo prato.'}
       </p>
+      {/* inputMode="none": o teclado e o nosso, na tela — tocar aqui abre o
+          numerico sem o teclado do sistema subir por cima do quiosque. Quem
+          tem teclado fisico segue digitando direto, sem tocar no campo. */}
       <input
         ref={inputRef}
         autoFocus
         value={buffer}
         onChange={(e) => setBuffer(e.target.value)}
         onKeyDown={onInputKeyDown}
+        onClick={onOpenKeypad}
+        inputMode="none"
         placeholder="485"
         aria-label="Peso do prato em gramas ou quilos"
         autoComplete="off"
@@ -1166,7 +1252,8 @@ function WeightRail({
         className="mt-1 h-[52px] w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[19px] text-ink"
       />
       <p className="mt-2 text-[13px] leading-[1.35] text-ink-soft">
-        Em gramas (<span className="font-mono">485</span>) ou quilos (
+        Toque no campo para digitar · gramas (
+        <span className="font-mono">485</span>) ou quilos (
         <span className="font-mono">0,485</span>)
       </p>
     </div>
@@ -1210,6 +1297,7 @@ function ModePicker({
   busy,
   trocando,
   onPick,
+  onOpenKeypad,
   inputRef,
   buffer,
   setBuffer,
@@ -1220,11 +1308,15 @@ function ModePicker({
   busy: boolean
   trocando: boolean
   onPick: (mode: ServiceMode) => void
+  onOpenKeypad: () => void
   inputRef: React.RefObject<HTMLInputElement | null>
   buffer: string
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
+  // Mesmo criterio dos cartoes: sem tarifa carregada a escolha segue
+  // liberada; quem recusa e o servidor, na hora do lancamento.
+  const porKgBlocked = rates != null && rates.por_kg?.ready === false
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-[92px] shrink-0 items-baseline gap-3.5 border-b border-rule px-11">
@@ -1242,8 +1334,9 @@ function ModePicker({
         {/* Duas colunas separadas por um fio de 1px, como no desenho: as
             opções são irmãs, não cartões soltos. A régua colorida no topo é
             o que distingue uma da outra — não há ícone. */}
+        <div className="flex w-full max-w-[760px] flex-col gap-2.5">
         <div
-          className="grid w-full max-w-[760px] gap-px overflow-hidden rounded-[4px] border border-rule bg-rule"
+          className="grid w-full gap-px overflow-hidden rounded-[4px] border border-rule bg-rule"
           style={{ gridTemplateColumns: '1fr 1fr' }}
         >
           {MODE_OPTIONS.map((opt) => {
@@ -1297,6 +1390,28 @@ function ModePicker({
           })}
         </div>
 
+        {/* A balanca ainda nao conversa com a estacao, entao o peso entra
+            digitado. O campo mora ja no seletor: confirmar o peso escolhe o
+            por quilo e lanca o prato num gesto so, sem passar por duas
+            telas. Tocar abre o teclado numerico. */}
+        <button
+          onClick={onOpenKeypad}
+          disabled={busy || porKgBlocked}
+          className="flex min-h-[64px] w-full items-center gap-4 rounded-[4px] border border-rule-strong bg-card px-[30px] text-left disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-amber">
+            Peso do prato
+          </span>
+          <span className="font-mono text-[22px] font-bold leading-none text-ink-muted">
+            — g
+          </span>
+          <span className="flex-1" />
+          <span className="text-[15px] text-ink-muted">
+            Toque para digitar · já lança no por quilo
+          </span>
+        </button>
+        </div>
+
         <p className="m-0 min-h-[21px] text-[15px] text-ink-muted">
           {breakEvenHint(rates) ?? 'Toque na opção'}
         </p>
@@ -1308,6 +1423,7 @@ function ModePicker({
         value={buffer}
         onChange={(e) => setBuffer(e.target.value)}
         onKeyDown={onInputKeyDown}
+        inputMode="none"
         className="absolute h-0 w-0 opacity-0"
         aria-label="Modalidade"
       />
