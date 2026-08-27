@@ -121,6 +121,23 @@ export async function cancelItem(
 }
 
 /**
+ * Converte a comanda por quilo em a vontade quando a soma dos pratos
+ * alcanca o preco fixo. Os pesos lancados saem cancelados (com autoria
+ * 'station:virou-avontade') e o fixo entra no lugar; bebidas ficam.
+ */
+export async function convertToAvontade(
+  qrToken: string,
+  people = 1
+): Promise<StationSnapshot> {
+  const { data, error } = await supabase.rpc('station_convert_to_avontade', {
+    p_qr_token: qrToken,
+    p_people: people,
+  })
+  if (error) throw new Error(error.message)
+  return data as StationSnapshot
+}
+
+/**
  * A propria comanda desfaz um lancamento recente (janela de 15 min no
  * servidor). Nao serve pro item fixo da modalidade — esse e assunto da
  * troca de modalidade e do numero de pessoas.
