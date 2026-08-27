@@ -239,13 +239,19 @@ export function PedidosView({
     const id = selectedOrder.id
     const total = selectedOrder.total
     startTransition(async () => {
-      await closeOrderWithPayment({
+      const res = await closeOrderWithPayment({
         orderId: id,
         method: checkoutMethod,
         amount: total,
       })
       setShowCheckout(false)
       setSelectedOrderId(null)
+      // Comprovante nao fiscal na termica ao fechar, como no PDV — mesma
+      // preferencia. Popup bloqueado nao trava nada: o botao Imprimir do
+      // pedido da o mesmo caminho.
+      if (!('error' in res) && localStorage.getItem('txoko_pdv_auto_print') !== 'off') {
+        openPrint(id)
+      }
     })
   }
 

@@ -25,7 +25,9 @@ export default async function ComandaPage({ params }: Props) {
     supabase
       .from('order_items')
       .select('*')
-      .eq('order_id', id),
+      .eq('order_id', id)
+      // Item cancelado nao vai pra cozinha
+      .neq('status', 'cancelled'),
     supabase
       .from('products')
       .select('id, name')

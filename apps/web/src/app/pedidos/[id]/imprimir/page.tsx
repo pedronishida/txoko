@@ -31,7 +31,10 @@ export default async function ImprimirPage({ params }: Props) {
     supabase
       .from('order_items')
       .select('*')
-      .eq('order_id', id),
+      .eq('order_id', id)
+      // Cancelado nao entra no cupom: o total ja o exclui, e lista-lo
+      // imprimiria um item que nao foi cobrado.
+      .neq('status', 'cancelled'),
     supabase
       .from('payments')
       .select('*')

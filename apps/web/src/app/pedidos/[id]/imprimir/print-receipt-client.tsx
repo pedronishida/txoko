@@ -69,7 +69,15 @@ export function PrintReceiptClient({
         : 'Balcao'
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen print:min-h-0 bg-white text-black">
+      {/* Bobina termica de 80mm (TOMATE MDK-080 e afins): retrato, sem
+          margem — a altura de 297mm so pagina cupons muito longos. A
+          coluna de 72mm respeita a area imprimivel do rolo. */}
+      <style>{`
+        @media print {
+          @page { size: 80mm 297mm; margin: 0; }
+        }
+      `}</style>
       {/* Print action bar — hidden when printing */}
       <div className="print:hidden fixed top-0 left-0 right-0 bg-gray-100 border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
         <span className="text-sm font-medium text-gray-700">
@@ -93,7 +101,7 @@ export function PrintReceiptClient({
 
       {/* Receipt content */}
       <div className="pt-14 print:pt-0">
-        <div className="max-w-[320px] mx-auto py-8 font-mono text-[13px] leading-relaxed">
+        <div className="max-w-[320px] print:max-w-[72mm] mx-auto py-8 print:py-0 print:pb-[8mm] font-mono text-[13px] leading-relaxed">
           {/* Restaurant header */}
           <div className="text-center mb-4">
             <p className="font-bold text-[15px] uppercase tracking-wider">
