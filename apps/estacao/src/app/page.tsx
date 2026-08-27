@@ -5,6 +5,7 @@ import { parseScan } from '@/lib/parse-scan'
 import {
   resolveBarcode,
   cancelItem,
+  cancelOwnItem,
   setServiceMode,
   getRates,
   getCatalog,
@@ -72,6 +73,13 @@ type Toast = { id: number; kind: 'ok' | 'error'; text: string }
 // seletor, o aceite ainda decide a modalidade; vindo do trilho, so lanca.
 type PendingWeight = { grams: number; from: 'picker' | 'rail' }
 
+// Item aguardando confirmacao de cancelamento. Pendente ainda nao subiu:
+// cancelar e so tirar da fila. Item lancado passa pelo servidor, que impoe
+// a janela de 15 min e protege o item fixo da modalidade.
+type CancelTarget =
+  | { kind: 'item'; item: StationItem }
+  | { kind: 'pendente'; p: Pendente }
+
 // Teclas do teclado numerico -> modalidade, na ordem em que aparecem na tela.
 // A tecla nao e anunciada ali (o desenho nao mostra atalho nessa tela), mas
 // serve de acelerador pra quem opera o dia inteiro.
@@ -115,6 +123,8 @@ export default function StationPage() {
   // Teclado numerico aberto, e de onde: o do seletor tambem escolhe o por
   // quilo; o do trilho so lanca o peso.
   const [weightPad, setWeightPad] = useState<'picker' | 'rail' | null>(null)
+  // Item tocado na comanda, aguardando o toque de confirmacao do cancelamento
+  const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
   // Reabre o seletor quando a atendente aperta a modalidade errada
   const [changingMode, setChangingMode] = useState(false)
   const [rates, setRates] = useState<StationRates | null>(null)
@@ -260,19 +270,24 @@ export default function StationPage() {
   }, [token])
 
 
-  // Define a modalidade da comanda. Uma comanda por pessoa, entao o "a
-  // vontade" e sempre 1 — nao ha quantidade pra ajustar na estacao.
+  // Define a modalidade da comanda. No "a vontade" o mesmo cartao pode
+  // cobrir mais de uma pessoa — o servidor ajusta a quantidade do item fixo.
   const applyMode = useCallback(
-    async (mode: ServiceMode) => {
+    async (mode: ServiceMode, people = 1) => {
       if (!token) return
       try {
         setBusy(true)
-        const snap = await setServiceMode(token, mode, 1)
+        const snap = await setServiceMode(token, mode, people)
         setSession(snap)
         setChangingMode(false)
         setOnline(true)
         void guardarComanda(token, snap)
-        pushToast('ok', serviceModeLabel(mode))
+        pushToast(
+          'ok',
+          people === 1
+            ? serviceModeLabel(mode)
+            : `${serviceModeLabel(mode)} · ${people} pessoas`
+        )
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Erro ao definir modalidade'
         // A modalidade tambem nao entra na fila: ela precifica tudo que vem
@@ -371,6 +386,7 @@ export default function StationPage() {
       setBuffer('')
       setPendingWeight(null)
       setWeightPad(null)
+      setCancelTarget(null)
       setChangingMode(false)
       setConfirmarFinal(false)
       setRates(null)
@@ -563,6 +579,50 @@ export default function StationPage() {
     },
     [decidirPeloPeso, pushToast]
   )
+
+  /**
+   * Executa o cancelamento confirmado no dialogo.
+   *
+   * Pendente ainda nao subiu: sai da fila e pronto. Se o envio tiver
+   * acontecido no meio do caminho, o item reaparece como lancado na foto
+   * seguinte — e dai se cancela pelo caminho do servidor.
+   */
+  const executarCancelamento = useCallback(async () => {
+    const alvo = cancelTarget
+    if (!alvo) return
+    setCancelTarget(null)
+    lastActivityRef.current = Date.now()
+
+    if (alvo.kind === 'pendente') {
+      await remover(alvo.p.key)
+      setPendentes(token ? await listar(token) : [])
+      setPendentesTotal((await listarTudo()).length)
+      pushToast('ok', 'Item removido')
+      return
+    }
+
+    if (!token) return
+    try {
+      setBusy(true)
+      const snap = await cancelOwnItem(token, alvo.item.id)
+      setSession(snap)
+      setOnline(true)
+      void guardarComanda(token, snap)
+      pushToast('ok', 'Item cancelado')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro ao cancelar'
+      // Igual ao cancel do caixa: nao entra na fila. Tirar da tela sem
+      // tirar do banco faria o caixa cobrar um item que o cliente viu sumir.
+      if (ehFalhaDeRede(msg)) {
+        setOnline(false)
+        pushToast('error', 'Sem rede — não dá para cancelar agora')
+      } else {
+        pushToast('error', msg)
+      }
+    } finally {
+      setBusy(false)
+    }
+  }, [cancelTarget, token, pushToast])
 
   const handleScan = useCallback(
     async (raw: string) => {
@@ -769,6 +829,11 @@ export default function StationPage() {
             lastActivityRef.current = Date.now()
             setWeightPad(from)
           }}
+          onSetPeople={(n) => void applyMode('avontade', n)}
+          onTapCancel={(alvo) => {
+            lastActivityRef.current = Date.now()
+            setCancelTarget(alvo)
+          }}
           changingMode={changingMode}
           onStartChangeMode={() => setChangingMode(true)}
           cancelToken={cancelToken}
@@ -831,6 +896,15 @@ export default function StationPage() {
                 }
               : undefined
           }
+        />
+      )}
+
+      {cancelTarget != null && (
+        <CancelConfirm
+          target={cancelTarget}
+          busy={busy}
+          onVoltar={() => setCancelTarget(null)}
+          onConfirmar={() => void executarCancelamento()}
         />
       )}
 
@@ -942,6 +1016,8 @@ function ActiveView({
   onInputKeyDown,
   onPickMode,
   onOpenKeypad,
+  onSetPeople,
+  onTapCancel,
   changingMode,
   onStartChangeMode,
   cancelToken,
@@ -961,6 +1037,8 @@ function ActiveView({
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onPickMode: (mode: ServiceMode) => void
   onOpenKeypad: (from: 'picker' | 'rail') => void
+  onSetPeople: (n: number) => void
+  onTapCancel: (alvo: CancelTarget) => void
   changingMode: boolean
   onStartChangeMode: () => void
   cancelToken: string | null
@@ -1091,6 +1169,12 @@ function ActiveView({
             <span className="font-mono text-[13px] text-ink-muted">
               {itemCountLabel(session.items.length + pendentes.length)}
             </span>
+            <span className="flex-1" />
+            {session.items.length + pendentes.length > 0 && (
+              <span className="text-[13px] text-ink-muted">
+                toque num item para cancelar
+              </span>
+            )}
           </div>
           <div
             ref={scrollRef}
@@ -1116,6 +1200,13 @@ function ActiveView({
                     isLast={
                       pendentes.length === 0 && i === session.items.length - 1
                     }
+                    // O fixo da modalidade nao cancela avulso: quem mexe nele
+                    // e o numero de pessoas e a troca de modalidade.
+                    onTap={
+                      item.service_mode != null && item.weight_grams == null
+                        ? undefined
+                        : () => onTapCancel({ kind: 'item', item })
+                    }
                   />
                 ))}
                 {/* Pendentes entram na mesma comanda, na mesma linha, com o
@@ -1127,6 +1218,7 @@ function ActiveView({
                     key={p.key}
                     p={p}
                     isLast={i === pendentes.length - 1}
+                    onTap={() => onTapCancel({ kind: 'pendente', p })}
                   />
                 ))}
               </>
@@ -1145,27 +1237,15 @@ function ActiveView({
               onOpenKeypad={() => onOpenKeypad('rail')}
             />
           ) : (
-            <div>
-              <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal">
-                Preço por pessoa
-              </span>
-              <p className="mt-3 font-mono text-[52px] font-bold leading-none tracking-[-0.035em]">
-                {formatCurrency(session.subtotal)}
-              </p>
-              <p className="mt-3 text-[15px] leading-[1.45] text-ink-muted">
-                Já lançado na comanda. Bebidas entram pelo leitor.
-              </p>
-              <input
-                ref={inputRef}
-                autoFocus
-                value={buffer}
-                onChange={(e) => setBuffer(e.target.value)}
-                onKeyDown={onInputKeyDown}
-                inputMode="none"
-                className="absolute h-0 w-0 opacity-0"
-                aria-label="Leitor de código de barras"
-              />
-            </div>
+            <AvontadeRail
+              session={session}
+              busy={busy}
+              onSetPeople={onSetPeople}
+              inputRef={inputRef}
+              buffer={buffer}
+              setBuffer={setBuffer}
+              onInputKeyDown={onInputKeyDown}
+            />
           )}
 
           <div className="flex-1" />
@@ -1210,10 +1290,19 @@ function ActiveView({
  * e uma linha menor ou apagada sugeriria o contrario. O que distingue e a
  * etiqueta e o ambar — a cor que a tela ja usa pra "ainda nao resolvido".
  */
-function PendenteRow({ p, isLast }: { p: Pendente; isLast: boolean }) {
+function PendenteRow({
+  p,
+  isLast,
+  onTap,
+}: {
+  p: Pendente
+  isLast: boolean
+  onTap: () => void
+}) {
   return (
-    <div
-      className="grid grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint py-[17px]"
+    <button
+      onClick={onTap}
+      className="grid w-full grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint py-[17px] text-left active:bg-red-soft"
       style={isLast ? { animation: 'est-land .22s ease-out' } : undefined}
     >
       <span className="text-right font-mono text-lg font-bold text-amber">
@@ -1233,17 +1322,28 @@ function PendenteRow({ p, isLast }: { p: Pendente; isLast: boolean }) {
       <span className="font-mono text-[22px] font-bold tracking-[-0.01em] text-amber">
         {p.total > 0 ? formatCurrency(p.total) : '—'}
       </span>
-    </div>
+    </button>
   )
 }
 
 /* ---------------------------------------------------------------- */
 
-function ComandaRow({ item, isLast }: { item: StationItem; isLast: boolean }) {
+function ComandaRow({
+  item,
+  isLast,
+  onTap,
+}: {
+  item: StationItem
+  isLast: boolean
+  // Ausente no item fixo da modalidade, que nao cancela avulso.
+  onTap?: () => void
+}) {
   const isWeight = item.weight_grams != null
   return (
-    <div
-      className="grid grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint py-[17px]"
+    <button
+      onClick={onTap}
+      disabled={onTap == null}
+      className="grid w-full grid-cols-[112px_minmax(0,1fr)_auto] items-baseline gap-[22px] border-b border-rule-faint py-[17px] text-left active:bg-red-soft disabled:cursor-default disabled:active:bg-transparent"
       style={isLast ? { animation: 'est-land .22s ease-out' } : undefined}
     >
       <span
@@ -1274,7 +1374,7 @@ function ComandaRow({ item, isLast }: { item: StationItem; isLast: boolean }) {
       <span className="font-mono text-[22px] font-bold tracking-[-0.01em]">
         {formatCurrency(item.total_price)}
       </span>
-    </div>
+    </button>
   )
 }
 
@@ -1342,6 +1442,92 @@ function WeightRail({
         <span className="font-mono">485</span>) ou quilos (
         <span className="font-mono">0,485</span>)
       </p>
+      {/* O campo ja abre o teclado, mas "adicionar mais um prato" precisa de
+          um verbo na tela — o botao e o mesmo gesto, com nome. */}
+      <button
+        onClick={onOpenKeypad}
+        className="mt-4 min-h-[56px] w-full rounded-[4px] border border-rule-strong text-base font-semibold text-ink-soft"
+      >
+        Adicionar prato
+      </button>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
+function AvontadeRail({
+  session,
+  busy,
+  onSetPeople,
+  inputRef,
+  buffer,
+  setBuffer,
+  onInputKeyDown,
+}: {
+  session: StationSnapshot
+  busy: boolean
+  onSetPeople: (n: number) => void
+  inputRef: React.RefObject<HTMLInputElement | null>
+  buffer: string
+  setBuffer: (v: string) => void
+  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+}) {
+  // O item fixo da modalidade diz quantas pessoas o cartao cobre. Foto
+  // guardada por versao antiga nao traz service_mode — cai em 1 e a
+  // proxima foto do servidor corrige.
+  const fixo = session.items.find(
+    (i) => i.weight_grams == null && i.service_mode === 'avontade'
+  )
+  const people = fixo?.quantity ?? 1
+
+  return (
+    <div>
+      <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal">
+        Preço por pessoa
+      </span>
+      <p className="mt-3 font-mono text-[52px] font-bold leading-none tracking-[-0.035em]">
+        {formatCurrency(fixo?.unit_price ?? session.subtotal)}
+      </p>
+      {/* Mais de um comendo no mesmo cartao: ajusta aqui e o servidor muda a
+          quantidade do item fixo — nao existe "segunda comanda" pra isso. */}
+      <div className="mt-5 flex items-center gap-4">
+        <span className="text-[15px] font-semibold text-ink-soft">Pessoas</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onSetPeople(people - 1)}
+            disabled={busy || people <= 1}
+            aria-label="Uma pessoa a menos"
+            className="h-12 w-12 rounded-[4px] border border-rule-strong font-mono text-2xl font-bold text-ink disabled:opacity-40"
+          >
+            −
+          </button>
+          <span className="w-10 text-center font-mono text-[24px] font-bold">
+            {people}
+          </span>
+          <button
+            onClick={() => onSetPeople(people + 1)}
+            disabled={busy || people >= 20}
+            aria-label="Uma pessoa a mais"
+            className="h-12 w-12 rounded-[4px] border border-rule-strong font-mono text-2xl font-bold text-ink disabled:opacity-40"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <p className="mt-4 text-[15px] leading-[1.45] text-ink-muted">
+        Já lançado na comanda. Bebidas entram pelo leitor.
+      </p>
+      <input
+        ref={inputRef}
+        autoFocus
+        value={buffer}
+        onChange={(e) => setBuffer(e.target.value)}
+        onKeyDown={onInputKeyDown}
+        inputMode="none"
+        className="absolute h-0 w-0 opacity-0"
+        aria-label="Leitor de código de barras"
+      />
     </div>
   )
 }
@@ -1566,6 +1752,87 @@ function WeightGuard({
             className="min-h-[60px] rounded-[4px] bg-amber px-7 text-[17px] font-bold text-on-amber"
           >
             Lançar assim mesmo
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
+/**
+ * Confirmacao do cancelamento tocado na comanda.
+ *
+ * Um toque escolhe, o segundo confirma — cancelar direto no primeiro toque
+ * transformaria qualquer encostada na lista em estorno. O dialogo repete o
+ * item por extenso porque e a ultima chance de ver que se tocou na linha
+ * errada.
+ */
+function CancelConfirm({
+  target,
+  busy,
+  onVoltar,
+  onConfirmar,
+}: {
+  target: CancelTarget
+  busy: boolean
+  onVoltar: () => void
+  onConfirmar: () => void
+}) {
+  const ehItem = target.kind === 'item'
+  const nome = ehItem ? target.item.product_name : target.p.nome
+  const qty = ehItem
+    ? target.item.weight_grams != null
+      ? formatWeight(target.item.weight_grams)
+      : `${target.item.quantity} un`
+    : target.p.qty
+  const valor = ehItem ? target.item.total_price : target.p.total
+  const decrementa =
+    ehItem && target.item.weight_grams == null && target.item.quantity > 1
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cancelar item"
+      className="absolute inset-0 z-40 flex items-center justify-center px-16"
+      style={{ background: 'var(--scrim)' }}
+      onClick={onVoltar}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[560px] rounded-[4px] border-t-4 border-red bg-card-2 px-10 pb-8 pt-8 text-center"
+        style={{ animation: 'est-land .18s ease-out' }}
+      >
+        <span className="text-xs font-bold uppercase tracking-[0.14em] text-red">
+          Cancelar item
+        </span>
+        <p className="mt-4 text-[24px] font-semibold leading-[1.25]">{nome}</p>
+        <p className="mt-1.5 font-mono text-[17px] text-ink-soft">
+          {qty}
+          {valor > 0 ? ` · ${formatCurrency(valor)}` : ''}
+        </p>
+        <p className="mb-7 mt-3 text-[15px] leading-[1.45] text-ink-muted">
+          {!ehItem
+            ? 'Este item ainda não subiu — sai da fila sem passar pelo servidor.'
+            : decrementa
+              ? 'Unitário acima de 1: cancela uma unidade por vez.'
+              : 'O item sai da comanda e fica registrado como cancelado.'}
+        </p>
+        <div className="flex justify-center gap-3">
+          <button
+            onClick={onVoltar}
+            className="min-h-[56px] rounded-[4px] border border-rule-strong px-7 text-[17px] font-semibold text-ink"
+          >
+            Voltar
+          </button>
+          <button
+            onClick={onConfirmar}
+            disabled={busy}
+            className="min-h-[56px] rounded-[4px] border border-red bg-red-soft px-7 text-[17px] font-bold text-red disabled:opacity-40"
+          >
+            Cancelar item
           </button>
         </div>
       </div>
