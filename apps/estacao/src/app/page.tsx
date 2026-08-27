@@ -58,11 +58,19 @@ import { NumericKeypad } from '@/components/numeric-keypad'
  * excecao de primeira classe e nao gambiarra: o campo mora no trilho da
  * comanda ativa, entao pratos 2..n tem caminho sem sair da tela. E como o
  * aparelho e uma tela touch sem teclado fisico, tocar em qualquer campo de
- * peso abre um teclado numerico na tela — no seletor de modalidade, o peso
- * confirmado ja escolhe o por quilo e lanca o prato num gesto so.
+ * peso abre um teclado numerico na tela.
+ *
+ * Na comanda recem-aberta o teclado ja vem aberto e o peso decide a
+ * modalidade sozinho: abaixo do ponto de equilibrio entra por quilo com o
+ * prato lancado; acima, o por quilo custaria mais que o preco fixo e a
+ * comanda vira a vontade. Ninguem paga o caminho mais caro por engano.
  */
 
 type Toast = { id: number; kind: 'ok' | 'error'; text: string }
+
+// Peso alto aguardando confirmacao no WeightGuard. A origem importa: vindo do
+// seletor, o aceite ainda decide a modalidade; vindo do trilho, so lanca.
+type PendingWeight = { grams: number; from: 'picker' | 'rail' }
 
 // Teclas do teclado numerico -> modalidade, na ordem em que aparecem na tela.
 // A tecla nao e anunciada ali (o desenho nao mostra atalho nessa tela), mas
@@ -103,7 +111,7 @@ export default function StationPage() {
   const [busy, setBusy] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   // Peso alto aguardando confirmacao (null = nada pendente)
-  const [pendingWeight, setPendingWeight] = useState<number | null>(null)
+  const [pendingWeight, setPendingWeight] = useState<PendingWeight | null>(null)
   // Teclado numerico aberto, e de onde: o do seletor tambem escolhe o por
   // quilo; o do trilho so lanca o peso.
   const [weightPad, setWeightPad] = useState<'picker' | 'rail' | null>(null)
@@ -193,6 +201,16 @@ export default function StationPage() {
   useEffect(() => {
     tokenRef.current = token
   }, [token])
+
+  // Comanda aberta ainda sem modalidade: o teclado ja vem aberto — o caminho
+  // comum e pesar o prato, e o peso decide a modalidade sozinho. Cancelar
+  // deixa o seletor na mao, pra quem vai de a vontade sem prato na balanca.
+  // Chaveado no order_id de proposito: fotos novas da MESMA comanda nao podem
+  // reabrir o teclado que o operador acabou de fechar.
+  useEffect(() => {
+    if (session && session.service_mode == null) setWeightPad('picker')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.order_id])
 
   const pushToast = useCallback((kind: Toast['kind'], text: string) => {
     const id = Date.now() + Math.random()
@@ -462,7 +480,7 @@ export default function StationPage() {
         return
       }
       if (grams > WEIGHT_CONFIRM_THRESHOLD) {
-        setPendingWeight(grams)
+        setPendingWeight({ grams, from: 'rail' })
         return
       }
       void applyManualWeight(grams)
@@ -471,17 +489,33 @@ export default function StationPage() {
   )
 
   /**
-   * Peso digitado ainda no seletor de modalidade: escolhe o por quilo e ja
-   * lanca o prato num gesto so. A modalidade continua fora da fila — ela
-   * precifica tudo que vem depois e precisa do servidor — entao o peso so
-   * entra depois dela aceita.
+   * Peso digitado no seletor: a modalidade sai do peso, nao de um toque.
+   *
+   * Acima do ponto de equilibrio o por quilo custaria mais que o preco fixo,
+   * entao a comanda entra como a vontade sozinha — ninguem paga o caminho
+   * mais caro por engano. Abaixo, escolhe o por quilo e ja lanca o prato.
+   * A modalidade continua fora da fila — ela precifica tudo que vem depois e
+   * precisa do servidor — entao o peso so entra depois dela aceita.
    */
-  const lancarPesoDoSeletor = useCallback(
+  const decidirPeloPeso = useCallback(
     async (grams: number) => {
       if (!token) return
+      const perKg = rates?.por_kg?.price_per_kg
+      const buffet = rates?.avontade
+      const totalPorKg = perKg != null ? (grams * perKg) / 1000 : null
+      const viraAvontade =
+        buffet?.ready === true &&
+        buffet.price != null &&
+        totalPorKg != null &&
+        totalPorKg >= buffet.price
+
       try {
         setBusy(true)
-        const snap = await setServiceMode(token, 'por_kg', 1)
+        const snap = await setServiceMode(
+          token,
+          viraAvontade ? 'avontade' : 'por_kg',
+          1
+        )
         setSession(snap)
         setChangingMode(false)
         setOnline(true)
@@ -498,9 +532,36 @@ export default function StationPage() {
       } finally {
         setBusy(false)
       }
-      submitManualWeight(grams)
+
+      if (viraAvontade) {
+        pushToast(
+          'ok',
+          totalPorKg != null
+            ? `No quilo, ${formatWeightProse(grams)} sairia ${formatCurrency(totalPorKg)} — entrou como à vontade`
+            : 'Entrou como à vontade'
+        )
+        return
+      }
+      void applyManualWeight(grams)
     },
-    [token, pushToast, submitManualWeight]
+    [token, rates, pushToast, applyManualWeight]
+  )
+
+  // Valida e aplica o guarda de peso alto antes de decidir: um typo aqui nao
+  // so lancaria peso errado — viraria a comanda pra modalidade errada.
+  const pesoDoSeletor = useCallback(
+    (grams: number) => {
+      if (grams <= 0) {
+        pushToast('error', 'Peso invalido')
+        return
+      }
+      if (grams > WEIGHT_CONFIRM_THRESHOLD) {
+        setPendingWeight({ grams, from: 'picker' })
+        return
+      }
+      void decidirPeloPeso(grams)
+    },
+    [decidirPeloPeso, pushToast]
   )
 
   const handleScan = useCallback(
@@ -629,22 +690,30 @@ export default function StationPage() {
 
     // 1) Confirmacao de peso alto pendente — Enter confirma
     if (pendingWeight != null) {
-      const grams = pendingWeight
+      const p = pendingWeight
       setPendingWeight(null)
-      void applyManualWeight(grams)
+      if (p.from === 'picker') void decidirPeloPeso(p.grams)
+      else void applyManualWeight(p.grams)
       return
     }
 
     if (!v) return
 
-    // 2) Comanda aberta sem modalidade: 1 / 2 / 3
+    // 2) Comanda aberta sem modalidade: 1 / 2, ou o peso direto
     if (session && (!session.service_mode || changingMode)) {
       const mode = MODE_BY_KEY[v]
       if (mode) {
         void applyMode(mode)
-      } else {
-        pushToast('error', 'Toque em Por quilo ou À vontade')
+        return
       }
+      // Peso digitado no teclado fisico ainda no seletor: mesmo caminho do
+      // teclado na tela — o peso decide a modalidade.
+      const grams = parseManualWeight(v)
+      if (grams != null) {
+        pesoDoSeletor(grams)
+        return
+      }
+      pushToast('error', 'Toque em Por quilo ou À vontade')
       return
     }
 
@@ -743,21 +812,38 @@ export default function StationPage() {
             const origem = weightPad
             setWeightPad(null)
             lastActivityRef.current = Date.now()
-            if (origem === 'picker') void lancarPesoDoSeletor(grams)
+            if (origem === 'picker') pesoDoSeletor(grams)
             else submitManualWeight(grams)
           }}
+          // Atalho pra quem nao vai pesar: sem ele, o cliente de a vontade
+          // teria que cancelar o teclado e cacar a opcao na tela de tras.
+          altLabel={
+            weightPad === 'picker' && rates?.avontade?.ready !== false
+              ? 'À vontade, sem pesar'
+              : undefined
+          }
+          onAlt={
+            weightPad === 'picker' && rates?.avontade?.ready !== false
+              ? () => {
+                  setWeightPad(null)
+                  lastActivityRef.current = Date.now()
+                  void applyMode('avontade')
+                }
+              : undefined
+          }
         />
       )}
 
       {pendingWeight != null && (
         <WeightGuard
-          grams={pendingWeight}
+          grams={pendingWeight.grams}
           threshold={WEIGHT_CONFIRM_THRESHOLD}
           onCorrigir={() => setPendingWeight(null)}
           onAceitar={() => {
-            const grams = pendingWeight
+            const p = pendingWeight
             setPendingWeight(null)
-            void applyManualWeight(grams)
+            if (p.from === 'picker') void decidirPeloPeso(p.grams)
+            else void applyManualWeight(p.grams)
           }}
         />
       )}
@@ -1391,9 +1477,9 @@ function ModePicker({
         </div>
 
         {/* A balanca ainda nao conversa com a estacao, entao o peso entra
-            digitado. O campo mora ja no seletor: confirmar o peso escolhe o
-            por quilo e lanca o prato num gesto so, sem passar por duas
-            telas. Tocar abre o teclado numerico. */}
+            digitado. O campo mora ja no seletor e o teclado abre sozinho na
+            comanda nova: confirmar o peso decide a modalidade — abaixo do
+            ponto entra por quilo com o prato lancado, acima vira a vontade. */}
         <button
           onClick={onOpenKeypad}
           disabled={busy || porKgBlocked}
@@ -1407,7 +1493,7 @@ function ModePicker({
           </span>
           <span className="flex-1" />
           <span className="text-[15px] text-ink-muted">
-            Toque para digitar · já lança no por quilo
+            Toque para digitar · o peso decide a modalidade
           </span>
         </button>
         </div>
