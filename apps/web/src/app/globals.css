@@ -697,13 +697,12 @@
     }
   }
 
-  /* ========== Print styles for reports ========== */
+  /* ========== Print styles (globais) ==========
+     Sem @page aqui: orientacao e tamanho de papel sao por tela.
+     Relatorios declaram landscape no proprio layout; cupom e comanda
+     declaram bobina de 80mm na propria pagina. Um @page global forcava
+     a termica a imprimir deitado. */
   @media print {
-    @page {
-      size: landscape;
-      margin: 1.5cm;
-    }
-
     body {
       background: #fff !important;
       color: #000 !important;

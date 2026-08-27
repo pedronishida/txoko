@@ -19,6 +19,13 @@ export default function RelatoriosLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="-mx-8 -mt-6 print:m-0">
+      {/* Relatorios exportam em paisagem; a regra vive aqui pra nao vazar
+          pro cupom da termica (@page e global ao documento). */}
+      <style>{`
+        @media print {
+          @page { size: landscape; margin: 1.5cm; }
+        }
+      `}</style>
       <div className="px-8 pt-6 print:px-0 print:pt-0">
         <PageHeader
           title="Relatorios"
