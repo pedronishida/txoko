@@ -6,6 +6,7 @@ import {
   resolveBarcode,
   cancelItem,
   cancelOwnItem,
+  convertToAvontade,
   setServiceMode,
   getRates,
   getCatalog,
@@ -64,7 +65,9 @@ import { NumericKeypad } from '@/components/numeric-keypad'
  * Na comanda recem-aberta o teclado ja vem aberto e o peso decide a
  * modalidade sozinho: abaixo do ponto de equilibrio entra por quilo com o
  * prato lancado; acima, o por quilo custaria mais que o preco fixo e a
- * comanda vira a vontade. Ninguem paga o caminho mais caro por engano.
+ * comanda vira a vontade. O teto vale tambem no meio da comanda: quando a
+ * soma dos pratos alcanca o preco fixo, ela converte sozinha. Ninguem paga
+ * o caminho mais caro por engano.
  */
 
 type Toast = { id: number; kind: 'ok' | 'error'; text: string }
@@ -487,6 +490,83 @@ export default function StationPage() {
     [token, lancar, rates, session]
   )
 
+  /**
+   * Converte a comanda em a vontade porque a soma dos pratos alcancou o
+   * teto. Os pesos ainda na fila saem antes: a comida agora esta coberta
+   * pelo preco fixo. Um envio em voo pode escapar da limpeza — se escapar,
+   * o item aparece na comanda e sai pelo toque, como qualquer outro.
+   */
+  const converterParaAvontade = useCallback(
+    async (motivo: string) => {
+      if (!token) return
+      // Pesos ainda na fila saem antes: depois da conversao, subir viraria
+      // cobranca duplicada. Se a conversao falhar, voltam pra fila — o que
+      // foi digitado nao pode sumir num toast de erro.
+      const removidos = pendentes.filter((p) => p.kind === 'weight')
+      for (const p of removidos) await remover(p.key)
+      setPendentes(await listar(token))
+      setPendentesTotal((await listarTudo()).length)
+      try {
+        setBusy(true)
+        const snap = await convertToAvontade(token)
+        setSession(snap)
+        setOnline(true)
+        void guardarComanda(token, snap)
+        pushToast('ok', motivo)
+      } catch (e) {
+        for (const p of removidos) await enfileirar(p)
+        setPendentes(await listar(token))
+        setPendentesTotal((await listarTudo()).length)
+        const msg = e instanceof Error ? e.message : 'Erro ao converter'
+        // A conversao nao entra na fila: prometer o teto na tela sem o
+        // servidor aceitar deixaria o caixa cobrando os pesos de novo.
+        if (ehFalhaDeRede(msg)) {
+          setOnline(false)
+          pushToast('error', 'Sem rede — não deu para virar à vontade agora')
+        } else {
+          pushToast('error', msg)
+        }
+      } finally {
+        setBusy(false)
+      }
+    },
+    [token, pendentes, pushToast]
+  )
+
+  /**
+   * Prato novo na comanda por quilo: entra somando, ate a soma dos pratos
+   * (lancados + na fila + este) alcancar o preco do a vontade — dai a
+   * comanda vira a vontade sozinha. O teto que o seletor aplica no primeiro
+   * prato vale pros seguintes: ninguem paga mais que o fixo comendo menos.
+   */
+  const lancarPesoNoTrilho = useCallback(
+    (grams: number) => {
+      const cap =
+        rates?.avontade?.ready === true && rates.avontade.price != null
+          ? rates.avontade.price
+          : null
+      const taxaKg = rates?.[session?.service_mode ?? 'por_kg']?.price_per_kg
+      if (cap != null && taxaKg != null && session) {
+        const somaPratos =
+          session.items
+            .filter((i) => i.weight_grams != null)
+            .reduce((s, i) => s + i.total_price, 0) +
+          pendentes
+            .filter((p) => p.kind === 'weight')
+            .reduce((s, p) => s + p.total, 0)
+        const novo = (taxaKg * grams) / 1000
+        if (somaPratos + novo >= cap) {
+          void converterParaAvontade(
+            `${formatCurrency(somaPratos + novo)} no quilo — virou à vontade (${formatCurrency(cap)})`
+          )
+          return
+        }
+      }
+      void applyManualWeight(grams)
+    },
+    [rates, session, pendentes, applyManualWeight, converterParaAvontade]
+  )
+
   // Valida e lanca um peso digitado, de qualquer origem — Enter no campo ou
   // teclado na tela. Peso alto para no WeightGuard antes de entrar.
   const submitManualWeight = useCallback(
@@ -499,9 +579,9 @@ export default function StationPage() {
         setPendingWeight({ grams, from: 'rail' })
         return
       }
-      void applyManualWeight(grams)
+      lancarPesoNoTrilho(grams)
     },
-    [applyManualWeight, pushToast]
+    [lancarPesoNoTrilho, pushToast]
   )
 
   /**
@@ -698,6 +778,12 @@ export default function StationPage() {
       }
 
       if (scan.kind === 'weight') {
+        // Etiqueta da balanca segue o mesmo caminho do peso digitado: na
+        // comanda por quilo o teto do a vontade tambem vale.
+        if (isPorKg(session.service_mode)) {
+          lancarPesoNoTrilho(scan.weightGrams)
+          return
+        }
         const taxaKg = rates?.[session.service_mode ?? 'por_kg']?.price_per_kg
         await lancar({
           kind: 'weight',
@@ -723,7 +809,7 @@ export default function StationPage() {
         total: doCatalogo?.price ?? 0,
       })
     },
-    [session, token, pushToast, lancar, rates, catalogo]
+    [session, token, pushToast, lancar, lancarPesoNoTrilho, rates, catalogo]
   )
 
   // O leitor HID "digita" no input + Enter ao final. Um input so atende tudo:
@@ -753,7 +839,7 @@ export default function StationPage() {
       const p = pendingWeight
       setPendingWeight(null)
       if (p.from === 'picker') void decidirPeloPeso(p.grams)
-      else void applyManualWeight(p.grams)
+      else lancarPesoNoTrilho(p.grams)
       return
     }
 
@@ -917,7 +1003,7 @@ export default function StationPage() {
             const p = pendingWeight
             setPendingWeight(null)
             if (p.from === 'picker') void decidirPeloPeso(p.grams)
-            else void applyManualWeight(p.grams)
+            else lancarPesoNoTrilho(p.grams)
           }}
         />
       )}
