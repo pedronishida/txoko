@@ -121,9 +121,27 @@ export async function cancelItem(
 }
 
 /**
- * Converte a comanda por quilo em a vontade quando a soma dos pratos
- * alcanca o preco fixo. Os pesos lancados saem cancelados (com autoria
- * 'station:virou-avontade') e o fixo entra no lugar; bebidas ficam.
+ * Ajusta as pessoas do a vontade sem tocar nos pesos — e o que faz a
+ * comanda mista existir. 0 so vale quando ha prato por peso (sobra o por
+ * quilo); comanda puramente a vontade sai pela troca de modalidade.
+ */
+export async function setAvontadePeople(
+  qrToken: string,
+  people: number
+): Promise<StationSnapshot> {
+  const { data, error } = await supabase.rpc('station_set_avontade_people', {
+    p_qr_token: qrToken,
+    p_people: people,
+  })
+  if (error) throw new Error(error.message)
+  return data as StationSnapshot
+}
+
+/**
+ * Converte os pratos por peso em +1 pessoa no a vontade quando a soma
+ * alcanca o preco fixo. Os pesos saem cancelados (com autoria
+ * 'station:virou-avontade'), quem ja estava no fixo continua contado e
+ * as bebidas ficam.
  */
 export async function convertToAvontade(
   qrToken: string,
