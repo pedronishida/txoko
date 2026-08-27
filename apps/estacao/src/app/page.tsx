@@ -7,6 +7,7 @@ import {
   cancelItem,
   cancelOwnItem,
   convertToAvontade,
+  setAvontadePeople,
   setServiceMode,
   getRates,
   getCatalog,
@@ -475,7 +476,12 @@ export default function StationPage() {
   const applyManualWeight = useCallback(
     async (grams: number) => {
       if (!token) return
-      const taxaKg = rates?.[session?.service_mode ?? 'por_kg']?.price_per_kg
+      // Peso sempre se precifica pela modalidade de peso — na comanda a
+      // vontade (mista) o prato da balanca continua saindo por quilo.
+      const modo = session?.service_mode
+      const taxaKg =
+        rates?.[isPorKg(modo ?? null) ? (modo as ServiceMode) : 'por_kg']
+          ?.price_per_kg
       await lancar({
         kind: 'weight',
         weightGrams: grams,
@@ -534,9 +540,48 @@ export default function StationPage() {
   )
 
   /**
-   * Prato novo na comanda por quilo: entra somando, ate a soma dos pratos
-   * (lancados + na fila + este) alcancar o preco do a vontade — dai a
-   * comanda vira a vontade sozinha. O teto que o seletor aplica no primeiro
+   * Pessoas do a vontade na comanda mista: ajusta a quantidade do fixo sem
+   * tocar nos pesos. E o caminho pra "um come no fixo, outro na balanca".
+   */
+  const ajustarPessoas = useCallback(
+    async (n: number) => {
+      if (!token) return
+      lastActivityRef.current = Date.now()
+      try {
+        setBusy(true)
+        const snap = await setAvontadePeople(token, n)
+        setSession(snap)
+        setOnline(true)
+        void guardarComanda(token, snap)
+        pushToast(
+          'ok',
+          n === 0
+            ? 'À vontade removido'
+            : n === 1
+              ? '1 pessoa no à vontade'
+              : `${n} pessoas no à vontade`
+        )
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Erro ao ajustar pessoas'
+        // Mesma regra da modalidade: pessoas precificam a comanda e nao
+        // entram na fila.
+        if (ehFalhaDeRede(msg)) {
+          setOnline(false)
+          pushToast('error', 'Sem rede — não deu para ajustar as pessoas')
+        } else {
+          pushToast('error', msg)
+        }
+      } finally {
+        setBusy(false)
+      }
+    },
+    [token, pushToast]
+  )
+
+  /**
+   * Prato novo na comanda com modalidade: entra somando, ate a soma dos
+   * pratos (lancados + na fila + este) alcancar o preco do a vontade — dai
+   * eles viram +1 pessoa no fixo. O teto que o seletor aplica no primeiro
    * prato vale pros seguintes: ninguem paga mais que o fixo comendo menos.
    */
   const lancarPesoNoTrilho = useCallback(
@@ -545,7 +590,10 @@ export default function StationPage() {
         rates?.avontade?.ready === true && rates.avontade.price != null
           ? rates.avontade.price
           : null
-      const taxaKg = rates?.[session?.service_mode ?? 'por_kg']?.price_per_kg
+      const modo = session?.service_mode
+      const taxaKg =
+        rates?.[isPorKg(modo ?? null) ? (modo as ServiceMode) : 'por_kg']
+          ?.price_per_kg
       if (cap != null && taxaKg != null && session) {
         const somaPratos =
           session.items
@@ -778,9 +826,9 @@ export default function StationPage() {
       }
 
       if (scan.kind === 'weight') {
-        // Etiqueta da balanca segue o mesmo caminho do peso digitado: na
-        // comanda por quilo o teto do a vontade tambem vale.
-        if (isPorKg(session.service_mode)) {
+        // Etiqueta da balanca segue o mesmo caminho do peso digitado: o
+        // teto do a vontade vale em qualquer comanda com modalidade.
+        if (session.service_mode) {
           lancarPesoNoTrilho(scan.weightGrams)
           return
         }
@@ -863,8 +911,9 @@ export default function StationPage() {
       return
     }
 
-    // 3) "Por quilo": peso digitado (gramas ou quilos)
-    if (session && isPorKg(session.service_mode)) {
+    // 3) Comanda com modalidade: peso digitado (gramas ou quilos). Vale
+    // tambem na comanda a vontade — e a mista, o prato sai por quilo.
+    if (session && session.service_mode) {
       const grams = parseManualWeight(v)
       if (grams != null) {
         submitManualWeight(grams)
@@ -915,7 +964,7 @@ export default function StationPage() {
             lastActivityRef.current = Date.now()
             setWeightPad(from)
           }}
-          onSetPeople={(n) => void applyMode('avontade', n)}
+          onSetPeople={(n) => void ajustarPessoas(n)}
           onTapCancel={(alvo) => {
             lastActivityRef.current = Date.now()
             setCancelTarget(alvo)
@@ -1169,6 +1218,18 @@ function ActiveView({
   const totalComPendentes =
     session.total + pendentes.reduce((soma, p) => soma + p.total, 0)
 
+  // Comanda mista: o fixo do a vontade conta as pessoas e convive com os
+  // pratos por peso. Foto guardada por versao antiga nao traz service_mode
+  // no item — cai em 0/ausente e a proxima foto do servidor corrige.
+  const fixoAvontade = session.items.find(
+    (i) => i.weight_grams == null && i.service_mode === 'avontade'
+  )
+  const pessoas = fixoAvontade?.quantity ?? 0
+  const temPeso =
+    session.items.some((i) => i.weight_grams != null) ||
+    pendentes.some((p) => p.kind === 'weight')
+  const mista = pessoas > 0 && (porKg || temPeso)
+
   // A taxa vigente ao lado da modalidade: e ela que precifica tudo que entra
   // depois, entao vem antes do numero da comanda.
   const rate = mode ? rates?.[mode] : null
@@ -1193,7 +1254,7 @@ function ActiveView({
                 (porKg ? 'text-amber' : 'text-teal')
               }
             >
-              {serviceModeLabel(mode)}
+              {mista ? 'Por quilo · À vontade' : serviceModeLabel(mode)}
             </span>
             {activeRate && (
               <span className="font-mono text-[13px] text-ink-muted">
@@ -1272,9 +1333,7 @@ function ActiveView({
                   Nenhum item ainda
                 </p>
                 <p className="max-w-[380px] text-[17px] text-ink-muted">
-                  {porKg
-                    ? 'Digite o peso do prato ou passe a bebida no leitor.'
-                    : 'Passe a bebida no leitor.'}
+                  Digite o peso do prato ou passe a bebida no leitor.
                 </p>
               </div>
             ) : (
@@ -1321,12 +1380,18 @@ function ActiveView({
               setBuffer={setBuffer}
               onInputKeyDown={onInputKeyDown}
               onOpenKeypad={() => onOpenKeypad('rail')}
+              busy={busy}
+              pessoas={pessoas}
+              precoPessoa={rates?.avontade?.price ?? null}
+              avontadeOk={rates?.avontade?.ready === true}
+              onSetPeople={onSetPeople}
             />
           ) : (
             <AvontadeRail
               session={session}
               busy={busy}
               onSetPeople={onSetPeople}
+              onOpenKeypad={() => onOpenKeypad('rail')}
               inputRef={inputRef}
               buffer={buffer}
               setBuffer={setBuffer}
@@ -1337,9 +1402,7 @@ function ActiveView({
           <div className="flex-1" />
 
           <p className="mb-[22px] border-t border-rule pt-5 text-sm leading-[1.4] text-ink-soft">
-            {porKg
-              ? 'Passe a bebida no leitor · o peso do prato entra à mão'
-              : 'Passe as bebidas no leitor'}
+            Passe a bebida no leitor · o peso do prato entra à mão
           </p>
 
           {/* Total em bloco próprio: é o número que o cliente lê do outro
@@ -1472,12 +1535,22 @@ function WeightRail({
   setBuffer,
   onInputKeyDown,
   onOpenKeypad,
+  busy,
+  pessoas,
+  precoPessoa,
+  avontadeOk,
+  onSetPeople,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>
   buffer: string
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onOpenKeypad: () => void
+  busy: boolean
+  pessoas: number
+  precoPessoa: number | null
+  avontadeOk: boolean
+  onSetPeople: (n: number) => void
 }) {
   const parsed = parseManualWeight(buffer)
   const willLaunch = parsed != null && parsed > 0
@@ -1536,6 +1609,57 @@ function WeightRail({
       >
         Adicionar prato
       </button>
+
+      {/* Comanda mista: o acompanhante que nao pesa entra aqui como pessoa
+          no fixo, sem mexer nos pratos ja lancados. */}
+      {avontadeOk && (
+        <div className="mt-5 border-t border-rule-faint pt-4">
+          {pessoas === 0 ? (
+            <button
+              onClick={() => onSetPeople(1)}
+              disabled={busy}
+              className="min-h-12 w-full rounded-[4px] border border-rule-strong text-[15px] font-semibold text-ink-soft disabled:opacity-40"
+            >
+              {precoPessoa != null
+                ? `+ 1 à vontade (${formatCurrency(precoPessoa)})`
+                : '+ 1 à vontade'}
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="min-w-0">
+                <span className="block text-[13px] font-bold uppercase tracking-[0.1em] text-teal">
+                  À vontade
+                </span>
+                {precoPessoa != null && (
+                  <span className="mt-0.5 block font-mono text-[13px] text-ink-muted">
+                    {formatCurrency(precoPessoa)} por pessoa
+                  </span>
+                )}
+              </span>
+              <span className="flex-1" />
+              <button
+                onClick={() => onSetPeople(pessoas - 1)}
+                disabled={busy}
+                aria-label="Uma pessoa a menos no à vontade"
+                className="h-11 w-11 rounded-[4px] border border-rule-strong font-mono text-xl font-bold text-ink disabled:opacity-40"
+              >
+                −
+              </button>
+              <span className="w-8 text-center font-mono text-[20px] font-bold">
+                {pessoas}
+              </span>
+              <button
+                onClick={() => onSetPeople(pessoas + 1)}
+                disabled={busy || pessoas >= 20}
+                aria-label="Uma pessoa a mais no à vontade"
+                className="h-11 w-11 rounded-[4px] border border-rule-strong font-mono text-xl font-bold text-ink disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -1546,6 +1670,7 @@ function AvontadeRail({
   session,
   busy,
   onSetPeople,
+  onOpenKeypad,
   inputRef,
   buffer,
   setBuffer,
@@ -1554,6 +1679,7 @@ function AvontadeRail({
   session: StationSnapshot
   busy: boolean
   onSetPeople: (n: number) => void
+  onOpenKeypad: () => void
   inputRef: React.RefObject<HTMLInputElement | null>
   buffer: string
   setBuffer: (v: string) => void
@@ -1604,16 +1730,34 @@ function AvontadeRail({
       <p className="mt-4 text-[15px] leading-[1.45] text-ink-muted">
         Já lançado na comanda. Bebidas entram pelo leitor.
       </p>
-      <input
-        ref={inputRef}
-        autoFocus
-        value={buffer}
-        onChange={(e) => setBuffer(e.target.value)}
-        onKeyDown={onInputKeyDown}
-        inputMode="none"
-        className="absolute h-0 w-0 opacity-0"
-        aria-label="Leitor de código de barras"
-      />
+
+      {/* Comanda mista no outro sentido: o acompanhante que come na balanca
+          lanca por aqui e o prato sai por quilo, na mesma comanda. */}
+      <div className="mt-5 border-t border-rule-faint pt-4">
+        <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-amber">
+          Prato por peso
+        </span>
+        <input
+          ref={inputRef}
+          autoFocus
+          value={buffer}
+          onChange={(e) => setBuffer(e.target.value)}
+          onKeyDown={onInputKeyDown}
+          onClick={onOpenKeypad}
+          inputMode="none"
+          placeholder="485"
+          aria-label="Peso do prato em gramas ou quilos"
+          autoComplete="off"
+          spellCheck={false}
+          className="mt-2 h-12 w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[17px] text-ink"
+        />
+        <button
+          onClick={onOpenKeypad}
+          className="mt-2 min-h-12 w-full rounded-[4px] border border-rule-strong text-[15px] font-semibold text-ink-soft"
+        >
+          Adicionar prato por peso
+        </button>
+      </div>
     </div>
   )
 }
