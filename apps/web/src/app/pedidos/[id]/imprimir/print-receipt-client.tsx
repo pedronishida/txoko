@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { formatCurrency } from '@/lib/utils'
 import type { Order, OrderItem, Payment, Customer, Table } from '@txoko/shared'
+import { DomoLogo } from './domo-logo'
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Dinheiro',
@@ -104,8 +105,11 @@ export function PrintReceiptClient({
         <div className="max-w-[320px] print:max-w-[72mm] mx-auto py-8 print:py-0 print:pb-[8mm] font-mono text-[13px] leading-relaxed">
           {/* Restaurant header */}
           <div className="text-center mb-4">
-            <p className="font-bold text-[15px] uppercase tracking-wider">
-              {restaurant?.name ?? 'Restaurante'}
+            <DomoLogo className="w-[52mm] max-w-full mx-auto" />
+            {/* CNPJ fixo enquanto o cadastro (restaurants.document) esta
+                vazio; o valor do banco prevalece quando preenchido. */}
+            <p className="text-[11px] mt-2">
+              CNPJ {restaurant?.document ?? '64.608.958/0001-42'}
             </p>
             {restaurant?.address && (
               <p className="text-[11px] mt-0.5">
@@ -114,9 +118,6 @@ export function PrintReceiptClient({
             )}
             {restaurant?.phone && (
               <p className="text-[11px]">{restaurant.phone}</p>
-            )}
-            {restaurant?.document && (
-              <p className="text-[11px]">CNPJ {restaurant.document}</p>
             )}
           </div>
 
