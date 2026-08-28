@@ -21,6 +21,8 @@ export type CaixaOrder = {
   // Vai junto pra tela nao precisar guardar o token separado — ela pode ter
   // carregado a comanda pelo numero do cartao, sem passar pelo QR.
   qr_token: string
+  // O modal de cancelamento gradua o aviso pelo status do pedido.
+  status: string
   service_mode: 'avontade' | 'por_kg' | 'por_kg_2mix' | null
   subtotal: number
   discount: number
@@ -120,6 +122,7 @@ export async function findOrderByCardToken(qr_token: string): Promise<FindOrCrea
       order_id: order.id,
       card_number: card.card_number,
       qr_token: token,
+      status: order.status,
       // A modalidade mora na COMANDA (escolhida na balanca). O cartao so
       // tem modo nos cartoes antigos, de modalidade fixa.
       service_mode: (order.service_mode ?? card.service_mode) as CaixaOrder['service_mode'],
@@ -299,8 +302,12 @@ export async function closeOrder(
 export type OpenOrderSummary = {
   order_id: string
   card_number: number | null
+  // Token do cartao DESTE pedido: carregar pela lista usa ele, nao o numero.
+  // Numero pode se repetir entre cartao ativo e regerado; o token nao.
+  qr_token: string | null
   service_mode: string | null
   type: string
+  status: string
   total: number
   items_count: number
   opened_at: string
@@ -314,7 +321,7 @@ export async function listOpenOrders(): Promise<OpenOrderSummary[]> {
   const { data, error } = await supabase
     .from('orders')
     .select(
-      'id, type, total, service_mode, opened_at, created_at, comanda_cards(card_number), order_items(id, status)'
+      'id, type, status, total, service_mode, opened_at, created_at, comanda_cards(card_number, qr_token), order_items(id, status)'
     )
     .eq('restaurant_id', restaurant_id)
     .in('status', ['open', 'preparing', 'ready', 'delivered'])
@@ -325,11 +332,15 @@ export async function listOpenOrders(): Promise<OpenOrderSummary[]> {
   type Row = {
     id: string
     type: string
+    status: string
     total: number | string
     service_mode: string | null
     opened_at: string | null
     created_at: string
-    comanda_cards: { card_number: number } | { card_number: number }[] | null
+    comanda_cards:
+      | { card_number: number; qr_token: string }
+      | { card_number: number; qr_token: string }[]
+      | null
     order_items: { id: string; status: string }[] | null
   }
 
@@ -338,8 +349,10 @@ export async function listOpenOrders(): Promise<OpenOrderSummary[]> {
     return {
       order_id: o.id,
       card_number: card?.card_number ?? null,
+      qr_token: card?.qr_token ?? null,
       service_mode: o.service_mode,
       type: o.type,
+      status: o.status,
       total: Number(o.total ?? 0),
       items_count: (o.order_items ?? []).filter((i) => i.status !== 'cancelled').length,
       opened_at: o.opened_at ?? o.created_at,

@@ -25,6 +25,8 @@ import {
   CalendarDays,
   BarChart3,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 type NavItem = {
@@ -120,18 +122,65 @@ function useInboxUnreadCount(restaurantId: string | null) {
 /**
  * Navegacao lateral.
  *
- * Abaixo de 1240px vira trilho de icones por CSS (ver globals.css). Nao ha
- * mais estado de recolhimento nem botao de alternar: o rotulo de cada link
- * continua no DOM, recortado para fora da tela, entao o trilho mantem os 19
- * nomes acessiveis e o alvo de 44x44 em vez de encolher junto.
+ * Vira trilho de icones por dois caminhos: abaixo de 1240px pela media query
+ * em globals.css, e em qualquer largura pelo chevron da borda direita, que
+ * grava data-nav-collapsed no <html> (persistido em localStorage e restaurado
+ * antes do paint pelo shell). Nos dois casos o rotulo de cada link continua
+ * no DOM, recortado para fora da tela, entao o trilho mantem os 19 nomes
+ * acessiveis e o alvo de 44x44 em vez de encolher junto.
  */
 export function Sidebar({ restaurantId }: { restaurantId: string | null }) {
   const pathname = usePathname()
   const inboxUnread = useInboxUnreadCount(restaurantId)
+  const [collapsed, setCollapsed] = useState(false)
+
+  // O boot script do shell ja aplicou o atributo; aqui so espelha pro
+  // estado, que decide a direcao do chevron.
+  useEffect(() => {
+    setCollapsed(document.documentElement.hasAttribute('data-nav-collapsed'))
+  }, [])
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev
+      const d = document.documentElement
+      if (next) d.setAttribute('data-nav-collapsed', '')
+      else d.removeAttribute('data-nav-collapsed')
+      try {
+        localStorage.setItem('txoko-nav-collapsed', next ? '1' : '0')
+      } catch {
+        /* sem storage: a preferencia so nao persiste */
+      }
+      return next
+    })
+  }
 
   return (
-    <aside data-nav-rail className="island thin-scroll flex flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-[20px] px-2.5 py-4">
-      <nav className="flex flex-col gap-0.5" aria-label="Navegacao principal">
+    <aside className="island relative z-20 flex flex-col rounded-[20px]">
+      {/* O chevron mora na borda, metade pra fora, no vao entre as ilhas.
+          Some abaixo de 1240px, onde a media query ja forca o trilho e
+          expandir nao teria efeito. */}
+      <button
+        type="button"
+        data-nav-toggle
+        onClick={toggleCollapsed}
+        aria-pressed={collapsed}
+        aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+        title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+        className="absolute -right-3.5 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-rule bg-overlay text-ink-muted shadow-e1 transition-colors hover:border-teal hover:text-teal-deep"
+      >
+        {collapsed ? (
+          <ChevronRight size={13} strokeWidth={2} aria-hidden />
+        ) : (
+          <ChevronLeft size={13} strokeWidth={2} aria-hidden />
+        )}
+      </button>
+
+      <nav
+        data-nav-rail
+        aria-label="Navegacao principal"
+        className="thin-scroll flex flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-[20px] px-2.5 py-4"
+      >
         {GROUP_ORDER.map((group, groupIdx) => (
           <div key={group} className="flex flex-col gap-0.5">
             <p

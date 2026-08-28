@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, ChevronDown, CircleHelp, LogOut, Search, Sparkles } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  CircleHelp,
+  LogOut,
+  PanelTopClose,
+  PanelTopOpen,
+  Search,
+  Sparkles,
+} from 'lucide-react'
 import { logoutAction } from '@/app/(auth)/actions'
 import { switchRestaurant, type Membership } from '@/lib/server/restaurant'
 import { Logo } from '@/components/logo'
@@ -14,9 +23,18 @@ type Props = {
   user: { id: string; email: string }
   memberships: Membership[]
   activeRestaurantId: string | null
+  /** Cabecalho recolhido (modo foco) — o shell e quem guarda o estado. */
+  headerHidden?: boolean
+  onToggleHeaderHidden?: () => void
 }
 
-export function Header({ user, memberships, activeRestaurantId }: Props) {
+export function Header({
+  user,
+  memberships,
+  activeRestaurantId,
+  headerHidden = false,
+  onToggleHeaderHidden,
+}: Props) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const initial = (user.email?.[0] ?? 'U').toUpperCase()
@@ -167,6 +185,27 @@ export function Header({ user, memberships, activeRestaurantId }: Props) {
         >
           <CircleHelp size={14} strokeWidth={1.8} className="text-ink-soft" />
         </button>
+        {onToggleHeaderHidden && (
+          <button
+            onClick={onToggleHeaderHidden}
+            aria-pressed={headerHidden}
+            aria-label={
+              headerHidden ? 'Fixar cabecalho' : 'Recolher cabecalho'
+            }
+            title={
+              headerHidden
+                ? 'Fixar o cabecalho de volta'
+                : 'Recolher o cabecalho — encoste o mouse no topo da tela pra revelar'
+            }
+            className="flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors hover:bg-sunken"
+          >
+            {headerHidden ? (
+              <PanelTopOpen size={14} strokeWidth={1.8} className="text-ink-soft" />
+            ) : (
+              <PanelTopClose size={14} strokeWidth={1.8} className="text-ink-soft" />
+            )}
+          </button>
+        )}
         <ThemeToggle />
         {activeRestaurantId && (
           <NotificationsBell restaurantId={activeRestaurantId} />
