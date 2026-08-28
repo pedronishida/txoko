@@ -1,9 +1,22 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Category, Product } from '@txoko/shared'
-import { Search, ScanLine, Plus, Minus, X, Loader2, ShoppingCart, Clock, Printer } from 'lucide-react'
+import {
+  Search,
+  ScanLine,
+  Plus,
+  Minus,
+  X,
+  Loader2,
+  ShoppingCart,
+  Clock,
+  Printer,
+  ArrowLeft,
+  Ban,
+  RotateCw,
+} from 'lucide-react'
 import {
   listOpenOrders,
   findOrderByCardToken,
@@ -19,6 +32,8 @@ import {
   type OpenOrderSummary,
   type PaymentLine,
 } from '@/app/(app)/caixa/actions'
+import { currentUserCanCancel } from '@/app/(app)/pedidos/actions'
+import { CancelOrderModal } from '@/components/pedidos/cancel-order-modal'
 import { cn, formatCurrency } from '@/lib/utils'
 import { TabBar } from '@/components/tab-bar'
 import { EmptyState } from '@/components/states'
@@ -46,12 +61,18 @@ function modeLabel(mode: string | null): string {
   return 'Balcao'
 }
 
+function cardLabel(n: number | null): string {
+  return n != null ? `#${String(n).padStart(3, '0')}` : '—'
+}
+
 function sinceLabel(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
   if (mins < 1) return 'agora'
   if (mins < 60) return `${mins} min`
   return `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`
 }
+
+type CancelTarget = { id: string; status: string; total: number }
 
 export function VendaView({
   products,
@@ -60,6 +81,7 @@ export function VendaView({
   products: Product[]
   categories: Category[]
 }) {
+  const router = useRouter()
   const [openOrders, setOpenOrders] = useState<OpenOrderSummary[]>([])
   const [order, setOrder] = useState<CaixaOrder | null>(null)
   // Cartao valido que ainda nao tem comanda: o caixa decide se abre.
@@ -74,6 +96,8 @@ export function VendaView({
   // estacao nao tem impressora, o caixa tem)
   const [autoPrint, setAutoPrint] = useState(true)
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
+  const [canCancel, setCanCancel] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const searchRef = useRef<HTMLInputElement>(null)
@@ -84,6 +108,12 @@ export function VendaView({
     setTimeout(() => setFeedback(null), 3000)
   }, [])
 
+  // O leitor digita no que estiver focado — depois de qualquer acao o foco
+  // volta pro campo dele, senao a proxima bipada cai no vazio.
+  const focusScan = useCallback(() => {
+    scanRef.current?.focus()
+  }, [])
+
   const refreshOrders = useCallback(async () => {
     setOpenOrders(await listOpenOrders())
   }, [])
@@ -91,6 +121,7 @@ export function VendaView({
   useEffect(() => {
     void refreshOrders()
     setAutoPrint(localStorage.getItem('txoko_pdv_auto_print') !== 'off')
+    void currentUserCanCancel().then(setCanCancel)
   }, [refreshOrders])
 
   // Recarrega a comanda atual depois de cada alteracao
@@ -99,10 +130,10 @@ export function VendaView({
       const res = await findOrderByCardToken(token)
       if ('ok' in res) setOrder(res.order)
       void refreshOrders()
+      focusScan()
     },
-    [refreshOrders]
+    [refreshOrders, focusScan]
   )
-
 
   // Abre a comanda do cartao aqui no caixa, sem mandar o cliente ate a
   // balanca so pra registrar uma bebida.
@@ -117,10 +148,11 @@ export function VendaView({
       }
       setPendingCard(null)
       setOrder(res.order)
-      notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} aberta`)
+      notify('ok', `Comanda ${cardLabel(res.order.card_number)} aberta`)
       void refreshOrders()
+      focusScan()
     })
-  }, [pendingCard, notify, refreshOrders])
+  }, [pendingCard, notify, refreshOrders, focusScan])
 
   // A camera dispara varias vezes por segundo — ignora repeticao em <2s
   const lastScanRef = useRef<{ value: string; ts: number } | null>(null)
@@ -131,6 +163,12 @@ export function VendaView({
   useEffect(() => {
     orderRef.current = order
   }, [order])
+
+  // Com o modal de cancelamento aberto, o teclado e dele.
+  const modalOpenRef = useRef(false)
+  useEffect(() => {
+    modalOpenRef.current = cancelTarget !== null
+  }, [cancelTarget])
 
   const handleScan = useCallback(
     (raw: string) => {
@@ -157,7 +195,7 @@ export function VendaView({
           }
           setPendingCard(null)
           setOrder(res.order)
-          notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
+          notify('ok', `Comanda ${cardLabel(res.order.card_number)} carregada`)
           return
         }
 
@@ -176,7 +214,7 @@ export function VendaView({
           }
           setPendingCard(null)
           setOrder(res.order)
-          notify('ok', `Comanda #${String(res.order.card_number).padStart(3, '0')} carregada`)
+          notify('ok', `Comanda ${cardLabel(res.order.card_number)} carregada`)
           return
         }
 
@@ -229,7 +267,7 @@ export function VendaView({
   function removeItem(itemId: string) {
     if (!order) return
     startTransition(async () => {
-      const res = await cancelItemFromOrder(order.order_id, itemId)
+      const res = await cancelItemFromOrder(order.qr_token, itemId)
       if ('error' in res) {
         notify('error', res.error)
         return
@@ -249,7 +287,7 @@ export function VendaView({
       }
       notify(
         'ok',
-        `Comanda #${String(closing.card_number).padStart(3, '0')} fechada — ${brl(closing.total)}`
+        `Comanda ${cardLabel(closing.card_number)} fechada — ${brl(closing.total)}`
       )
       // Comprovante nao fiscal na termica. A janela imprime sozinha e fecha;
       // se o navegador bloquear o popup, o caixa segue normal (o botao
@@ -257,7 +295,7 @@ export function VendaView({
       if (autoPrint) openReceipt(closing.order_id)
       setOrder(null)
       void refreshOrders()
-      scanRef.current?.focus()
+      focusScan()
     })
   }
 
@@ -265,20 +303,60 @@ export function VendaView({
     window.open(`/pedidos/${orderId}/imprimir`, '_blank', 'width=420,height=640')
   }
 
-  // Categorias na ordem em que aparecem nos chips, com a tecla impressa.
+  // Volta pra lista de comandas sem fechar nada.
+  const backToList = useCallback(() => {
+    setOrder(null)
+    setPendingCard(null)
+    void refreshOrders()
+    focusScan()
+  }, [refreshOrders, focusScan])
+
+  // Carrega a comanda clicada na lista. Pelo TOKEN do cartao do proprio
+  // pedido, nao pelo numero: numero pode se repetir entre cartao ativo e
+  // regerado, e ai o clique abriria a comanda errada (ou nenhuma).
+  function loadFromList(o: OpenOrderSummary) {
+    if (o.qr_token == null) {
+      // Pedido aberto sem cartao (mesa, delivery): o lugar dele e Pedidos.
+      router.push('/pedidos')
+      return
+    }
+    const token = o.qr_token
+    startTransition(async () => {
+      const res = await findOrderByCardToken(token)
+      if ('needsOpen' in res) {
+        setPendingCard({ qr_token: res.qr_token, card_number: res.card_number })
+        return
+      }
+      if ('error' in res) {
+        notify('error', res.error)
+        return
+      }
+      setOrder(res.order)
+      focusScan()
+    })
+  }
+
+  function toggleAutoPrint() {
+    const next = !autoPrint
+    setAutoPrint(next)
+    localStorage.setItem('txoko_pdv_auto_print', next ? 'on' : 'off')
+    notify('ok', next ? 'Comprovante sera impresso ao fechar' : 'Fechamento sem impressao')
+    focusScan()
+  }
+
   const categoryTabs = useMemo(
     () =>
-      [{ key: 'all', label: 'Todos' }, ...categories.map((c) => ({ key: c.id, label: c.name }))]
-        .slice(0, 9)
-        .map((t, i) => ({ ...t, hint: String(i + 1) })),
+      [{ key: 'all', label: 'Todos' }, ...categories.map((c) => ({ key: c.id, label: c.name }))],
     [categories]
   )
 
-  // Atalhos: F2 busca, F9 finaliza, Esc limpa a venda atual, 1-9 troca
-  // categoria. Os numericos ficam suspensos enquanto o foco esta num campo —
-  // o PDV tem busca e leitor, e roubar digito deles quebraria a venda.
+  // Atalhos: F2 busca, F5-F8 forma de pagamento, F9 finaliza, Esc volta pra
+  // lista. Digito solto NAO troca mais categoria: qualquer tecla imprimivel
+  // fora de um campo e redirecionada pro campo do leitor (efeito abaixo) —
+  // o numero da comanda tem prioridade sobre atalho.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (modalOpenRef.current) return
       if (e.key === 'F2') {
         e.preventDefault()
         searchRef.current?.focus()
@@ -289,22 +367,39 @@ export function VendaView({
         if (order && !pending) finalize()
         return
       }
-      if (e.key === 'Escape') {
-        setOrder(null)
-        scanRef.current?.focus()
+      const pm = PAYMENT_METHODS.find((m) => m.key === e.key)
+      if (pm) {
+        e.preventDefault()
+        setMethod(pm.value)
         return
       }
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase()
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
-      const n = Number(e.key)
-      if (!n || n > categoryTabs.length) return
-      setCategoryId(categoryTabs[n - 1]!.key)
-      e.preventDefault()
+      if (e.key === 'Escape') {
+        backToList()
+        return
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
+
+  // A dor real do balcao: o leitor dispara com o foco perdido em qualquer
+  // canto e a leitura evapora. Qualquer tecla imprimivel que nao esteja indo
+  // pra um campo cai no campo do leitor — sem precisar clicar nele.
+  useEffect(() => {
+    function redirect(e: KeyboardEvent) {
+      if (modalOpenRef.current) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key.length !== 1 || e.key === ' ') return
+      const t = e.target as HTMLElement | null
+      const tag = t?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      if (t?.isContentEditable) return
+      // Focar durante o keydown faz o caractere cair ja no campo.
+      scanRef.current?.focus()
+    }
+    window.addEventListener('keydown', redirect, true)
+    return () => window.removeEventListener('keydown', redirect, true)
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -320,27 +415,28 @@ export function VendaView({
   }, [products, query, categoryId])
 
   return (
-    <div className="-mx-8 -mt-6 h-[calc(100vh-3rem)] flex flex-col">
-      {/* Barra do caixa */}
-      <header className="flex items-center gap-4 px-8 h-14 border-b border-border bg-bg-elevated shrink-0">
+    <div className="-mx-8 -my-6 flex min-h-0 flex-1 flex-col">
+      {/* Barra do caixa — shrink-0: rolagem e por painel, o topo nao sai */}
+      <header className="flex h-14 shrink-0 items-center gap-4 border-b border-rule-faint bg-island px-8">
         <div className="flex items-center gap-2">
           <span className="text-[15px] font-semibold tracking-tight">Caixa</span>
-          <span className="flex items-center gap-1.5 text-[12px] text-muted">
-            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+          <span className="flex items-center gap-1.5 text-[12px] text-ink-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-teal" />
             aberto
           </span>
         </div>
 
         {/* Campo do leitor ocupa todo o meio da barra — e o que a operadora
             mais usa e o texto nao pode cortar */}
-        <div className="relative flex-1 min-w-0">
+        <div className="relative min-w-0 flex-1">
           <ScanLine
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted"
           />
           <input
             ref={scanRef}
             autoFocus
+            aria-label="Leitor de cartao e produto"
             placeholder="Bipe o cartao, digite o numero dele ou bipe o produto"
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return
@@ -349,54 +445,62 @@ export function VendaView({
               e.currentTarget.value = ''
               handleScan(v)
             }}
-            className="w-full h-9 pl-9 pr-3 bg-bg border border-border rounded-lg text-[13px] font-mono placeholder:text-muted focus:outline-none focus:border-primary"
+            className="font-data h-9 w-full rounded-lg border border-rule bg-field pl-9 pr-3 text-[13px] placeholder:text-ink-muted focus:border-teal focus:outline-none"
             autoComplete="off"
             spellCheck={false}
           />
         </div>
 
         <button
-          onClick={() => {
-            const next = !autoPrint
-            setAutoPrint(next)
-            localStorage.setItem('txoko_pdv_auto_print', next ? 'on' : 'off')
-          }}
+          onClick={toggleAutoPrint}
+          aria-pressed={autoPrint}
           title="Imprimir comprovante ao fechar a comanda"
           className={cn(
-            'flex items-center gap-2 h-9 px-3 shrink-0 rounded-lg border text-[12px] transition-colors',
+            'flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-[12px] font-medium transition-colors',
             autoPrint
-              ? 'border-primary bg-primary/10 text-foreground'
-              : 'border-border text-muted hover:text-foreground'
+              ? 'border-teal bg-teal-soft text-teal-deep'
+              : 'border-rule text-ink-muted hover:bg-sunken hover:text-ink'
           )}
         >
           <Printer size={14} />
           {autoPrint ? 'Imprime ao fechar' : 'Sem impressao'}
         </button>
 
-        <div className="flex items-center gap-2 h-9 px-3 shrink-0 rounded-lg border border-border text-[12px] text-muted">
+        {/* Nao e so contador: clicar volta pra lista de comandas. */}
+        <button
+          onClick={backToList}
+          aria-pressed={!order && !pendingCard}
+          title="Ver as comandas abertas"
+          className={cn(
+            'flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-[12px] font-medium transition-colors',
+            !order && !pendingCard
+              ? 'border-teal bg-teal-soft text-teal-deep'
+              : 'border-rule text-ink-muted hover:bg-sunken hover:text-ink'
+          )}
+        >
           <ShoppingCart size={14} />
-          Comandas abertas
-          <span className="font-mono font-semibold text-foreground">{openOrders.length}</span>
-        </div>
+          Comandas
+          <span className="font-data text-[12px] font-bold">{openOrders.length}</span>
+        </button>
       </header>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex min-h-0 flex-1">
         {/* Catalogo */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-border">
-          <div className="px-8 pt-5 pb-3 space-y-3 shrink-0">
+        <div className="flex min-w-0 flex-1 flex-col border-r border-rule-faint">
+          <div className="shrink-0 space-y-3 px-8 pb-3 pt-5">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted"
               />
               <input
                 ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar produto — nome, SKU ou codigo de barras"
-                className="w-full h-10 pl-9 pr-14 bg-bg-elevated border border-border rounded-lg text-[13px] placeholder:text-muted focus:outline-none focus:border-primary"
+                className="h-10 w-full rounded-lg border border-rule bg-island pl-9 pr-14 text-[13px] placeholder:text-ink-muted focus:border-teal focus:outline-none"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted font-mono border border-border rounded px-1.5 py-0.5">
+              <kbd className="font-data absolute right-3 top-1/2 -translate-y-1/2 rounded border border-rule px-1.5 py-0.5 text-[10px] text-ink-muted">
                 F2
               </kbd>
             </div>
@@ -413,7 +517,7 @@ export function VendaView({
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto thin-scroll px-8 pb-6">
+          <div className="thin-scroll flex-1 overflow-y-auto px-8 pb-6">
             {filtered.length === 0 ? (
               <EmptyState
                 title="Nenhum produto encontrado"
@@ -424,7 +528,7 @@ export function VendaView({
                 }
               />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {filtered.map((p) => {
                   const semEstoque =
                     p.stock_tracked && (p.stock_quantity ?? 0) <= 0
@@ -434,21 +538,21 @@ export function VendaView({
                       onClick={() => addProduct(p)}
                       disabled={pending || semEstoque || !order}
                       className={cn(
-                        'text-left p-3 rounded-xl border transition-colors',
+                        'rounded-xl border p-3 text-left transition-colors',
                         semEstoque || !order
-                          ? 'border-border bg-bg-elevated opacity-50 cursor-not-allowed'
-                          : 'border-border bg-bg-elevated hover:border-primary hover:bg-surface-hover'
+                          ? 'cursor-not-allowed border-rule-faint bg-island opacity-50'
+                          : 'border-rule-faint bg-island hover:border-teal hover:bg-sunken'
                       )}
                     >
-                      <div className="text-[13px] font-medium text-foreground leading-tight line-clamp-2 min-h-[2.4em]">
+                      <div className="line-clamp-2 min-h-[2.4em] text-[13px] font-medium leading-tight text-ink">
                         {p.name}
                       </div>
                       <div className="mt-2 flex items-baseline justify-between gap-2">
-                        <span className="font-data text-[14px] text-foreground">
+                        <span className="font-data text-[14px] text-ink">
                           {brl(Number(p.price))}
                         </span>
                         {semEstoque && (
-                          <span className="text-[10px] uppercase tracking-wide text-destructive">
+                          <span className="text-[10px] uppercase tracking-wide text-red">
                             sem estoque
                           </span>
                         )}
@@ -465,18 +569,52 @@ export function VendaView({
         <aside data-pane="pdv" className="flex w-[380px] shrink-0 flex-col bg-panel-veil">
           {order ? (
             <>
-              <div className="px-5 py-4 border-b border-border shrink-0">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[13px] font-semibold text-foreground">
-                    Comanda #{String(order.card_number).padStart(3, '0')}
-                  </span>
-                  <span className="text-[11px] text-muted">{modeLabel(order.service_mode)}</span>
+              <div className="shrink-0 border-b border-rule-faint px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={backToList}
+                    aria-label="Voltar as comandas abertas"
+                    title="Voltar as comandas abertas (Esc)"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
+                  >
+                    <ArrowLeft size={15} />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-data text-[14px] font-semibold text-ink">
+                      {cardLabel(order.card_number)}
+                    </span>
+                    <span className="ml-2 text-[11px] text-ink-muted">
+                      {modeLabel(order.service_mode)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => openReceipt(order.order_id)}
+                    aria-label="Imprimir conferencia"
+                    title="Imprimir conferencia (sem fechar)"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
+                  >
+                    <Printer size={14} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCancelTarget({
+                        id: order.order_id,
+                        status: order.status,
+                        total: order.total,
+                      })
+                    }
+                    aria-label="Cancelar comanda"
+                    title="Cancelar a comanda inteira"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-red-tint hover:text-red"
+                  >
+                    <Ban size={14} />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto thin-scroll px-5 py-3">
+              <div className="thin-scroll flex-1 overflow-y-auto px-5 py-3">
                 {order.items.length === 0 ? (
-                  <p className="text-[13px] text-muted py-8 text-center">
+                  <p className="py-8 text-center text-[13px] text-ink-muted">
                     Comanda sem itens.
                   </p>
                 ) : (
@@ -484,46 +622,48 @@ export function VendaView({
                     {order.items.map((item) => (
                       <li
                         key={item.id}
-                        className="flex items-center gap-2 py-2 border-b border-border/50 last:border-0"
+                        className="flex items-center gap-2 border-b border-rule-faint py-2 last:border-0"
                       >
                         {item.weight_grams == null ? (
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex shrink-0 items-center gap-1">
                             <StepBtn
                               onClick={() => changeQty(item.id, item.quantity - 1)}
                               disabled={pending}
+                              label="Diminuir quantidade"
                             >
                               <Minus size={12} />
                             </StepBtn>
-                            <span className="w-6 text-center font-data text-[13px]">
+                            <span className="font-data w-6 text-center text-[13px]">
                               {item.quantity}
                             </span>
                             <StepBtn
                               onClick={() => changeQty(item.id, item.quantity + 1)}
                               disabled={pending}
+                              label="Aumentar quantidade"
                             >
                               <Plus size={12} />
                             </StepBtn>
                           </div>
                         ) : (
-                          <span className="shrink-0 font-data text-[11px] text-muted w-[70px]">
+                          <span className="font-data w-[70px] shrink-0 text-[11px] text-ink-muted">
                             {item.weight_grams} g
                           </span>
                         )}
 
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13px] text-foreground truncate">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13px] text-ink">
                             {item.product_name}
                           </div>
                         </div>
 
-                        <span className="font-data text-[13px] text-foreground shrink-0">
+                        <span className="font-data shrink-0 text-[13px] text-ink">
                           {brl(Number(item.total_price))}
                         </span>
 
                         <button
                           onClick={() => removeItem(item.id)}
                           disabled={pending}
-                          className="text-muted hover:text-destructive transition-colors shrink-0"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-red-tint hover:text-red"
                           aria-label="Remover item"
                         >
                           <X size={13} />
@@ -534,7 +674,7 @@ export function VendaView({
                 )}
               </div>
 
-              <div className="px-5 py-4 border-t border-border shrink-0 space-y-3">
+              <div className="shrink-0 space-y-3 border-t border-rule-faint px-5 py-4">
                 <div className="space-y-1 text-[12px]">
                   <Line label="Subtotal" value={brl(Number(order.subtotal))} />
                   {Number(order.discount) > 0 && (
@@ -546,8 +686,8 @@ export function VendaView({
                 </div>
 
                 <div className="flex items-baseline justify-between">
-                  <span className="text-[12px] uppercase tracking-wide text-muted">Total</span>
-                  <span className="font-data text-[26px] font-semibold text-foreground">
+                  <span className="text-[12px] uppercase tracking-wide text-ink-muted">Total</span>
+                  <span className="font-data text-[26px] font-semibold text-ink">
                     {brl(Number(order.total))}
                   </span>
                 </div>
@@ -557,14 +697,16 @@ export function VendaView({
                     <button
                       key={m.value}
                       onClick={() => setMethod(m.value)}
+                      aria-pressed={method === m.value}
                       className={cn(
-                        'h-9 rounded-lg text-[12px] border transition-colors',
+                        'flex h-10 flex-col items-center justify-center rounded-lg border text-[12px] leading-tight transition-colors',
                         method === m.value
-                          ? 'border-primary bg-primary/10 text-foreground'
-                          : 'border-border text-muted hover:text-foreground'
+                          ? 'border-teal bg-teal-soft font-semibold text-teal-deep'
+                          : 'border-rule text-ink-muted hover:bg-sunken hover:text-ink'
                       )}
                     >
                       {m.label}
+                      <kbd className="font-data text-[9px] opacity-60">{m.key}</kbd>
                     </button>
                   ))}
                 </div>
@@ -572,27 +714,27 @@ export function VendaView({
                 <button
                   onClick={finalize}
                   disabled={pending || order.items.length === 0}
-                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-[14px] flex items-center justify-center gap-2 disabled:opacity-40 transition-opacity"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-teal text-[14px] font-semibold text-on-teal transition-opacity disabled:opacity-40"
                 >
                   {pending ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <>
                       Receber {brl(Number(order.total))}
-                      <kbd className="text-[10px] font-mono opacity-70">F9</kbd>
+                      <kbd className="font-data text-[10px] opacity-70">F9</kbd>
                     </>
                   )}
                 </button>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col">
+            <div className="flex min-h-0 flex-1 flex-col">
               {pendingCard && (
-                <div className="px-5 py-4 border-b border-border bg-warm/10">
-                  <p className="text-[13px] font-semibold text-foreground">
-                    Cartao #{String(pendingCard.card_number).padStart(3, '0')} sem comanda
+                <div className="shrink-0 border-b border-rule-faint bg-red-tint/40 px-5 py-4">
+                  <p className="text-[13px] font-semibold text-ink">
+                    Cartao {cardLabel(pendingCard.card_number)} sem comanda
                   </p>
-                  <p className="mt-1 text-[11px] text-muted">
+                  <p className="mt-1 text-[11px] text-ink-muted">
                     O cliente nao passou pela balanca. Abrir aqui cria a comanda
                     vazia, sem cobrar modalidade.
                   </p>
@@ -601,7 +743,7 @@ export function VendaView({
                       type="button"
                       onClick={abrirComanda}
                       disabled={pending}
-                      className="h-9 px-4 rounded-lg bg-primary text-primary-foreground font-semibold text-[13px] flex items-center gap-2 disabled:opacity-40"
+                      className="flex h-9 items-center gap-2 rounded-lg bg-teal px-4 text-[13px] font-semibold text-on-teal disabled:opacity-40"
                     >
                       {pending ? <Loader2 size={14} className="animate-spin" /> : null}
                       Abrir comanda
@@ -609,54 +751,96 @@ export function VendaView({
                     <button
                       type="button"
                       onClick={() => setPendingCard(null)}
-                      className="h-9 px-3 rounded-lg border border-border text-[13px] text-muted"
+                      className="h-9 rounded-lg border border-rule px-3 text-[13px] text-ink-muted"
                     >
                       Cancelar
                     </button>
                   </div>
                 </div>
               )}
-              <div className="px-5 py-4 border-b border-border">
-                <span className="text-[13px] font-semibold text-foreground">
+              <div className="flex shrink-0 items-center justify-between border-b border-rule-faint px-5 py-4">
+                <span className="text-[13px] font-semibold text-ink">
                   Comandas abertas
                 </span>
+                <button
+                  onClick={() => void refreshOrders()}
+                  aria-label="Atualizar lista"
+                  title="Atualizar lista"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
+                >
+                  <RotateCw size={13} />
+                </button>
               </div>
-              <div className="flex-1 overflow-y-auto thin-scroll px-3 py-3">
+              <div className="thin-scroll flex-1 overflow-y-auto px-3 py-3">
                 {openOrders.length === 0 ? (
-                  <p className="text-[13px] text-muted py-10 text-center px-4">
+                  <p className="px-4 py-10 text-center text-[13px] text-ink-muted">
                     Nenhuma comanda aberta. Bipe o codigo de barras de um cartao pra comecar.
                   </p>
                 ) : (
-                  <ul className="space-y-1">
+                  <ul className="space-y-1.5">
                     {openOrders.map((o) => (
-                      <li key={o.order_id}>
-                        <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-bg">
-                          <span className="font-data text-[15px] text-foreground w-12 shrink-0">
-                            {o.card_number != null
-                              ? `#${String(o.card_number).padStart(3, '0')}`
-                              : '—'}
+                      <li key={o.order_id} className="group relative">
+                        {/* A linha inteira carrega a comanda: dali edita,
+                            lanca produto e fecha. Impressao e cancelamento
+                            ficam nos icones da direita. */}
+                        <button
+                          onClick={() => loadFromList(o)}
+                          disabled={pending}
+                          title={
+                            o.qr_token != null
+                              ? `Abrir a comanda ${cardLabel(o.card_number)} — editar, lancar itens ou fechar`
+                              : 'Pedido sem cartao — gerenciar na tela de Pedidos'
+                          }
+                          className="flex min-h-[56px] w-full items-center gap-3 rounded-[12px] border border-rule bg-panel px-3.5 py-2.5 pr-[84px] text-left transition-colors hover:border-teal hover:bg-teal-tint disabled:opacity-60"
+                        >
+                          <span className="font-data w-12 shrink-0 text-[15px] text-ink">
+                            {cardLabel(o.card_number)}
                           </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[12px] text-foreground truncate">
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[12px] text-ink">
                               {modeLabel(o.service_mode)}
                             </div>
-                            <div className="text-[11px] text-muted flex items-center gap-1">
+                            <div className="flex items-center gap-1 text-[11px] text-ink-muted">
                               <Clock size={10} />
                               {sinceLabel(o.opened_at)} · {o.items_count}{' '}
                               {o.items_count === 1 ? 'item' : 'itens'}
                             </div>
                           </div>
-                          <span className="font-data text-[13px] text-foreground shrink-0">
+                          <span className="font-data shrink-0 text-[13px] text-ink">
                             {brl(o.total)}
                           </span>
+                        </button>
+                        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+                          <button
+                            onClick={() => openReceipt(o.order_id)}
+                            aria-label={`Imprimir conferencia da comanda ${cardLabel(o.card_number)}`}
+                            title="Imprimir conferencia"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
+                          >
+                            <Printer size={14} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setCancelTarget({
+                                id: o.order_id,
+                                status: o.status,
+                                total: o.total,
+                              })
+                            }
+                            aria-label={`Cancelar comanda ${cardLabel(o.card_number)}`}
+                            title="Cancelar comanda"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-red-tint hover:text-red"
+                          >
+                            <Ban size={14} />
+                          </button>
                         </div>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
-              <p className="px-5 py-3 text-[11px] text-muted border-t border-border">
-                Bipe o cartao pra abrir a comanda e editar os itens.
+              <p className="shrink-0 border-t border-rule-faint px-5 py-3 text-[11px] text-ink-muted">
+                Bipe o cartao ou toque numa comanda pra abrir e editar.
               </p>
             </div>
           )}
@@ -666,14 +850,34 @@ export function VendaView({
       {feedback && (
         <div
           className={cn(
-            'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg text-[13px] font-medium shadow-lg z-50',
+            'fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2.5 text-[13px] font-medium shadow-e3',
             feedback.kind === 'ok'
-              ? 'bg-success/15 text-success border border-success/30'
-              : 'bg-destructive/15 text-destructive border border-destructive/30'
+              ? 'border-teal bg-teal-soft text-teal-deep'
+              : 'border-red bg-red-tint text-red'
           )}
         >
           {feedback.text}
         </div>
+      )}
+
+      {/* Mesmo fluxo de cancelamento da tela de Pedidos: motivo obrigatorio,
+          decisao de estorno e trilha de quem autorizou. */}
+      {cancelTarget && (
+        <CancelOrderModal
+          orderId={cancelTarget.id}
+          orderStatus={cancelTarget.status}
+          orderTotal={cancelTarget.total}
+          sourceLabel="PDV"
+          canCancel={canCancel}
+          onClose={() => setCancelTarget(null)}
+          onCancelled={() => {
+            if (order?.order_id === cancelTarget.id) setOrder(null)
+            setCancelTarget(null)
+            notify('ok', 'Comanda cancelada')
+            void refreshOrders()
+            focusScan()
+          }}
+        />
       )}
     </div>
   )
@@ -682,17 +886,20 @@ export function VendaView({
 function StepBtn({
   onClick,
   disabled,
+  label,
   children,
 }: {
   onClick: () => void
   disabled?: boolean
+  label: string
   children: React.ReactNode
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-6 h-6 rounded-md border border-border text-muted hover:text-foreground disabled:opacity-30 flex items-center justify-center transition-colors"
+      aria-label={label}
+      className="flex h-7 w-7 items-center justify-center rounded-md border border-rule text-ink-muted transition-colors hover:bg-sunken hover:text-ink disabled:opacity-30"
     >
       {children}
     </button>
@@ -701,9 +908,9 @@ function StepBtn({
 
 function Line({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-muted">
+    <div className="flex items-center justify-between text-ink-muted">
       <span>{label}</span>
-      <span className="font-data text-foreground">{value}</span>
+      <span className="font-data text-ink">{value}</span>
     </div>
   )
 }

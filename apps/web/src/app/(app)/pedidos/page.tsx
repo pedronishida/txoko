@@ -9,23 +9,35 @@ export default async function PedidosPage() {
   const supabase = await createClient()
   const restaurantId = await getActiveRestaurantId()
 
-  const [{ data: orders }, { data: items }, { data: products }, { data: tables }, { data: customers }] =
-    await Promise.all([
-      supabase
-        .from('orders')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: false })
-        .limit(200),
-      // order_items nao tem restaurant_id; filtra via join implicito (RLS cobre)
-      supabase
-        .from('order_items')
-        .select('*, order:orders!inner(restaurant_id)')
-        .eq('order.restaurant_id', restaurantId),
-      supabase.from('products').select('id, name, price').eq('restaurant_id', restaurantId),
-      supabase.from('tables').select('id, number').eq('restaurant_id', restaurantId),
-      supabase.from('customers').select('id, name, phone').eq('restaurant_id', restaurantId),
-    ])
+  const [
+    { data: orders },
+    { data: items },
+    { data: products },
+    { data: tables },
+    { data: customers },
+    { data: cards },
+  ] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .order('created_at', { ascending: false })
+      .limit(200),
+    // order_items nao tem restaurant_id; filtra via join implicito (RLS cobre)
+    supabase
+      .from('order_items')
+      .select('*, order:orders!inner(restaurant_id)')
+      .eq('order.restaurant_id', restaurantId),
+    supabase.from('products').select('id, name, price').eq('restaurant_id', restaurantId),
+    supabase.from('tables').select('id, number').eq('restaurant_id', restaurantId),
+    supabase.from('customers').select('id, name, phone').eq('restaurant_id', restaurantId),
+    // Numero do cartao por comanda — e o codigo que a equipe fala em voz
+    // alta; o hex interno do pedido nao identifica nada no salao.
+    supabase
+      .from('comanda_cards')
+      .select('id, card_number')
+      .eq('restaurant_id', restaurantId),
+  ])
 
   return (
     <PedidosView
@@ -34,6 +46,7 @@ export default async function PedidosPage() {
       products={(products ?? []) as unknown as Pick<Product, 'id' | 'name' | 'price'>[]}
       tables={(tables ?? []) as unknown as Pick<Table, 'id' | 'number'>[]}
       customers={(customers ?? []) as unknown as Pick<Customer, 'id' | 'name' | 'phone'>[]}
+      cards={(cards ?? []) as { id: string; card_number: number }[]}
       restaurantId={restaurantId}
     />
   )

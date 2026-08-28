@@ -19,13 +19,22 @@ import type {
   Product,
   Table,
 } from '@txoko/shared'
-import { Pencil, SplitSquareVertical, Printer, X } from 'lucide-react'
+import {
+  Pencil,
+  SplitSquareVertical,
+  Printer,
+  X,
+  List,
+  LayoutGrid,
+  Clock,
+} from 'lucide-react'
 import { setOrderStatus, currentUserCanCancel } from './actions'
 import { closeOrderWithPayment } from '@/lib/server/payments'
 import type { PaymentMethod } from '@txoko/shared'
 
 type TypeFilter = 'all' | OrderType
 type StatusFilter = 'active' | 'completed' | 'cancelled' | 'all'
+type ViewMode = 'lista' | 'quadro'
 
 const ACTIVE_STATUSES: OrderStatus[] = ['open', 'preparing', 'ready']
 const COMPLETED_STATUSES: OrderStatus[] = ['delivered', 'closed']
@@ -48,6 +57,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const SOURCE_LABEL: Record<string, string> = {
   pos: 'PDV',
+  station: 'Estacao',
   qrcode: 'QR',
   ifood: 'iFood',
   rappi: 'Rappi',
@@ -64,8 +74,30 @@ const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   online: 'Online',
 }
 
+// O quadro mostra o fluxo operacional; fechado e cancelado sao historia e
+// ficam na lista.
+const KANBAN_COLS: {
+  status: OrderStatus
+  label: string
+  advance: OrderStatus | 'checkout'
+  advanceLabel: string
+}[] = [
+  { status: 'open', label: 'Aberto', advance: 'preparing', advanceLabel: 'Iniciar preparo' },
+  { status: 'preparing', label: 'Preparando', advance: 'ready', advanceLabel: 'Marcar pronto' },
+  { status: 'ready', label: 'Pronto', advance: 'delivered', advanceLabel: 'Marcar entregue' },
+  { status: 'delivered', label: 'Entregue', advance: 'checkout', advanceLabel: 'Fechar conta' },
+]
+
 function getMinutesAgo(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
+}
+
+// Tempo parado colore por urgencia — so em pedido que ainda esta em jogo.
+function ageTone(minutes: number, status: OrderStatus): string {
+  if (!ACTIVE_STATUSES.includes(status)) return 'text-ink-muted'
+  if (minutes >= 30) return 'text-red'
+  if (minutes >= 15) return 'text-amber-text'
+  return 'text-ink-muted'
 }
 
 // Statuses that cannot be edited or further acted upon
@@ -78,6 +110,8 @@ type Props = {
   products: Pick<Product, 'id' | 'name' | 'price'>[]
   tables: Pick<Table, 'id' | 'number'>[]
   customers: Pick<import('@txoko/shared').Customer, 'id' | 'name' | 'phone'>[]
+  /** Numero impresso de cada cartao de comanda, pra traduzir comanda_card_id. */
+  cards: { id: string; card_number: number }[]
   restaurantId: string
 }
 
@@ -87,12 +121,14 @@ export function PedidosView({
   products,
   tables,
   customers,
+  cards,
   restaurantId,
 }: Props) {
   const [orders, setOrders] = useState(initialOrders)
   const [items, setItems] = useState(initialItems)
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
+  const [view, setView] = useState<ViewMode>('lista')
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [showCheckout, setShowCheckout] = useState(false)
   const [checkoutMethod, setCheckoutMethod] = useState<PaymentMethod>('pix')
@@ -109,7 +145,13 @@ export function PedidosView({
 
   useEffect(() => {
     void currentUserCanCancel().then(setCanCancel)
+    if (localStorage.getItem('txoko_pedidos_view') === 'quadro') setView('quadro')
   }, [])
+
+  function changeView(v: ViewMode) {
+    setView(v)
+    localStorage.setItem('txoko_pedidos_view', v)
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -188,6 +230,22 @@ export function PedidosView({
     return map
   }, [items])
 
+  const cardNumberByCardId = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const c of cards) m.set(c.id, c.card_number)
+    return m
+  }, [cards])
+
+  // O codigo que identifica o pedido pra equipe: numero da comanda quando o
+  // pedido nasceu de um cartao; o hex interno so como ultimo recurso.
+  function comandaCode(o: Order): { label: string; isCard: boolean } {
+    const n = o.comanda_card_id
+      ? cardNumberByCardId.get(o.comanda_card_id)
+      : undefined
+    if (n != null) return { label: `#${String(n).padStart(3, '0')}`, isCard: true }
+    return { label: `#${o.id.slice(0, 6)}`, isCard: false }
+  }
+
   const filtered = useMemo(() => {
     return orders.filter((o) => {
       if (typeFilter !== 'all' && o.type !== typeFilter) return false
@@ -197,6 +255,13 @@ export function PedidosView({
       return true
     })
   }, [orders, typeFilter, statusFilter])
+
+  // O quadro ignora o filtro de status (as colunas SAO o status) mas respeita
+  // o de tipo.
+  const boardOrders = useMemo(
+    () => orders.filter((o) => typeFilter === 'all' || o.type === typeFilter),
+    [orders, typeFilter]
+  )
 
   const counts = useMemo(
     () => ({
@@ -239,19 +304,13 @@ export function PedidosView({
     const id = selectedOrder.id
     const total = selectedOrder.total
     startTransition(async () => {
-      const res = await closeOrderWithPayment({
+      await closeOrderWithPayment({
         orderId: id,
         method: checkoutMethod,
         amount: total,
       })
       setShowCheckout(false)
       setSelectedOrderId(null)
-      // Comprovante nao fiscal na termica ao fechar, como no PDV — mesma
-      // preferencia. Popup bloqueado nao trava nada: o botao Imprimir do
-      // pedido da o mesmo caminho.
-      if (!('error' in res) && localStorage.getItem('txoko_pdv_auto_print') !== 'off') {
-        openPrint(id)
-      }
     })
   }
 
@@ -271,6 +330,16 @@ export function PedidosView({
     window.open(`/pedidos/${orderId}/comanda`, '_blank')
   }
 
+  function locationOf(order: Order): string {
+    const table = order.table_id
+      ? tables.find((t) => t.id === order.table_id)
+      : null
+    if (table) return `Mesa ${table.number}`
+    if (order.type === 'delivery') return 'Delivery'
+    if (order.type === 'takeaway') return 'Retirada'
+    return 'Balcao'
+  }
+
   const STATUS_FILTERS: { key: StatusFilter; label: string; count: number }[] = [
     { key: 'active', label: 'Em andamento', count: counts.active },
     { key: 'completed', label: 'Concluidos', count: counts.completed },
@@ -279,179 +348,337 @@ export function PedidosView({
   ]
 
   return (
-    <div className="-mx-8 -mt-6">
-      {/* Header */}
-      <div className="px-8 pt-6">
+    <div className="-mx-8 -my-6 flex min-h-0 flex-1 flex-col">
+      {/* Cabecalho da tela: titulo e filtros ficam — so as listas rolam. */}
+      <div className="shrink-0 border-b border-rule-faint px-8 pb-4 pt-6">
         <PageHeader
           title="Pedidos"
           subtitle={`${orders.length} ${orders.length === 1 ? 'pedido recente' : 'pedidos recentes'}`}
           border={false}
         />
-        <div className="flex items-end justify-between gap-4">
-          <TabBar
-            variant="chip"
-            aria-label="Situacao do pedido"
-            tabs={STATUS_FILTERS.map((s) => ({
-              key: s.key,
-              label: s.label,
-              count: s.count,
-            }))}
-            active={statusFilter}
-            onChange={(key) => setStatusFilter(key as StatusFilter)}
-          />
-          <div className="flex items-center gap-5 pb-3 shrink-0">
-            {TYPE_TABS.map((t) => {
-              const active = typeFilter === t.key
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTypeFilter(t.key)}
-                  className={cn(
-                    'text-[11px] font-medium tracking-tight transition-colors',
-                    active ? 'text-foreground' : 'text-muted hover:text-muted'
-                  )}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
+        <div className="flex items-center justify-between gap-4">
+          {view === 'lista' ? (
+            <TabBar
+              variant="chip"
+              aria-label="Situacao do pedido"
+              tabs={STATUS_FILTERS.map((s) => ({
+                key: s.key,
+                label: s.label,
+                count: s.count,
+              }))}
+              active={statusFilter}
+              onChange={(key) => setStatusFilter(key as StatusFilter)}
+            />
+          ) : (
+            <p className="text-[12px] text-ink-muted">
+              Fluxo dos pedidos em andamento — fechados e cancelados ficam na
+              lista.
+            </p>
+          )}
+
+          <div className="flex shrink-0 items-center gap-4">
+            <div className="flex items-center gap-1">
+              {TYPE_TABS.map((t) => {
+                const active = typeFilter === t.key
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTypeFilter(t.key)}
+                    aria-pressed={active}
+                    className={cn(
+                      'flex h-11 items-center rounded-[9px] px-2.5 text-[11.5px] font-medium tracking-tight transition-colors',
+                      active
+                        ? 'text-ink'
+                        : 'text-ink-muted hover:bg-sunken hover:text-ink'
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div
+              role="group"
+              aria-label="Formato de exibicao"
+              className="flex h-11 items-center gap-0.5 rounded-[12px] border border-rule p-1"
+            >
+              <button
+                onClick={() => changeView('lista')}
+                aria-pressed={view === 'lista'}
+                className={cn(
+                  'flex h-9 items-center gap-1.5 rounded-[8px] px-3 text-[12px] font-semibold transition-colors',
+                  view === 'lista'
+                    ? 'bg-teal-soft text-teal-deep'
+                    : 'text-ink-soft hover:bg-sunken hover:text-ink'
+                )}
+              >
+                <List size={13} strokeWidth={2} aria-hidden />
+                Lista
+              </button>
+              <button
+                onClick={() => changeView('quadro')}
+                aria-pressed={view === 'quadro'}
+                className={cn(
+                  'flex h-9 items-center gap-1.5 rounded-[8px] px-3 text-[12px] font-semibold transition-colors',
+                  view === 'quadro'
+                    ? 'bg-teal-soft text-teal-deep'
+                    : 'text-ink-soft hover:bg-sunken hover:text-ink'
+                )}
+              >
+                <LayoutGrid size={13} strokeWidth={2} aria-hidden />
+                Quadro
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex min-h-[calc(100vh-14rem)]">
-        {/* List */}
-        <section className={cn('min-w-0 flex-1')}>
-          {filtered.length === 0 ? (
-            <EmptyState
-              title="Nenhum pedido neste filtro"
-              hint="Troque o status ou o tipo de pedido para ver os outros."
-            />
-          ) : (
-            <div className="divide-y divide-border">
-              {filtered.map((order) => {
-                const orderItems = itemsByOrder[order.id] ?? []
-                const table = order.table_id
-                  ? tables.find((t) => t.id === order.table_id)
-                  : null
-                const minutes = getMinutesAgo(order.created_at)
-                const active = selectedOrderId === order.id
-                const locationLabel = table
-                  ? `Mesa ${table.number}`
-                  : order.type === 'delivery'
-                    ? 'Delivery'
-                    : order.type === 'takeaway'
-                      ? 'Retirada'
-                      : 'Balcao'
-                const isTerminal = TERMINAL_STATUSES.includes(order.status)
+      <div className="flex min-h-0 flex-1">
+        {view === 'lista' ? (
+          /* Lista — rola sozinha; cabecalho e painel de detalhe ficam. */
+          <section className="thin-scroll min-w-0 flex-1 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <EmptyState
+                title="Nenhum pedido neste filtro"
+                hint="Troque o status ou o tipo de pedido para ver os outros."
+              />
+            ) : (
+              <div className="divide-y divide-rule-faint">
+                {filtered.map((order) => {
+                  const orderItems = itemsByOrder[order.id] ?? []
+                  const minutes = getMinutesAgo(order.created_at)
+                  const active = selectedOrderId === order.id
+                  const code = comandaCode(order)
+                  const isTerminal = TERMINAL_STATUSES.includes(order.status)
 
-                return (
-                  <div
-                    key={order.id}
-                    className={cn(
-                      'relative group flex items-center gap-4 px-8 py-4 transition-colors',
-                      active ? 'bg-primary-soft' : 'hover:bg-surface-hover'
-                    )}
-                  >
-                    {active && (
-                      <span className="absolute left-0 top-0 bottom-0 w-px bg-primary" />
-                    )}
-
-                    {/* Clickable main area */}
-                    <button
-                      onClick={() => setSelectedOrderId(order.id)}
-                      className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                  return (
+                    <div
+                      key={order.id}
+                      className={cn(
+                        'group relative flex items-center gap-4 px-8 py-4 transition-colors',
+                        active ? 'bg-teal-tint' : 'hover:bg-sunken'
+                      )}
                     >
-                      <span className="text-[11px] font-data text-muted w-14 shrink-0">
-                        #{order.id.slice(0, 6)}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[13px] font-medium text-foreground tracking-tight">
-                            {locationLabel}
+                      {active && (
+                        <span className="absolute bottom-0 left-0 top-0 w-px bg-teal" />
+                      )}
+
+                      {/* Clickable main area */}
+                      <button
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                      >
+                        {/* Numero da comanda: e o codigo que a equipe fala.
+                            Pedido sem cartao cai no hex curto, apagado. */}
+                        <span
+                          className={cn(
+                            'font-data w-14 shrink-0',
+                            code.isCard
+                              ? 'text-[13px] font-semibold text-ink'
+                              : 'text-[11px] text-ink-muted'
+                          )}
+                        >
+                          {code.label}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-[13px] font-medium tracking-tight text-ink">
+                              {locationOf(order)}
+                            </span>
+                            <span className="text-[11px] tracking-tight text-ink-muted">·</span>
+                            <span className="text-[11px] tracking-tight text-ink-muted">
+                              {STATUS_LABEL[order.status] ?? order.status}
+                            </span>
+                            <span className="text-[11px] tracking-tight text-ink-muted">·</span>
+                            <span className="text-[11px] tracking-tight text-ink-muted">
+                              {SOURCE_LABEL[order.source] ?? order.source}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 truncate text-[11px] tracking-tight text-ink-muted">
+                            {orderItems.length}{' '}
+                            {orderItems.length === 1 ? 'item' : 'itens'} —{' '}
+                            {orderItems
+                              .map((i) => {
+                                const p = products.find((pr) => pr.id === i.product_id)
+                                return `${i.quantity}× ${p?.name || '?'}`
+                              })
+                              .join(', ')}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <span className="font-data text-[13px] font-medium tracking-tight text-ink">
+                            {formatCurrency(order.total)}
                           </span>
-                          <span className="text-[11px] text-muted tracking-tight">·</span>
-                          <span className="text-[11px] text-muted tracking-tight">
-                            {STATUS_LABEL[order.status] ?? order.status}
-                          </span>
-                          <span className="text-[11px] text-muted tracking-tight">·</span>
-                          <span className="text-[11px] text-muted tracking-tight">
-                            {SOURCE_LABEL[order.source] ?? order.source}
+                          <span
+                            className={cn(
+                              'font-data text-[10px]',
+                              ageTone(minutes, order.status)
+                            )}
+                          >
+                            {minutes}m
                           </span>
                         </div>
-                        <p className="text-[11px] text-muted tracking-tight mt-0.5 truncate">
-                          {orderItems.length}{' '}
-                          {orderItems.length === 1 ? 'item' : 'itens'} —{' '}
-                          {orderItems
-                            .map((i) => {
-                              const p = products.find((pr) => pr.id === i.product_id)
-                              return `${i.quantity}× ${p?.name || '?'}`
-                            })
-                            .join(', ')}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[13px] font-medium text-foreground font-data tracking-tight">
-                          {formatCurrency(order.total)}
-                        </span>
-                        <span className="text-[10px] font-data text-muted">
-                          {minutes}m
-                        </span>
-                      </div>
-                    </button>
+                      </button>
 
-                    {/* Row action buttons */}
-                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openEdit(order.id)}
-                        disabled={BLOCKED_EDIT_STATUSES.includes(order.status)}
-                        title="Editar pedido"
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <Pencil size={12} />
-                      </button>
-                      <button
-                        onClick={() => openSplit(order.id)}
-                        disabled={isTerminal}
-                        title="Dividir conta"
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <SplitSquareVertical size={12} />
-                      </button>
-                      <button
-                        onClick={() => openPrint(order.id)}
-                        title="Imprimir recibo"
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
-                      >
-                        <Printer size={12} />
-                      </button>
-                      {!isTerminal && (
+                      {/* Row action buttons */}
+                      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                         <button
-                          onClick={() => doSetStatus(order.id, 'cancelled')}
-                          title="Cancelar pedido"
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                          onClick={() => openEdit(order.id)}
+                          disabled={BLOCKED_EDIT_STATUSES.includes(order.status)}
+                          title="Editar pedido"
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                         >
-                          <X size={12} />
+                          <Pencil size={12} />
                         </button>
+                        <button
+                          onClick={() => openSplit(order.id)}
+                          disabled={isTerminal}
+                          title="Dividir conta"
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          <SplitSquareVertical size={12} />
+                        </button>
+                        <button
+                          onClick={() => openPrint(order.id)}
+                          title="Imprimir recibo"
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
+                        >
+                          <Printer size={12} />
+                        </button>
+                        {!isTerminal && (
+                          <button
+                            onClick={() => setCancelOrderId(order.id)}
+                            title="Cancelar pedido"
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-red-tint hover:text-red"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        ) : (
+          /* Quadro — colunas por status, cada uma com rolagem propria. */
+          <section className="thin-scroll min-w-0 flex-1 overflow-x-auto">
+            <div className="flex h-full min-w-max gap-4 px-8 py-5">
+              {KANBAN_COLS.map((col) => {
+                const colOrders = boardOrders.filter((o) => o.status === col.status)
+                return (
+                  <div
+                    key={col.status}
+                    className="flex h-full w-[270px] shrink-0 flex-col rounded-[14px] border border-rule-faint bg-panel-veil"
+                  >
+                    <header className="flex shrink-0 items-baseline justify-between px-4 pb-2 pt-3.5">
+                      <span className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-muted">
+                        {col.label}
+                      </span>
+                      <span className="font-data text-[11px] text-ink-soft">
+                        {colOrders.length}
+                      </span>
+                    </header>
+                    <div className="thin-scroll flex-1 space-y-2 overflow-y-auto px-2.5 pb-2.5">
+                      {colOrders.length === 0 ? (
+                        <p className="px-1.5 py-6 text-center text-[11.5px] text-ink-muted">
+                          Nenhum pedido
+                        </p>
+                      ) : (
+                        colOrders.map((order) => {
+                          const code = comandaCode(order)
+                          const orderItems = itemsByOrder[order.id] ?? []
+                          const minutes = getMinutesAgo(order.created_at)
+                          const active = selectedOrderId === order.id
+                          return (
+                            <div
+                              key={order.id}
+                              className={cn(
+                                'rounded-[12px] border bg-panel transition-colors',
+                                active
+                                  ? 'border-teal'
+                                  : 'border-rule-faint hover:border-teal'
+                              )}
+                            >
+                              <button
+                                onClick={() => setSelectedOrderId(order.id)}
+                                className="w-full p-3 text-left"
+                              >
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span
+                                    className={cn(
+                                      'font-data',
+                                      code.isCard
+                                        ? 'text-[13px] font-semibold text-ink'
+                                        : 'text-[11px] text-ink-muted'
+                                    )}
+                                  >
+                                    {code.label}
+                                  </span>
+                                  <span className="font-data text-[12.5px] text-ink">
+                                    {formatCurrency(order.total)}
+                                  </span>
+                                </div>
+                                <p className="mt-1 truncate text-[11.5px] text-ink-soft">
+                                  {locationOf(order)} · {orderItems.length}{' '}
+                                  {orderItems.length === 1 ? 'item' : 'itens'}
+                                </p>
+                                <p
+                                  className={cn(
+                                    'mt-1.5 flex items-center gap-1 font-data text-[10.5px]',
+                                    ageTone(minutes, order.status)
+                                  )}
+                                >
+                                  <Clock size={10} aria-hidden />
+                                  {minutes}m
+                                  <span className="ml-auto font-sans text-[10px] text-ink-muted">
+                                    {SOURCE_LABEL[order.source] ?? order.source}
+                                  </span>
+                                </p>
+                              </button>
+                              <div className="px-3 pb-2.5">
+                                <button
+                                  onClick={() => {
+                                    if (col.advance === 'checkout') {
+                                      setSelectedOrderId(order.id)
+                                      setShowCheckout(true)
+                                    } else {
+                                      doSetStatus(order.id, col.advance)
+                                    }
+                                  }}
+                                  disabled={pending}
+                                  className="h-9 w-full rounded-[8px] border border-rule text-[11.5px] font-semibold text-ink-soft transition-colors hover:border-teal hover:bg-teal-soft hover:text-teal-deep disabled:opacity-40"
+                                >
+                                  {col.advanceLabel}
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })
                       )}
                     </div>
                   </div>
                 )
               })}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Detail panel */}
         {selectedOrder && (
-          <aside data-pane="detail" className="flex w-[360px] shrink-0 flex-col border-l border-rule">
-            <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
+          <aside
+            data-pane="detail"
+            className="flex min-h-0 w-[360px] shrink-0 flex-col border-l border-rule"
+          >
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-rule-faint px-6 py-5">
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[11px] font-data text-muted">
-                    #{selectedOrder.id.slice(0, 6)}
+                  <span className="font-data text-[13px] font-semibold text-ink">
+                    {comandaCode(selectedOrder).label}
                   </span>
-                  <span className="text-[13px] font-medium text-foreground tracking-tight">
+                  <span className="text-[13px] font-medium tracking-tight text-ink">
                     {selectedTable
                       ? `Mesa ${selectedTable.number}`
                       : selectedOrder.type === 'delivery'
@@ -461,24 +688,32 @@ export function PedidosView({
                           : 'Balcao'}
                   </span>
                 </div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-[11px] text-muted tracking-tight">
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-[11px] tracking-tight text-ink-muted">
                     {STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status}
                   </span>
-                  <span className="text-[11px] text-muted">·</span>
-                  <span className="text-[11px] text-muted tracking-tight">
+                  <span className="text-[11px] text-ink-muted">·</span>
+                  <span className="text-[11px] tracking-tight text-ink-muted">
                     {SOURCE_LABEL[selectedOrder.source] ?? selectedOrder.source}
                   </span>
-                  <span className="text-[11px] text-muted">·</span>
-                  <span className="text-[11px] font-data text-muted">
+                  <span className="text-[11px] text-ink-muted">·</span>
+                  <span className="font-data text-[11px] text-ink-muted">
                     {getMinutesAgo(selectedOrder.created_at)}m
                   </span>
+                  {comandaCode(selectedOrder).isCard && (
+                    <>
+                      <span className="text-[11px] text-ink-muted">·</span>
+                      <span className="font-data text-[10px] text-ink-muted">
+                        {selectedOrder.id.slice(0, 6)}
+                      </span>
+                    </>
+                  )}
                 </div>
                 {selectedCustomer && (
-                  <p className="text-[11px] text-foreground/75 mt-1.5 tracking-tight">
+                  <p className="mt-1.5 text-[11px] tracking-tight text-ink-soft">
                     {selectedCustomer.name}
                     {selectedCustomer.phone && (
-                      <span className="text-muted font-data">
+                      <span className="font-data text-ink-muted">
                         {' '}
                         · {selectedCustomer.phone}
                       </span>
@@ -486,18 +721,18 @@ export function PedidosView({
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex shrink-0 items-center gap-1">
                 {/* Quick action buttons in panel header */}
                 <button
                   onClick={() => openComanda(selectedOrder.id)}
                   title="Imprimir comanda"
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
                 >
                   <Printer size={13} />
                 </button>
                 <button
                   onClick={() => setSelectedOrderId(null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
                   aria-label="Fechar"
                 >
                   <X size={14} />
@@ -506,27 +741,27 @@ export function PedidosView({
             </div>
 
             {selectedOrder.delivery_address && (
-              <div className="px-6 py-4 border-b border-border">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-1">
+              <div className="shrink-0 border-b border-rule-faint px-6 py-4">
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.06em] text-ink-muted">
                   Entrega
                 </p>
-                <p className="text-[12px] text-foreground tracking-tight">
+                <p className="text-[12px] tracking-tight text-ink">
                   {(selectedOrder.delivery_address as Address).street},{' '}
                   {(selectedOrder.delivery_address as Address).number}
                 </p>
-                <p className="text-[11px] text-muted tracking-tight">
+                <p className="text-[11px] tracking-tight text-ink-muted">
                   {(selectedOrder.delivery_address as Address).neighborhood} ·{' '}
                   {(selectedOrder.delivery_address as Address).city}
                 </p>
                 {selectedOrder.notes && (
-                  <p className="text-[11px] text-accent-foreground mt-2 tracking-tight">
+                  <p className="mt-2 text-[11px] tracking-tight text-amber-text">
                     {selectedOrder.notes}
                   </p>
                 )}
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto thin-scroll">
+            <div className="thin-scroll min-h-0 flex-1 overflow-y-auto">
               {/* Trilha: o cancelamento e o estorno so valem alguma coisa se
                   sobreviver o registro de quem autorizou e por que. */}
               <div className="border-b border-rule px-6 py-4">
@@ -537,7 +772,7 @@ export function PedidosView({
               </div>
 
               <div className="px-6 py-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted mb-3">
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.06em] text-ink-muted">
                   Itens
                 </p>
                 <div className="space-y-3">
@@ -548,20 +783,20 @@ export function PedidosView({
                         key={item.id}
                         className="flex items-start justify-between gap-3"
                       >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-foreground tracking-tight">
-                            <span className="font-data text-muted mr-1.5">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] tracking-tight text-ink">
+                            <span className="font-data mr-1.5 text-ink-muted">
                               {item.quantity}×
                             </span>
                             {product?.name}
                           </p>
                           {item.notes && (
-                            <p className="text-[10px] text-accent-foreground mt-0.5 ml-5 tracking-tight">
+                            <p className="ml-5 mt-0.5 text-[10px] tracking-tight text-amber-text">
                               {item.notes}
                             </p>
                           )}
                         </div>
-                        <span className="text-[11px] font-data text-muted shrink-0">
+                        <span className="font-data shrink-0 text-[11px] text-ink-muted">
                           {formatCurrency(item.total_price)}
                         </span>
                       </div>
@@ -571,8 +806,9 @@ export function PedidosView({
               </div>
             </div>
 
-            {/* Totals */}
-            <div className="px-6 py-4 border-t border-border space-y-1.5">
+            {/* Totais presos no rodape do painel — com muitos itens, o total
+                nao pode morar la embaixo do scroll. */}
+            <div className="shrink-0 space-y-1.5 border-t border-rule-faint px-6 py-4">
               <Row label="Subtotal" value={formatCurrency(selectedOrder.subtotal)} />
               {selectedOrder.service_fee > 0 && (
                 <Row
@@ -593,11 +829,11 @@ export function PedidosView({
                   accent
                 />
               )}
-              <div className="pt-2 mt-1 border-t border-border flex items-baseline justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
+              <div className="mt-1 flex items-baseline justify-between border-t border-rule-faint pt-2">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
                   Total
                 </span>
-                <span className="text-[16px] font-medium text-foreground font-data tracking-tight">
+                <span className="font-data text-[16px] font-medium tracking-tight text-ink">
                   {formatCurrency(selectedOrder.total)}
                 </span>
               </div>
@@ -606,22 +842,22 @@ export function PedidosView({
             {/* Actions */}
             {selectedOrder.status !== 'closed' &&
               selectedOrder.status !== 'cancelled' && (
-                <div className="px-6 py-5 border-t border-border">
+                <div className="shrink-0 border-t border-rule-faint px-6 py-5">
                   {!showCheckout ? (
                     <div className="space-y-2">
                       {/* Edit + Split quick buttons */}
-                      <div className="flex gap-2 mb-1">
+                      <div className="mb-1 flex gap-2">
                         <button
                           onClick={() => openEdit(selectedOrder.id)}
                           disabled={BLOCKED_EDIT_STATUSES.includes(selectedOrder.status)}
-                          className="flex-1 h-8 border border-border text-[11px] text-foreground/75 hover:text-foreground hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-rule text-[11px] text-ink-soft transition-colors hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                         >
                           <Pencil size={11} />
                           Editar
                         </button>
                         <button
                           onClick={() => openSplit(selectedOrder.id)}
-                          className="flex-1 h-8 border border-border text-[11px] text-foreground/75 hover:text-foreground hover:border-stone rounded-md transition-colors flex items-center justify-center gap-1.5"
+                          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-rule text-[11px] text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
                         >
                           <SplitSquareVertical size={11} />
                           Dividir
@@ -631,7 +867,7 @@ export function PedidosView({
                       {selectedOrder.status === 'open' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'preparing')}
-                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
+                          className="h-10 w-full rounded-md bg-teal text-[13px] font-medium text-on-teal transition-colors hover:bg-teal-deep"
                         >
                           Aceitar pedido
                         </button>
@@ -639,7 +875,7 @@ export function PedidosView({
                       {selectedOrder.status === 'preparing' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'ready')}
-                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
+                          className="h-10 w-full rounded-md bg-teal text-[13px] font-medium text-on-teal transition-colors hover:bg-teal-deep"
                         >
                           Marcar pronto
                         </button>
@@ -647,7 +883,7 @@ export function PedidosView({
                       {selectedOrder.status === 'ready' && (
                         <button
                           onClick={() => doSetStatus(selectedOrder.id, 'delivered')}
-                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
+                          className="h-10 w-full rounded-md bg-teal text-[13px] font-medium text-on-teal transition-colors hover:bg-teal-deep"
                         >
                           Marcar entregue
                         </button>
@@ -656,7 +892,7 @@ export function PedidosView({
                         selectedOrder.status === 'ready') && (
                         <button
                           onClick={() => setShowCheckout(true)}
-                          className="w-full h-9 bg-primary text-primary-foreground text-[13px] font-medium rounded-md hover:bg-primary-hover transition-colors"
+                          className="h-10 w-full rounded-md bg-teal text-[13px] font-medium text-on-teal transition-colors hover:bg-teal-deep"
                         >
                           Fechar conta
                         </button>
@@ -673,7 +909,7 @@ export function PedidosView({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-muted">
                         Metodo de pagamento
                       </p>
                       <div className="grid grid-cols-4 gap-1">
@@ -684,10 +920,10 @@ export function PedidosView({
                               key={m}
                               onClick={() => setCheckoutMethod(m)}
                               className={cn(
-                                'h-9 text-[11px] font-medium rounded-md transition-colors tracking-tight',
+                                'h-9 rounded-md text-[11px] font-medium tracking-tight transition-colors',
                                 active
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'text-foreground/75 hover:text-foreground hover:bg-surface'
+                                  ? 'bg-teal text-on-teal'
+                                  : 'text-ink-soft hover:bg-sunken hover:text-ink'
                               )}
                             >
                               {PAYMENT_LABEL[m]}
@@ -698,14 +934,14 @@ export function PedidosView({
                       <div className="flex gap-2">
                         <button
                           onClick={() => setShowCheckout(false)}
-                          className="flex-1 h-9 text-[12px] text-foreground/75 hover:text-foreground hover:bg-surface rounded-md transition-colors"
+                          className="h-9 flex-1 rounded-md text-[12px] text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
                         >
                           Voltar
                         </button>
                         <button
                           onClick={doCheckout}
                           disabled={pending}
-                          className="flex-1 h-9 bg-primary text-primary-foreground text-[12px] font-medium rounded-md hover:bg-primary-hover transition-colors disabled:opacity-40"
+                          className="h-9 flex-1 rounded-md bg-teal text-[12px] font-medium text-on-teal transition-colors hover:bg-teal-deep disabled:opacity-40"
                         >
                           {pending
                             ? 'Processando'
@@ -775,10 +1011,8 @@ function Row({
 }) {
   return (
     <div className="flex justify-between text-[12px]">
-      <span className="text-muted tracking-tight">{label}</span>
-      <span
-        className={cn('font-data', accent ? 'text-primary' : 'text-foreground/75')}
-      >
+      <span className="tracking-tight text-ink-muted">{label}</span>
+      <span className={cn('font-data', accent ? 'text-teal-deep' : 'text-ink-soft')}>
         {value}
       </span>
     </div>

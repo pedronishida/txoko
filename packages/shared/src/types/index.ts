@@ -149,6 +149,7 @@ export interface Order {
   table_id: string | null
   customer_id: string | null
   waiter_id: string | null
+  comanda_card_id: string | null
   type: OrderType
   status: OrderStatus
   subtotal: number

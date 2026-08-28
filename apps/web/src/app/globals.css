@@ -454,6 +454,72 @@
   }
 }
 
+/* Recolhimento manual da sidebar — o chevron na borda direita do trilho.
+   O atributo mora no <html> e e restaurado por um script inline no shell
+   antes do primeiro paint, entao nao ha flash de sidebar aberta. Repete as
+   regras do trilho da media query acima: CSS nao compoe "media OU atributo"
+   numa regra so. Abaixo de 1240px a media query ja forca o trilho e o botao
+   some — expandir ali nao teria efeito. */
+html[data-nav-collapsed] [data-shell] {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+html[data-nav-collapsed] [data-nav-group] {
+  display: none;
+}
+html[data-nav-collapsed] [data-nav-label] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  flex: none;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+html[data-nav-collapsed] [data-nav-rail] {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+html[data-nav-collapsed] [data-nav-link] {
+  position: relative;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding-left: 0;
+  padding-right: 0;
+}
+html[data-nav-collapsed] [data-nav-badge] {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+}
+@media (max-width: 1240px) {
+  [data-nav-toggle] {
+    display: none;
+  }
+}
+
+/* Cabecalho ocultavel — modo foco das telas de operacao. Com o atributo no
+   <html>, o slot do header sai do grid (fixed) e a linha dele some; o mouse
+   encostado no topo da tela poe data-header-peek e o header desce por cima
+   do conteudo, em --e3, sem empurrar nada. */
+html[data-header-hidden] [data-shell] {
+  grid-template-rows: minmax(0, 1fr);
+}
+html[data-header-hidden] [data-header-slot] {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  top: 0;
+  z-index: 40;
+  transform: translateY(calc(-100% - 24px));
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html[data-header-hidden][data-header-peek] [data-header-slot] {
+  transform: translateY(16px);
+}
+
 /* Tablet retrato: os paineis de detalhe cedem largura. A coluna
    principal e a que precisa de espaco. */
 @media (max-width: 1024px) {
