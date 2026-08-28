@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { setOrderStatus, currentUserCanCancel } from './actions'
 import { closeOrderWithPayment } from '@/lib/server/payments'
+import { safeAction } from '@/lib/safe-action'
 import type { PaymentMethod } from '@txoko/shared'
 
 type TypeFilter = 'all' | OrderType
@@ -137,6 +138,9 @@ export function PedidosView({
   const [editOrderId, setEditOrderId] = useState<string | null>(null)
   const [splitOrderId, setSplitOrderId] = useState<string | null>(null)
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
+  // Falha de action (fechar conta, mudar status) aparece aqui em vez de
+  // derrubar a tela no error boundary.
+  const [actionError, setActionError] = useState<string | null>(null)
   // Recarrega a trilha depois de um cancelamento, sem recarregar a tela.
   const [trailKey, setTrailKey] = useState(0)
   // Gate do botao de cancelar. A RPC tambem recusa quem nao pode — isto aqui
@@ -293,9 +297,15 @@ export function PedidosView({
     ? (orders.find((o) => o.id === cancelOrderId) ?? null)
     : null
 
+  function flagError(text: string) {
+    setActionError(text)
+    setTimeout(() => setActionError(null), 5000)
+  }
+
   function doSetStatus(id: string, status: OrderStatus) {
-    startTransition(() => {
-      void setOrderStatus(id, status)
+    startTransition(async () => {
+      const res = await safeAction(setOrderStatus(id, status))
+      if (res && 'error' in res && res.error) flagError(res.error)
     })
   }
 
@@ -304,13 +314,24 @@ export function PedidosView({
     const id = selectedOrder.id
     const total = selectedOrder.total
     startTransition(async () => {
-      await closeOrderWithPayment({
-        orderId: id,
-        method: checkoutMethod,
-        amount: total,
-      })
+      const res = await safeAction(
+        closeOrderWithPayment({
+          orderId: id,
+          method: checkoutMethod,
+          amount: total,
+        })
+      )
+      if (res && 'error' in res && res.error) {
+        flagError(res.error)
+        return
+      }
       setShowCheckout(false)
       setSelectedOrderId(null)
+      // Comprovante na termica ao fechar, como no PDV — mesma preferencia
+      // do aparelho; popup bloqueado nao trava nada.
+      if (localStorage.getItem('txoko_pdv_auto_print') !== 'off') {
+        window.open(`/pedidos/${id}/imprimir`, '_blank', 'width=420,height=640')
+      }
     })
   }
 
@@ -955,6 +976,15 @@ export function PedidosView({
           </aside>
         )}
       </div>
+
+      {actionError && (
+        <div
+          role="alert"
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-red bg-red-tint px-4 py-2.5 text-[13px] font-medium text-red shadow-e3"
+        >
+          {actionError}
+        </div>
+      )}
 
       {/* Edit Order Modal */}
       {editOrder && (

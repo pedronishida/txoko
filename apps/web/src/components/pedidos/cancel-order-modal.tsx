@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { Modal } from '@/components/modal'
 import { cancelOrderWithRefund } from '@/app/(app)/pedidos/actions'
+import { safeAction } from '@/lib/safe-action'
 
 // Lista fechada: motivo digitado a mao vira campo vazio no relatorio.
 const REASONS = [
@@ -63,7 +64,7 @@ export function CancelOrderModal({
     if (blocked || !reason) return
     setError(null)
     startTransition(async () => {
-      const res = await cancelOrderWithRefund(orderId, reason, refund)
+      const res = await safeAction(cancelOrderWithRefund(orderId, reason, refund))
       if ('error' in res && res.error) {
         setError(res.error)
         return

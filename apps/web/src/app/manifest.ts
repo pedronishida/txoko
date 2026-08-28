@@ -16,22 +16,24 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: 'ltr',
     scope: '/',
     categories: ['business', 'productivity', 'food'],
-    // Aponta pras rotas dinamicas do Next (icon.tsx / apple-icon.tsx)
+    // Os icones sao arquivos estaticos em app/ — o Next serve com a
+    // extensao (/icon.png). Sem ela a rota nao existe e o navegador loga
+    // 404 do manifest a cada pagina.
     icons: [
       {
-        src: '/icon',
+        src: '/icon.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',
       },
       {
-        src: '/icon',
+        src: '/icon.png',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable',
       },
       {
-        src: '/apple-icon',
+        src: '/apple-icon.png',
         sizes: '180x180',
         type: 'image/png',
         purpose: 'any',

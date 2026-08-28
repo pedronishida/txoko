@@ -34,6 +34,7 @@ import {
 } from '@/app/(app)/caixa/actions'
 import { currentUserCanCancel } from '@/app/(app)/pedidos/actions'
 import { CancelOrderModal } from '@/components/pedidos/cancel-order-modal'
+import { safeAction } from '@/lib/safe-action'
 import { cn, formatCurrency } from '@/lib/utils'
 import { TabBar } from '@/components/tab-bar'
 import { EmptyState } from '@/components/states'
@@ -114,25 +115,31 @@ export function VendaView({
     scanRef.current?.focus()
   }, [])
 
+  // Falha de rede/deploy no refresh nao pode zerar a lista: mantem a
+  // anterior e segue — a proxima interacao tenta de novo.
   const refreshOrders = useCallback(async () => {
-    setOpenOrders(await listOpenOrders())
+    const res = await safeAction(listOpenOrders())
+    if (Array.isArray(res)) setOpenOrders(res)
   }, [])
 
   useEffect(() => {
     void refreshOrders()
     setAutoPrint(localStorage.getItem('txoko_pdv_auto_print') !== 'off')
-    void currentUserCanCancel().then(setCanCancel)
+    void currentUserCanCancel()
+      .then(setCanCancel)
+      .catch(() => setCanCancel(false))
   }, [refreshOrders])
 
   // Recarrega a comanda atual depois de cada alteracao
   const reloadOrder = useCallback(
     async (token: string) => {
-      const res = await findOrderByCardToken(token)
+      const res = await safeAction(findOrderByCardToken(token))
       if ('ok' in res) setOrder(res.order)
+      else if ('error' in res) notify('error', res.error)
       void refreshOrders()
       focusScan()
     },
-    [refreshOrders, focusScan]
+    [refreshOrders, focusScan, notify]
   )
 
   // Abre a comanda do cartao aqui no caixa, sem mandar o cliente ate a
@@ -141,7 +148,7 @@ export function VendaView({
     const alvo = pendingCard
     if (!alvo) return
     startTransition(async () => {
-      const res = await openOrderFromCard(alvo.qr_token)
+      const res = await safeAction(openOrderFromCard(alvo.qr_token))
       if ('error' in res) {
         notify('error', res.error)
         return
@@ -184,7 +191,7 @@ export function VendaView({
         // Codigo de barras do cartao abre a comanda; qualquer outro codigo e
         // produto, e so faz sentido com uma comanda carregada.
         if (CARD_BARCODE_RE.test(value)) {
-          const res = await findOrderByCardBarcode(value)
+          const res = await safeAction(findOrderByCardBarcode(value))
           if ('needsOpen' in res) {
             setPendingCard({ qr_token: res.qr_token, card_number: res.card_number })
             return
@@ -203,7 +210,7 @@ export function VendaView({
         // leitor falha ou a camera do aparelho nao le. Codigo de barras tem
         // 8+ digitos, entao nao ha confusao.
         if (/^\d{1,4}$/.test(value)) {
-          const res = await findOrderByCardNumber(Number(value))
+          const res = await safeAction(findOrderByCardNumber(Number(value)))
           if ('needsOpen' in res) {
             setPendingCard({ qr_token: res.qr_token, card_number: res.card_number })
             return
@@ -224,7 +231,7 @@ export function VendaView({
           return
         }
 
-        const res = await addBarcodeToOrder(current.qr_token, value)
+        const res = await safeAction(addBarcodeToOrder(current.qr_token, value))
         if ('error' in res) {
           notify('error', res.error)
           return
@@ -243,7 +250,7 @@ export function VendaView({
       return
     }
     startTransition(async () => {
-      const res = await addProductToOrder(order.order_id, product.id, 1)
+      const res = await safeAction(addProductToOrder(order.order_id, product.id, 1))
       if ('error' in res) {
         notify('error', res.error)
         return
@@ -255,7 +262,7 @@ export function VendaView({
   function changeQty(itemId: string, quantity: number) {
     if (!order) return
     startTransition(async () => {
-      const res = await setOrderItemQuantity(order.order_id, itemId, quantity)
+      const res = await safeAction(setOrderItemQuantity(order.order_id, itemId, quantity))
       if ('error' in res) {
         notify('error', res.error)
         return
@@ -267,7 +274,7 @@ export function VendaView({
   function removeItem(itemId: string) {
     if (!order) return
     startTransition(async () => {
-      const res = await cancelItemFromOrder(order.qr_token, itemId)
+      const res = await safeAction(cancelItemFromOrder(order.qr_token, itemId))
       if ('error' in res) {
         notify('error', res.error)
         return
@@ -280,7 +287,7 @@ export function VendaView({
     if (!order) return
     const closing = order
     startTransition(async () => {
-      const res = await closeOrder(closing.order_id, [{ method, amount: closing.total }])
+      const res = await safeAction(closeOrder(closing.order_id, [{ method, amount: closing.total }]))
       if ('error' in res) {
         notify('error', res.error)
         return
@@ -322,7 +329,7 @@ export function VendaView({
     }
     const token = o.qr_token
     startTransition(async () => {
-      const res = await findOrderByCardToken(token)
+      const res = await safeAction(findOrderByCardToken(token))
       if ('needsOpen' in res) {
         setPendingCard({ qr_token: res.qr_token, card_number: res.card_number })
         return

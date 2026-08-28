@@ -28,7 +28,9 @@ export default function Error({
             Algo deu errado
           </h1>
           <p className="text-[13px] text-muted mt-3 tracking-tight leading-relaxed">
-            Encontramos um erro inesperado. Ja registramos pra investigar.
+            A tela encontrou um erro — geralmente e uma versao nova do sistema
+            no ar ou a sessao que venceu. Recarregar resolve; nenhuma comanda
+            ou pedido se perde, esta tudo salvo no servidor.
           </p>
           {error.digest && (
             <p className="text-[10px] text-muted font-data mt-3 tracking-tight">
@@ -36,12 +38,22 @@ export default function Error({
             </p>
           )}
           <div className="flex items-center justify-center gap-4 mt-8">
+            {/* Reload de verdade: reset() so re-renderiza a arvore quebrada e
+                nao adianta quando o client ficou de uma versao antiga. */}
+            <button
+              onClick={() => window.location.reload()}
+              className="h-11 px-5 inline-flex items-center text-[13px] font-semibold bg-foreground text-bg rounded-md hover:opacity-90 transition-opacity"
+            >
+              Recarregar o sistema
+            </button>
             <button
               onClick={reset}
-              className="h-9 px-4 inline-flex items-center text-[13px] font-medium bg-foreground text-bg rounded-md hover:opacity-90 transition-opacity"
+              className="text-[12px] text-muted hover:text-foreground transition-colors tracking-tight"
             >
-              Tentar novamente
+              Tentar de novo sem recarregar
             </button>
+          </div>
+          <div className="mt-5">
             <Link
               href="/"
               className="text-[12px] text-muted hover:text-foreground transition-colors tracking-tight"
