@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { parseScan } from '@/lib/parse-scan'
@@ -43,6 +43,7 @@ import {
   parseManualWeight,
   serviceModeLabel,
 } from '@/lib/format'
+import { useBalanca, type Balanca } from '@/lib/balanca'
 import { NumericKeypad } from '@/components/numeric-keypad'
 
 /**
@@ -56,12 +57,13 @@ import { NumericKeypad } from '@/components/numeric-keypad'
  * direita, nome, taxa, preco, linhas separadas por fio de 1px. Raios de 4px,
  * densidade de terminal.
  *
- * A leitura automatica da balanca (Web Serial, Toledo Prix IV) ainda nao
- * existe — falta o cabo. Ate la o peso entra a mao, que no desenho e via de
- * excecao de primeira classe e nao gambiarra: o campo mora no trilho da
- * comanda ativa, entao pratos 2..n tem caminho sem sair da tela. E como o
- * aparelho e uma tela touch sem teclado fisico, tocar em qualquer campo de
- * peso abre um teclado numerico na tela.
+ * A balanca (Urano POP-S na serial) entrega o peso sozinha, e o operador so
+ * confirma. O peso digitado continua de pe como via de primeira classe e nao
+ * gambiarra: e o caminho quando a balanca cai, quando o cabo sai, e no tablet,
+ * onde Web Serial nao existe. O campo mora no trilho da comanda ativa, entao
+ * pratos 2..n tem caminho sem sair da tela. E como o aparelho e uma tela touch
+ * sem teclado fisico, tocar em qualquer campo de peso abre um teclado numerico
+ * na tela.
  *
  * Na comanda recem-aberta o teclado ja vem aberto e o peso decide a
  * modalidade sozinho: abaixo do ponto de equilibrio entra por quilo com o
@@ -100,6 +102,11 @@ const WEIGHT_CONFIRM_THRESHOLD = 1500
 // Comanda mais velha que isto nao volta na tela depois de uma recarga: a essa
 // altura ja passou pelo caixa.
 const VALIDADE_DA_FOTO = 45 * 60 * 1000
+
+// Abaixo disso o prato conta como retirado da balanca, e o botao de lancar
+// volta a armar. Nao e zero: o prato vazio, um respingo ou a propria deriva
+// da balanca deixam alguns gramas no visor depois que o cliente tira o prato.
+const PRATO_RETIRADO_ATE = 40
 
 // Barras de largura variada — o cartao e lido por codigo de barras, nao QR.
 const BARCODE_WIDTHS = [
@@ -140,6 +147,17 @@ export default function StationPage() {
   const [confirmarFinal, setConfirmarFinal] = useState(false)
   const [online, setOnline] = useState(true)
   const [clock, setClock] = useState('')
+  const balanca = useBalanca()
+  /**
+   * Ha um prato ja lancado ainda em cima da balanca.
+   *
+   * Sem isto o mesmo prato entra de novo a cada toque, porque ele continua
+   * pesando estavel exatamente por ninguem o ter tirado. E a trava e um
+   * booleano, nao o peso lancado: comparar peso daria destrave sozinho na
+   * primeira oscilacao de um grama — a balanca respira, e o prato parado
+   * passeia entre 994 e 995 g. Um grama de deriva viraria cobranca dobrada.
+   */
+  const [pratoLancado, setPratoLancado] = useState(false)
   const escoandoRef = useRef(false)
   // O escoamento roda solto no tempo e precisa saber qual comanda esta na tela
   // agora, nao qual estava quando ele comecou.
@@ -164,6 +182,16 @@ export default function StationPage() {
     const t = setInterval(tick, 20000)
     return () => clearInterval(t)
   }, [])
+
+  // Prato saiu da balanca: o proximo pode entrar. Rearmar pelo peso, e nao
+  // por um tempo de espera, e o que deixa a fila andar no ritmo de quem serve
+  // — tirou o prato, a estacao ja esta pronta para o proximo.
+  useEffect(() => {
+    if (!pratoLancado) return
+    if (balanca.gramas != null && balanca.gramas <= PRATO_RETIRADO_ATE) {
+      setPratoLancado(false)
+    }
+  }, [balanca.gramas, pratoLancado])
 
   // Auto-focus no input sempre que clicar em qualquer lugar
   useEffect(() => {
@@ -709,6 +737,40 @@ export default function StationPage() {
   )
 
   /**
+   * Lanca o peso que esta na balanca agora.
+   *
+   * So aceita leitura parada: enquanto o prato oscila, o numero na tela ainda
+   * nao e o que o cliente vai pagar. Depois de entrar, o peso fica travado ate
+   * o prato sair — o mesmo prato parado na balanca nao pode virar dois itens.
+   *
+   * Segue pelos mesmos caminhos do peso digitado, de proposito: o guarda de
+   * peso alto e o teto do a vontade valem igual, venha o numero da serial ou
+   * do teclado.
+   */
+  const lancarDaBalanca = useCallback(
+    (from: 'picker' | 'rail') => {
+      const grams = balanca.gramas
+      if (grams == null || !balanca.estavel) return
+      if (grams <= 0) {
+        pushToast('error', 'Balança sem peso')
+        return
+      }
+      lastActivityRef.current = Date.now()
+      // Trava ja no toque, nao depois do envio: entre o toque e o item na
+      // comanda cabe um segundo toque impaciente, e ele lancaria o prato duas
+      // vezes. Se o guarda de peso alto for recusado, a trava sai junto.
+      setPratoLancado(true)
+      if (grams > WEIGHT_CONFIRM_THRESHOLD) {
+        setPendingWeight({ grams, from })
+        return
+      }
+      if (from === 'picker') void decidirPeloPeso(grams)
+      else lancarPesoNoTrilho(grams)
+    },
+    [balanca.gramas, balanca.estavel, decidirPeloPeso, lancarPesoNoTrilho, pushToast]
+  )
+
+  /**
    * Executa o cancelamento confirmado no dialogo.
    *
    * Pendente ainda nao subiu: sai da fila e pronto. Se o envio tiver
@@ -934,6 +996,7 @@ export default function StationPage() {
             busy={busy}
             online={online}
             naFila={pendentesTotal}
+            balanca={balanca}
           />
           <input
             ref={inputRef}
@@ -953,6 +1016,9 @@ export default function StationPage() {
           pendentes={pendentes}
           online={online}
           busy={busy}
+          balanca={balanca}
+          pratoLancado={pratoLancado}
+          onLancarBalanca={lancarDaBalanca}
           onFinish={() => finishSession()}
           confirmarFinal={confirmarFinal}
           inputRef={inputRef}
@@ -1047,7 +1113,13 @@ export default function StationPage() {
         <WeightGuard
           grams={pendingWeight.grams}
           threshold={WEIGHT_CONFIRM_THRESHOLD}
-          onCorrigir={() => setPendingWeight(null)}
+          onCorrigir={() => {
+            setPendingWeight(null)
+            // Recusou o peso alto: o prato continua na balança e precisa poder
+            // ser repesado — destravar aqui é o que permite corrigir a posição
+            // e lançar de novo sem tirar tudo da balança.
+            setPratoLancado(false)
+          }}
           onAceitar={() => {
             const p = pendingWeight
             setPendingWeight(null)
@@ -1069,11 +1141,13 @@ function IdleView({
   busy,
   online,
   naFila,
+  balanca,
 }: {
   clock: string
   busy: boolean
   online: boolean
   naFila: number
+  balanca: Balanca
 }) {
   return (
     <>
@@ -1114,11 +1188,30 @@ function IdleView({
         <span className="text-[15px] text-ink-muted">
           {busy
             ? 'Abrindo comanda…'
-            : online
-              ? 'Leitor pronto'
-              : 'Sem rede — comanda nova só quando a conexão voltar'}
+            : !online
+              ? 'Sem rede — comanda nova só quando a conexão voltar'
+              : balanca.estado === 'lendo'
+                ? 'Leitor e balança prontos'
+                : 'Leitor pronto'}
         </span>
         <div className="flex-1" />
+        {/* A balança se autoriza uma vez por navegador e volta sozinha nas
+            recargas seguintes — então o convite mora aqui, na tela de espera,
+            que é onde a estação passa a manhã antes do primeiro cliente. Só
+            aparece quando há o que fazer: com ela lendo, o rodapé cala. */}
+        {balanca.estado === 'desligada' && (
+          <button
+            onClick={() => void balanca.conectar()}
+            className="min-h-11 rounded-[4px] border border-rule-strong px-4 text-[14px] font-semibold text-ink-soft"
+          >
+            Conectar balança
+          </button>
+        )}
+        {(balanca.estado === 'muda' || balanca.estado === 'erro') && (
+          <span className="rounded-[4px] border border-amber-edge bg-amber-soft px-3 py-1.5 text-[13px] font-semibold text-amber">
+            Balança sem resposta — confira o cabo
+          </span>
+        )}
         {/* Fila que sobrou de comanda já encerrada. Aparece aqui para ninguém
             desligar o aparelho com lançamento por subir. */}
         {naFila > 0 && (
@@ -1143,6 +1236,9 @@ function ActiveView({
   pendentes,
   online,
   busy,
+  balanca,
+  pratoLancado,
+  onLancarBalanca,
   onFinish,
   confirmarFinal,
   inputRef,
@@ -1164,6 +1260,9 @@ function ActiveView({
   pendentes: Pendente[]
   online: boolean
   busy: boolean
+  balanca: Balanca
+  pratoLancado: boolean
+  onLancarBalanca: (from: 'picker' | 'rail') => void
   onFinish: () => void
   confirmarFinal: boolean
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -1200,6 +1299,9 @@ function ActiveView({
         rates={rates}
         busy={busy}
         trocando={changingMode}
+        balanca={balanca}
+        pratoLancado={pratoLancado}
+        onLancarBalanca={() => onLancarBalanca('picker')}
         onPick={onPickMode}
         onOpenKeypad={() => onOpenKeypad('picker')}
         inputRef={inputRef}
@@ -1381,6 +1483,9 @@ function ActiveView({
               onInputKeyDown={onInputKeyDown}
               onOpenKeypad={() => onOpenKeypad('rail')}
               busy={busy}
+              balanca={balanca}
+              pratoLancado={pratoLancado}
+              onLancarBalanca={() => onLancarBalanca('rail')}
               pessoas={pessoas}
               precoPessoa={rates?.avontade?.price ?? null}
               avontadeOk={rates?.avontade?.ready === true}
@@ -1390,6 +1495,9 @@ function ActiveView({
             <AvontadeRail
               session={session}
               busy={busy}
+              balanca={balanca}
+              pratoLancado={pratoLancado}
+              onLancarBalanca={() => onLancarBalanca('rail')}
               onSetPeople={onSetPeople}
               onOpenKeypad={() => onOpenKeypad('rail')}
               inputRef={inputRef}
@@ -1402,7 +1510,9 @@ function ActiveView({
           <div className="flex-1" />
 
           <p className="mb-[22px] border-t border-rule pt-5 text-sm leading-[1.4] text-ink-soft">
-            Passe a bebida no leitor · o peso do prato entra à mão
+            {balanca.estado === 'lendo'
+              ? 'Passe a bebida no leitor · o prato pesa na balança'
+              : 'Passe a bebida no leitor · o peso do prato entra à mão'}
           </p>
 
           {/* Total em bloco próprio: é o número que o cliente lê do outro
@@ -1529,6 +1639,111 @@ function ComandaRow({
 
 /* ---------------------------------------------------------------- */
 
+function rotuloBalancaMuda(estado: Balanca['estado']): string {
+  if (estado === 'muda') return 'Balança sem resposta'
+  if (estado === 'conectando') return 'Conectando à balança'
+  if (estado === 'erro') return 'Erro na balança'
+  if (estado === 'sem-suporte') return 'Balança indisponível'
+  return 'Balança desconectada'
+}
+
+/**
+ * O peso que esta na balanca agora.
+ *
+ * O numero e o maior da coluna porque e o que o operador confere contra o
+ * visor da balanca, a um metro de distancia — e por isso sai formatado igual
+ * ao visor dela: gramas ate um quilo, quilo com tres casas depois.
+ *
+ * O verbo do botao carrega o peso ("Lançar 994 g") em vez de so "Lançar": e a
+ * ultima leitura antes de virar dinheiro na comanda, e quem toca precisa ver
+ * o que esta lancando sem desviar os olhos pro visor.
+ */
+function BalancaAoVivo({
+  gramas,
+  estavel,
+  travado,
+  podeLancar,
+  onLancar,
+}: {
+  gramas: number
+  estavel: boolean
+  travado: boolean
+  podeLancar: boolean
+  onLancar: () => void
+}) {
+  const emKg = gramas >= 1000
+  const numero = emKg ? (gramas / 1000).toFixed(3).replace('.', ',') : gramas
+  const vazio = gramas <= 0
+
+  // Tres situacoes, tres leituras: prato parado e pronto, prato ainda
+  // oscilando, e prato ja lancado esperando sair. Nenhuma delas e erro.
+  const nota = travado
+    ? 'Já lançado — tire o prato para o próximo'
+    : vazio
+      ? 'Coloque o prato na balança'
+      : estavel
+        ? `${formatWeight(gramas)} pronto para lançar`
+        : 'Pesando…'
+
+  return (
+    <div>
+      <span className="flex items-center gap-2.5">
+        <span
+          className={
+            'h-[9px] w-[9px] shrink-0 rounded-full ' +
+            (estavel && !vazio ? 'bg-teal' : 'bg-amber')
+          }
+          style={
+            estavel && !vazio
+              ? undefined
+              : { animation: 'est-breathe 1.4s ease-in-out infinite' }
+          }
+        />
+        <span className="text-xs font-bold uppercase tracking-[0.14em] text-teal">
+          Balança
+        </span>
+      </span>
+
+      <div className="mt-3 flex items-baseline gap-2.5">
+        <span
+          className={
+            'font-mono text-[68px] font-bold leading-none tracking-[-0.04em] ' +
+            (vazio || travado
+              ? 'text-ink-muted'
+              : estavel
+                ? 'text-ink'
+                : 'text-ink-soft')
+          }
+        >
+          {vazio ? '—' : numero}
+        </span>
+        <span className="font-mono text-2xl text-ink-muted">
+          {emKg ? 'kg' : 'g'}
+        </span>
+      </div>
+
+      <p className="mt-3 min-h-10 text-sm leading-[1.45] text-ink-muted">
+        {nota}
+      </p>
+
+      <button
+        onClick={onLancar}
+        disabled={!podeLancar}
+        className={
+          'min-h-[60px] w-full rounded-[4px] text-[17px] font-bold ' +
+          (podeLancar
+            ? 'bg-teal text-on-accent'
+            : 'cursor-not-allowed border border-rule-strong text-ink-muted')
+        }
+      >
+        {podeLancar ? `Lançar ${formatWeight(gramas)}` : 'Lançar prato'}
+      </button>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
 function WeightRail({
   inputRef,
   buffer,
@@ -1536,6 +1751,9 @@ function WeightRail({
   onInputKeyDown,
   onOpenKeypad,
   busy,
+  balanca,
+  pratoLancado,
+  onLancarBalanca,
   pessoas,
   precoPessoa,
   avontadeOk,
@@ -1547,6 +1765,9 @@ function WeightRail({
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onOpenKeypad: () => void
   busy: boolean
+  balanca: Balanca
+  pratoLancado: boolean
+  onLancarBalanca: () => void
   pessoas: number
   precoPessoa: number | null
   avontadeOk: boolean
@@ -1555,31 +1776,64 @@ function WeightRail({
   const parsed = parseManualWeight(buffer)
   const willLaunch = parsed != null && parsed > 0
 
+  // Com a balança lendo, o número grande é o dela — o campo digitado vira o
+  // caminho de exceção. Quando ela cala, os papéis se invertem sozinhos.
+  const aoVivo = balanca.estado === 'lendo' && balanca.gramas != null
+  const naBalanca = balanca.gramas ?? 0
+  const travado = pratoLancado
+  const podeLancar =
+    aoVivo && balanca.estavel && naBalanca > 0 && !travado && !busy
+
   return (
     <div>
-      {/* Sem cabo serial a balança está muda, e este é o estado normal —
-          não um erro. O peso digitado é conferido contra o visor da balança,
-          então é o segundo maior número da tela. */}
-      <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber">
-        Balança desconectada
-      </span>
-      <div className="mt-3 flex items-baseline gap-2.5">
-        <span
-          className={
-            'font-mono text-[68px] font-bold leading-none tracking-[-0.04em] ' +
-            (willLaunch ? 'text-ink' : 'text-ink-muted')
-          }
-        >
-          {willLaunch ? parsed : '—'}
-        </span>
-        <span className="font-mono text-2xl text-ink-muted">g</span>
-      </div>
-      <p className="mt-3 min-h-10 text-sm leading-[1.45] text-ink-muted">
-        {willLaunch
-          ? `${formatWeight(parsed)} entra na comanda com Enter`
-          : 'Sem leitura da balança. Digite o peso do próximo prato.'}
-      </p>
-      {/* inputMode="none": o teclado e o nosso, na tela — tocar aqui abre o
+      {aoVivo ? (
+        <BalancaAoVivo
+          gramas={naBalanca}
+          estavel={balanca.estavel}
+          travado={travado}
+          podeLancar={podeLancar}
+          onLancar={onLancarBalanca}
+        />
+      ) : (
+        <>
+          {/* Balança muda é estado normal, não erro: acontece no tablet, com o
+              cabo fora, e enquanto ninguém autorizou a porta. O peso digitado é
+              conferido contra o visor da balança, então é o maior número daqui. */}
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber">
+            {rotuloBalancaMuda(balanca.estado)}
+          </span>
+          <div className="mt-3 flex items-baseline gap-2.5">
+            <span
+              className={
+                'font-mono text-[68px] font-bold leading-none tracking-[-0.04em] ' +
+                (willLaunch ? 'text-ink' : 'text-ink-muted')
+              }
+            >
+              {willLaunch ? parsed : '—'}
+            </span>
+            <span className="font-mono text-2xl text-ink-muted">g</span>
+          </div>
+          <p className="mt-3 min-h-10 text-sm leading-[1.45] text-ink-muted">
+            {willLaunch
+              ? `${formatWeight(parsed)} entra na comanda com Enter`
+              : 'Sem leitura da balança. Digite o peso do próximo prato.'}
+          </p>
+          {balanca.estado === 'desligada' && (
+            <button
+              onClick={() => void balanca.conectar()}
+              className="mb-3 min-h-12 w-full rounded-[4px] border border-amber-edge bg-amber-soft text-[15px] font-bold text-amber"
+            >
+              Conectar balança
+            </button>
+          )}
+        </>
+      )}
+      {/* O campo nunca sai da arvore, mesmo com a balanca lendo: e nele que o
+          leitor de codigo de barras "digita" a bebida e o cartao. Com a
+          balanca no ar ele so encolhe pra zero — o peso ja vem pela serial e
+          um campo grande ali disputaria a atencao com o numero que importa.
+
+          inputMode="none": o teclado e o nosso, na tela — tocar aqui abre o
           numerico sem o teclado do sistema subir por cima do quiosque. Quem
           tem teclado fisico segue digitando direto, sem tocar no campo. */}
       <input
@@ -1594,21 +1848,38 @@ function WeightRail({
         aria-label="Peso do prato em gramas ou quilos"
         autoComplete="off"
         spellCheck={false}
-        className="mt-1 h-[52px] w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[19px] text-ink"
+        className={
+          aoVivo
+            ? 'h-0 w-0 opacity-0'
+            : 'mt-1 h-[52px] w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[19px] text-ink'
+        }
       />
-      <p className="mt-2 text-[13px] leading-[1.35] text-ink-soft">
-        Toque no campo para digitar · gramas (
-        <span className="font-mono">485</span>) ou quilos (
-        <span className="font-mono">0,485</span>)
-      </p>
-      {/* O campo ja abre o teclado, mas "adicionar mais um prato" precisa de
-          um verbo na tela — o botao e o mesmo gesto, com nome. */}
-      <button
-        onClick={onOpenKeypad}
-        className="mt-4 min-h-[56px] w-full rounded-[4px] border border-rule-strong text-base font-semibold text-ink-soft"
-      >
-        Adicionar prato
-      </button>
+      {aoVivo ? (
+        // Com a balança no ar, digitar vira saída de emergência — fica como
+        // texto de apoio, não como o botão grande que compete com Lançar.
+        <button
+          onClick={onOpenKeypad}
+          className="mt-3 min-h-11 w-full rounded-[4px] text-[14px] font-semibold text-ink-muted underline decoration-rule-strong underline-offset-4"
+        >
+          Digitar o peso à mão
+        </button>
+      ) : (
+        <>
+          <p className="mt-2 text-[13px] leading-[1.35] text-ink-soft">
+            Toque no campo para digitar · gramas (
+            <span className="font-mono">485</span>) ou quilos (
+            <span className="font-mono">0,485</span>)
+          </p>
+          {/* O campo ja abre o teclado, mas "adicionar mais um prato" precisa de
+              um verbo na tela — o botao e o mesmo gesto, com nome. */}
+          <button
+            onClick={onOpenKeypad}
+            className="mt-4 min-h-[56px] w-full rounded-[4px] border border-rule-strong text-base font-semibold text-ink-soft"
+          >
+            Adicionar prato
+          </button>
+        </>
+      )}
 
       {/* Comanda mista: o acompanhante que nao pesa entra aqui como pessoa
           no fixo, sem mexer nos pratos ja lancados. */}
@@ -1669,6 +1940,9 @@ function WeightRail({
 function AvontadeRail({
   session,
   busy,
+  balanca,
+  pratoLancado,
+  onLancarBalanca,
   onSetPeople,
   onOpenKeypad,
   inputRef,
@@ -1678,6 +1952,9 @@ function AvontadeRail({
 }: {
   session: StationSnapshot
   busy: boolean
+  balanca: Balanca
+  pratoLancado: boolean
+  onLancarBalanca: () => void
   onSetPeople: (n: number) => void
   onOpenKeypad: () => void
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -1685,6 +1962,10 @@ function AvontadeRail({
   setBuffer: (v: string) => void
   onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
+  const aoVivo = balanca.estado === 'lendo' && balanca.gramas != null
+  const naBalanca = balanca.gramas ?? 0
+  const podeLancar =
+    aoVivo && balanca.estavel && naBalanca > 0 && !pratoLancado && !busy
   // O item fixo da modalidade diz quantas pessoas o cartao cobre. Foto
   // guardada por versao antiga nao traz service_mode — cai em 1 e a
   // proxima foto do servidor corrige.
@@ -1732,11 +2013,24 @@ function AvontadeRail({
       </p>
 
       {/* Comanda mista no outro sentido: o acompanhante que come na balanca
-          lanca por aqui e o prato sai por quilo, na mesma comanda. */}
+          lanca por aqui e o prato sai por quilo, na mesma comanda. Com a
+          balanca lendo, esse prato tambem chega pesado — nao faria sentido a
+          mesma comanda ter um caminho automatico e outro digitado. */}
       <div className="mt-5 border-t border-rule-faint pt-4">
         <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-amber">
           Prato por peso
         </span>
+        {aoVivo && (
+          <p className="mt-2 font-mono text-[15px] text-ink-soft">
+            {pratoLancado
+              ? 'Já lançado — tire o prato'
+              : naBalanca > 0
+                ? `${formatWeight(naBalanca)} na balança${balanca.estavel ? '' : ' · pesando…'}`
+                : 'Balança vazia'}
+          </p>
+        )}
+        {/* O campo continua na arvore mesmo com a balanca lendo: e nele que o
+            leitor de codigo de barras entrega a bebida. */}
         <input
           ref={inputRef}
           autoFocus
@@ -1749,14 +2043,35 @@ function AvontadeRail({
           aria-label="Peso do prato em gramas ou quilos"
           autoComplete="off"
           spellCheck={false}
-          className="mt-2 h-12 w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[17px] text-ink"
+          className={
+            aoVivo
+              ? 'h-0 w-0 opacity-0'
+              : 'mt-2 h-12 w-full rounded-[4px] border border-rule-strong bg-bg px-4 font-mono text-[17px] text-ink'
+          }
         />
-        <button
-          onClick={onOpenKeypad}
-          className="mt-2 min-h-12 w-full rounded-[4px] border border-rule-strong text-[15px] font-semibold text-ink-soft"
-        >
-          Adicionar prato por peso
-        </button>
+        {aoVivo ? (
+          <button
+            onClick={podeLancar ? onLancarBalanca : onOpenKeypad}
+            disabled={busy}
+            className={
+              'mt-2 min-h-12 w-full rounded-[4px] text-[15px] font-bold disabled:opacity-40 ' +
+              (podeLancar
+                ? 'bg-teal text-on-accent'
+                : 'border border-rule-strong font-semibold text-ink-soft')
+            }
+          >
+            {podeLancar
+              ? `Lançar ${formatWeight(naBalanca)}`
+              : 'Digitar o peso à mão'}
+          </button>
+        ) : (
+          <button
+            onClick={onOpenKeypad}
+            className="mt-2 min-h-12 w-full rounded-[4px] border border-rule-strong text-[15px] font-semibold text-ink-soft"
+          >
+            Adicionar prato por peso
+          </button>
+        )}
       </div>
     </div>
   )
@@ -1798,6 +2113,9 @@ function ModePicker({
   rates,
   busy,
   trocando,
+  balanca,
+  pratoLancado,
+  onLancarBalanca,
   onPick,
   onOpenKeypad,
   inputRef,
@@ -1809,6 +2127,9 @@ function ModePicker({
   rates: StationRates | null
   busy: boolean
   trocando: boolean
+  balanca: Balanca
+  pratoLancado: boolean
+  onLancarBalanca: () => void
   onPick: (mode: ServiceMode) => void
   onOpenKeypad: () => void
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -1819,6 +2140,12 @@ function ModePicker({
   // Mesmo criterio dos cartoes: sem tarifa carregada a escolha segue
   // liberada; quem recusa e o servidor, na hora do lancamento.
   const porKgBlocked = rates != null && rates.por_kg?.ready === false
+
+  const aoVivo = balanca.estado === 'lendo' && balanca.gramas != null
+  const naBalanca = balanca.gramas ?? 0
+  const travado = pratoLancado
+  const podeLancar =
+    aoVivo && balanca.estavel && naBalanca > 0 && !travado && !busy && !porKgBlocked
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-[92px] shrink-0 items-baseline gap-3.5 border-b border-rule px-11">
@@ -1892,24 +2219,47 @@ function ModePicker({
           })}
         </div>
 
-        {/* A balanca ainda nao conversa com a estacao, entao o peso entra
-            digitado. O campo mora ja no seletor e o teclado abre sozinho na
-            comanda nova: confirmar o peso decide a modalidade — abaixo do
-            ponto entra por quilo com o prato lancado, acima vira a vontade. */}
+        {/* O peso decide a modalidade sozinho: abaixo do ponto de equilíbrio
+            entra por quilo com o prato lançado, acima vira à vontade. Com a
+            balança lendo, esse peso chega pronto e a linha inteira vira o
+            botão de confirmar; sem ela, abre o teclado como sempre. */}
         <button
-          onClick={onOpenKeypad}
-          disabled={busy || porKgBlocked}
-          className="flex min-h-[64px] w-full items-center gap-4 rounded-[4px] border border-rule-strong bg-card px-[30px] text-left disabled:cursor-not-allowed disabled:opacity-40"
+          onClick={podeLancar ? onLancarBalanca : onOpenKeypad}
+          disabled={busy || porKgBlocked || (aoVivo && travado)}
+          className={
+            'flex min-h-[64px] w-full items-center gap-4 rounded-[4px] border px-[30px] text-left disabled:cursor-not-allowed disabled:opacity-40 ' +
+            (podeLancar
+              ? 'border-teal bg-teal-soft'
+              : 'border-rule-strong bg-card')
+          }
         >
-          <span className="text-xs font-bold uppercase tracking-[0.12em] text-amber">
-            Peso do prato
+          <span
+            className={
+              'text-xs font-bold uppercase tracking-[0.12em] ' +
+              (podeLancar ? 'text-teal' : 'text-amber')
+            }
+          >
+            {aoVivo ? 'Na balança' : 'Peso do prato'}
           </span>
-          <span className="font-mono text-[22px] font-bold leading-none text-ink-muted">
-            — g
+          <span
+            className={
+              'font-mono text-[22px] font-bold leading-none ' +
+              (aoVivo && naBalanca > 0 ? 'text-ink' : 'text-ink-muted')
+            }
+          >
+            {aoVivo && naBalanca > 0 ? formatWeight(naBalanca) : '— g'}
           </span>
           <span className="flex-1" />
           <span className="text-[15px] text-ink-muted">
-            Toque para digitar · o peso decide a modalidade
+            {!aoVivo
+              ? 'Toque para digitar · o peso decide a modalidade'
+              : travado
+                ? 'Já lançado — tire o prato'
+                : naBalanca <= 0
+                  ? 'Coloque o prato na balança'
+                  : balanca.estavel
+                    ? 'Toque para confirmar'
+                    : 'Pesando…'}
           </span>
         </button>
         </div>
