@@ -77,7 +77,13 @@ type Toast = { id: number; kind: 'ok' | 'error'; text: string }
 
 // Peso alto aguardando confirmacao no WeightGuard. A origem importa: vindo do
 // seletor, o aceite ainda decide a modalidade; vindo do trilho, so lanca.
-type PendingWeight = { grams: number; from: 'picker' | 'rail' }
+// `mode` so vem quando o cliente ja escolheu na tela — dai o aceite aplica a
+// escolha dele, e nao a decisao automatica pelo ponto de equilibrio.
+type PendingWeight = {
+  grams: number
+  from: 'picker' | 'rail'
+  mode?: ServiceMode
+}
 
 // Item aguardando confirmacao de cancelamento. Pendente ainda nao subiu:
 // cancelar e so tirar da fila. Item lancado passa pelo servidor, que impoe
@@ -158,6 +164,9 @@ export default function StationPage() {
    * passeia entre 994 e 995 g. Um grama de deriva viraria cobranca dobrada.
    */
   const [pratoLancado, setPratoLancado] = useState(false)
+  // Distingue o teclado que abriu sozinho do que o operador abriu com o dedo:
+  // so o primeiro pode ser fechado por conta propria.
+  const padAutomaticoRef = useRef(false)
   const escoandoRef = useRef(false)
   // O escoamento roda solto no tempo e precisa saber qual comanda esta na tela
   // agora, nao qual estava quando ele comecou.
@@ -244,15 +253,49 @@ export default function StationPage() {
     tokenRef.current = token
   }, [token])
 
-  // Comanda aberta ainda sem modalidade: o teclado ja vem aberto — o caminho
-  // comum e pesar o prato, e o peso decide a modalidade sozinho. Cancelar
-  // deixa o seletor na mao, pra quem vai de a vontade sem prato na balanca.
-  // Chaveado no order_id de proposito: fotos novas da MESMA comanda nao podem
-  // reabrir o teclado que o operador acabou de fechar.
+  /**
+   * Comanda nova sem modalidade: o teclado ja vem aberto — mas so quando a
+   * balanca esta muda.
+   *
+   * O teclado automatico nasceu de um mundo sem balanca, onde digitar era o
+   * caminho comum e abrir sozinho poupava um toque. Com a balanca lendo ele
+   * passou a ser estorvo: cobre justamente o peso e os dois precos que o
+   * cliente precisa ver, e o primeiro gesto dele vira fechar um teclado que
+   * ninguem pediu.
+   *
+   * Chaveado no order_id de proposito: fotos novas da MESMA comanda nao podem
+   * reabrir o teclado que o operador acabou de fechar.
+   */
   useEffect(() => {
-    if (session && session.service_mode == null) setWeightPad('picker')
+    if (session && session.service_mode == null && balanca.estado !== 'lendo') {
+      setWeightPad('picker')
+      padAutomaticoRef.current = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.order_id])
+
+  /**
+   * A balanca chegou depois do teclado: o teclado sai de cena.
+   *
+   * Numa recarga a comanda volta do armazenamento local em milissegundos,
+   * enquanto a balanca ainda esta reabrindo a porta — a checagem acima roda
+   * cedo demais e o teclado abre por engano. Aqui o erro se desfaz sozinho.
+   *
+   * So vale para o teclado que abriu sozinho: o que o operador abriu com o
+   * dedo fica onde esta, porque ele tem motivo (a balanca errou o prato, o
+   * cliente ja saiu de perto) e nada e mais irritante que uma tela que
+   * desfaz o gesto de quem opera.
+   */
+  useEffect(() => {
+    if (
+      padAutomaticoRef.current &&
+      weightPad === 'picker' &&
+      balanca.estado === 'lendo'
+    ) {
+      setWeightPad(null)
+      padAutomaticoRef.current = false
+    }
+  }, [balanca.estado, weightPad])
 
   const pushToast = useCallback((kind: Toast['kind'], text: string) => {
     const id = Date.now() + Math.random()
@@ -719,6 +762,52 @@ export default function StationPage() {
     [token, rates, pushToast, applyManualWeight]
   )
 
+  /**
+   * Aplica a modalidade que o CLIENTE escolheu, com o prato que ele pesou.
+   *
+   * Difere de decidirPeloPeso, que escolhe sozinha pelo ponto de equilibrio:
+   * aquela conta so vale para um prato, e quem vai repetir tem motivo legitimo
+   * para preferir o a vontade mesmo saindo mais caro no primeiro. Com a
+   * balanca na tela o cliente ve os dois totais e decide — o sistema deixa de
+   * adivinhar.
+   *
+   * No por quilo o prato pesado entra na comanda logo apos a modalidade. No a
+   * vontade ele nao entra: ja esta coberto pelo preco fixo.
+   */
+  const escolherComPeso = useCallback(
+    async (mode: ServiceMode, grams: number | null) => {
+      if (!token) return
+      try {
+        setBusy(true)
+        const snap = await setServiceMode(token, mode, 1)
+        setSession(snap)
+        setChangingMode(false)
+        setOnline(true)
+        void guardarComanda(token, snap)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Erro ao definir modalidade'
+        // Mesma regra de sempre: a modalidade precifica tudo que vem depois e
+        // nao entra na fila. Sem servidor, o prato tambem nao entra — senao
+        // ele subiria depois com a modalidade errada.
+        if (ehFalhaDeRede(msg)) {
+          setOnline(false)
+          pushToast('error', 'Sem rede — a modalidade precisa do servidor')
+        } else {
+          pushToast('error', msg)
+        }
+        setPratoLancado(false)
+        return
+      } finally {
+        setBusy(false)
+      }
+
+      if (mode !== 'avontade' && grams != null && grams > 0) {
+        void applyManualWeight(grams)
+      }
+    },
+    [token, pushToast, applyManualWeight]
+  )
+
   // Valida e aplica o guarda de peso alto antes de decidir: um typo aqui nao
   // so lancaria peso errado — viraria a comanda pra modalidade errada.
   const pesoDoSeletor = useCallback(
@@ -768,6 +857,31 @@ export default function StationPage() {
       else lancarPesoNoTrilho(grams)
     },
     [balanca.gramas, balanca.estavel, decidirPeloPeso, lancarPesoNoTrilho, pushToast]
+  )
+
+  /**
+   * O cliente tocou numa das duas opcoes no seletor.
+   *
+   * Sem peso na balanca a escolha e so a modalidade, como sempre foi — e o
+   * caminho de quem vai de a vontade sem pesar prato nenhum.
+   */
+  const escolherDoSeletor = useCallback(
+    (mode: ServiceMode, grams: number | null) => {
+      lastActivityRef.current = Date.now()
+      if (grams == null || grams <= 0) {
+        void applyMode(mode)
+        return
+      }
+      setPratoLancado(true)
+      // O guarda continua valendo com balanca: dois pratos empilhados pesam
+      // tanto quanto um typo, e custam o mesmo ao cliente.
+      if (grams > WEIGHT_CONFIRM_THRESHOLD) {
+        setPendingWeight({ grams, from: 'picker', mode })
+        return
+      }
+      void escolherComPeso(mode, grams)
+    },
+    [applyMode, escolherComPeso]
   )
 
   /**
@@ -948,7 +1062,8 @@ export default function StationPage() {
     if (pendingWeight != null) {
       const p = pendingWeight
       setPendingWeight(null)
-      if (p.from === 'picker') void decidirPeloPeso(p.grams)
+      if (p.mode) void escolherComPeso(p.mode, p.grams)
+      else if (p.from === 'picker') void decidirPeloPeso(p.grams)
       else lancarPesoNoTrilho(p.grams)
       return
     }
@@ -1019,6 +1134,7 @@ export default function StationPage() {
           balanca={balanca}
           pratoLancado={pratoLancado}
           onLancarBalanca={lancarDaBalanca}
+          onEscolher={escolherDoSeletor}
           onFinish={() => finishSession()}
           confirmarFinal={confirmarFinal}
           inputRef={inputRef}
@@ -1028,6 +1144,7 @@ export default function StationPage() {
           onPickMode={(m) => void applyMode(m)}
           onOpenKeypad={(from) => {
             lastActivityRef.current = Date.now()
+            padAutomaticoRef.current = false
             setWeightPad(from)
           }}
           onSetPeople={(n) => void ajustarPessoas(n)}
@@ -1123,7 +1240,8 @@ export default function StationPage() {
           onAceitar={() => {
             const p = pendingWeight
             setPendingWeight(null)
-            if (p.from === 'picker') void decidirPeloPeso(p.grams)
+            if (p.mode) void escolherComPeso(p.mode, p.grams)
+            else if (p.from === 'picker') void decidirPeloPeso(p.grams)
             else lancarPesoNoTrilho(p.grams)
           }}
         />
@@ -1239,6 +1357,7 @@ function ActiveView({
   balanca,
   pratoLancado,
   onLancarBalanca,
+  onEscolher,
   onFinish,
   confirmarFinal,
   inputRef,
@@ -1263,6 +1382,7 @@ function ActiveView({
   balanca: Balanca
   pratoLancado: boolean
   onLancarBalanca: (from: 'picker' | 'rail') => void
+  onEscolher: (mode: ServiceMode, grams: number | null) => void
   onFinish: () => void
   confirmarFinal: boolean
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -1301,7 +1421,7 @@ function ActiveView({
         trocando={changingMode}
         balanca={balanca}
         pratoLancado={pratoLancado}
-        onLancarBalanca={() => onLancarBalanca('picker')}
+        onEscolher={onEscolher}
         onPick={onPickMode}
         onOpenKeypad={() => onOpenKeypad('picker')}
         inputRef={inputRef}
@@ -2108,6 +2228,76 @@ const MODE_OPTIONS: {
   { mode: 'avontade', title: 'À vontade', tone: 'teal' },
 ]
 
+/**
+ * O lugar do peso enquanto ele nao existe.
+ *
+ * Ocupa a mesma altura do peso pesado pra tela nao pular quando o prato entra
+ * na balanca — e o cliente esta lendo justamente essa area no momento em que
+ * o numero aparece.
+ */
+function PesoAusente({
+  balanca,
+  pesando,
+  naBalanca,
+  busy,
+  porKgBlocked,
+  onOpenKeypad,
+}: {
+  balanca: Balanca
+  pesando: boolean
+  naBalanca: number
+  busy: boolean
+  porKgBlocked: boolean
+  onOpenKeypad: () => void
+}) {
+  const lendo = balanca.estado === 'lendo'
+
+  return (
+    <div className="flex min-h-[86px] flex-col items-center justify-center gap-3 text-center">
+      {lendo ? (
+        <>
+          <span className="flex items-center gap-2.5">
+            <span
+              className="h-[9px] w-[9px] rounded-full bg-teal"
+              style={{ animation: 'est-breathe 2s ease-in-out infinite' }}
+            />
+            <span className="text-xl text-ink-soft">
+              {pesando
+                ? 'Pesando…'
+                : naBalanca > PRATO_RETIRADO_ATE
+                  ? 'Aguarde a balança parar'
+                  : 'Coloque o prato na balança'}
+            </span>
+          </span>
+          <button
+            onClick={onOpenKeypad}
+            disabled={busy || porKgBlocked}
+            className="min-h-11 rounded-[4px] px-3 text-[14px] font-semibold text-ink-muted underline decoration-rule-strong underline-offset-4 disabled:opacity-40"
+          >
+            Digitar o peso à mão
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={onOpenKeypad}
+          disabled={busy || porKgBlocked}
+          className="flex min-h-[64px] items-center gap-4 rounded-[4px] border border-rule-strong bg-card px-[30px] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-amber">
+            Peso do prato
+          </span>
+          <span className="font-mono text-[22px] font-bold leading-none text-ink-muted">
+            — g
+          </span>
+          <span className="text-[15px] text-ink-muted">Toque para digitar</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- */
+
 function ModePicker({
   comandaLabel,
   rates,
@@ -2115,7 +2305,7 @@ function ModePicker({
   trocando,
   balanca,
   pratoLancado,
-  onLancarBalanca,
+  onEscolher,
   onPick,
   onOpenKeypad,
   inputRef,
@@ -2129,7 +2319,7 @@ function ModePicker({
   trocando: boolean
   balanca: Balanca
   pratoLancado: boolean
-  onLancarBalanca: () => void
+  onEscolher: (mode: ServiceMode, grams: number | null) => void
   onPick: (mode: ServiceMode) => void
   onOpenKeypad: () => void
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -2141,11 +2331,43 @@ function ModePicker({
   // liberada; quem recusa e o servidor, na hora do lancamento.
   const porKgBlocked = rates != null && rates.por_kg?.ready === false
 
-  const aoVivo = balanca.estado === 'lendo' && balanca.gramas != null
+  /**
+   * O peso que a escolha usa — congelado no ultimo valor estavel.
+   *
+   * Nao e o peso vivo da balanca de proposito. Quem decide aqui e o cliente, e
+   * ele tira o prato da balanca pra pegar o cartao ou pra sentar. Se a tela
+   * seguisse a balanca, os precos sumiriam no meio da decisao e ele voltaria
+   * pra estaca zero. Congela quando para, e so solta no "repesar".
+   */
+  const [pesoDecisao, setPesoDecisao] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (
+      balanca.estavel &&
+      balanca.gramas != null &&
+      balanca.gramas > PRATO_RETIRADO_ATE
+    ) {
+      setPesoDecisao(balanca.gramas)
+    }
+  }, [balanca.estavel, balanca.gramas])
+
   const naBalanca = balanca.gramas ?? 0
-  const travado = pratoLancado
-  const podeLancar =
-    aoVivo && balanca.estavel && naBalanca > 0 && !travado && !busy && !porKgBlocked
+  const pesando =
+    balanca.estado === 'lendo' && naBalanca > PRATO_RETIRADO_ATE && !balanca.estavel
+  const pratoSaiu = pesoDecisao != null && naBalanca <= PRATO_RETIRADO_ATE
+
+  // Os dois totais para ESTE prato. E a conta que o cliente faria de cabeca
+  // olhando a tarifa — e que ninguem faz de cabeca numa fila.
+  const perKg = rates?.por_kg?.price_per_kg
+  const totalPorKg =
+    pesoDecisao != null && perKg != null ? (perKg * pesoDecisao) / 1000 : null
+  const precoAvontade = rates?.avontade?.price
+  const avontadeOk = rates?.avontade?.ready !== false
+  const avontadeGanha =
+    totalPorKg != null && precoAvontade != null && precoAvontade < totalPorKg
+
+  const decidindo = pesoDecisao != null
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-[92px] shrink-0 items-baseline gap-3.5 border-b border-rule px-11">
@@ -2157,8 +2379,39 @@ function ModePicker({
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-[38px] px-16">
-        <p className="text-2xl text-ink-soft">Como o cliente vai pagar?</p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-16">
+        {/* O peso vem antes da pergunta: é o dado que torna a pergunta
+            respondível. Sem ele, os dois cartões são tarifas abstratas. */}
+        {decidindo ? (
+          <div className="text-center">
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-ink-muted">
+              Seu prato pesou
+            </span>
+            <div className="mt-1.5 flex items-baseline justify-center gap-2.5">
+              <span className="font-mono text-[64px] font-bold leading-none tracking-[-0.04em]">
+                {pesoDecisao >= 1000
+                  ? (pesoDecisao / 1000).toFixed(3).replace('.', ',')
+                  : pesoDecisao}
+              </span>
+              <span className="font-mono text-2xl text-ink-muted">
+                {pesoDecisao >= 1000 ? 'kg' : 'g'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <PesoAusente
+            balanca={balanca}
+            pesando={pesando}
+            naBalanca={naBalanca}
+            busy={busy}
+            porKgBlocked={porKgBlocked}
+            onOpenKeypad={onOpenKeypad}
+          />
+        )}
+
+        <p className="m-0 text-2xl text-ink-soft">
+          {decidindo ? 'Como você prefere pagar?' : 'Como o cliente vai pagar?'}
+        </p>
 
         {/* Duas colunas separadas por um fio de 1px, como no desenho: as
             opções são irmãs, não cartões soltos. A régua colorida no topo é
@@ -2174,31 +2427,59 @@ function ModePicker({
             // recusa modalidade sem produto é o lançamento, no servidor.
             const blocked = rates != null && rate?.ready === false
             const teal = opt.tone === 'teal'
-            const price = teal
-              ? rate?.price != null
-                ? formatCurrency(rate.price)
-                : null
-              : rate?.price_per_kg != null
-                ? `${formatCurrency(rate.price_per_kg)}/kg`
-                : null
+            // Com prato pesado, o número grande é o que ESTE prato custa em
+            // cada caminho. É a conta que decide, e ninguém a faz de cabeça
+            // na frente de uma fila.
+            const price = decidindo
+              ? teal
+                ? precoAvontade != null
+                  ? formatCurrency(precoAvontade)
+                  : null
+                : totalPorKg != null
+                  ? formatCurrency(totalPorKg)
+                  : null
+              : teal
+                ? rate?.price != null
+                  ? formatCurrency(rate.price)
+                  : null
+                : rate?.price_per_kg != null
+                  ? `${formatCurrency(rate.price_per_kg)}/kg`
+                  : null
             const detail = blocked
               ? 'Sem produto cadastrado'
-              : teal
-                ? 'Quanto comer quiser, uma pessoa'
-                : 'Pesa o prato na balança'
+              : decidindo
+                ? teal
+                  ? 'Pode repetir quantas vezes quiser'
+                  : perKg != null
+                    ? `${formatWeight(pesoDecisao)} × ${formatCurrency(perKg)}/kg`
+                    : 'Paga só o que serviu'
+                : teal
+                  ? 'Quanto comer quiser, uma pessoa'
+                  : 'Pesa o prato na balança'
+            // O selo marca a mais barata sem tirar a escolha: quem vai repetir
+            // tem motivo legítimo pra pagar mais agora e menos no total.
+            const maisBarato =
+              decidindo && avontadeGanha === teal && totalPorKg != null
 
             return (
               <button
                 key={opt.mode}
-                onClick={() => onPick(opt.mode)}
-                disabled={busy || blocked}
+                onClick={() =>
+                  decidindo
+                    ? onEscolher(opt.mode, pesoDecisao)
+                    : onPick(opt.mode)
+                }
+                disabled={busy || blocked || pratoLancado}
                 className={
-                  'flex flex-col items-start gap-3 border-t-[3px] bg-card px-[30px] pb-[26px] pt-7 text-left ' +
-                  (teal ? 'border-teal' : 'border-amber') +
-                  (blocked || busy ? ' cursor-not-allowed opacity-40' : '')
+                  'flex min-h-[150px] flex-col items-start gap-3 border-t-[3px] px-[30px] pb-[26px] pt-7 text-left ' +
+                  (teal ? 'border-teal ' : 'border-amber ') +
+                  (maisBarato ? 'bg-teal-soft ' : 'bg-card ') +
+                  (blocked || busy || pratoLancado
+                    ? 'cursor-not-allowed opacity-40'
+                    : '')
                 }
               >
-                <span className="flex w-full items-baseline gap-3">
+                <span className="flex w-full items-center gap-3">
                   <span
                     className={
                       'text-xs font-bold uppercase tracking-[0.12em] ' +
@@ -2207,8 +2488,14 @@ function ModePicker({
                   >
                     {opt.title}
                   </span>
+                  <span className="flex-1" />
+                  {maisBarato && (
+                    <span className="rounded-[4px] bg-teal px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-on-accent">
+                      mais barato
+                    </span>
+                  )}
                 </span>
-                <span className="font-mono text-[48px] font-bold leading-none tracking-[-0.04em]">
+                <span className="font-mono text-[44px] font-bold leading-none tracking-[-0.04em]">
                   {price ?? '—'}
                 </span>
                 <span className="text-[15px] leading-[1.4] text-ink-muted">
@@ -2219,53 +2506,40 @@ function ModePicker({
           })}
         </div>
 
-        {/* O peso decide a modalidade sozinho: abaixo do ponto de equilíbrio
-            entra por quilo com o prato lançado, acima vira à vontade. Com a
-            balança lendo, esse peso chega pronto e a linha inteira vira o
-            botão de confirmar; sem ela, abre o teclado como sempre. */}
-        <button
-          onClick={podeLancar ? onLancarBalanca : onOpenKeypad}
-          disabled={busy || porKgBlocked || (aoVivo && travado)}
-          className={
-            'flex min-h-[64px] w-full items-center gap-4 rounded-[4px] border px-[30px] text-left disabled:cursor-not-allowed disabled:opacity-40 ' +
-            (podeLancar
-              ? 'border-teal bg-teal-soft'
-              : 'border-rule-strong bg-card')
-          }
-        >
-          <span
-            className={
-              'text-xs font-bold uppercase tracking-[0.12em] ' +
-              (podeLancar ? 'text-teal' : 'text-amber')
-            }
-          >
-            {aoVivo ? 'Na balança' : 'Peso do prato'}
-          </span>
-          <span
-            className={
-              'font-mono text-[22px] font-bold leading-none ' +
-              (aoVivo && naBalanca > 0 ? 'text-ink' : 'text-ink-muted')
-            }
-          >
-            {aoVivo && naBalanca > 0 ? formatWeight(naBalanca) : '— g'}
-          </span>
-          <span className="flex-1" />
-          <span className="text-[15px] text-ink-muted">
-            {!aoVivo
-              ? 'Toque para digitar · o peso decide a modalidade'
-              : travado
-                ? 'Já lançado — tire o prato'
-                : naBalanca <= 0
-                  ? 'Coloque o prato na balança'
-                  : balanca.estavel
-                    ? 'Toque para confirmar'
-                    : 'Pesando…'}
-          </span>
-        </button>
+        {decidindo && (
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                setPesoDecisao(null)
+                onOpenKeypad()
+              }}
+              className="min-h-11 rounded-[4px] px-3 text-[14px] font-semibold text-ink-muted underline decoration-rule-strong underline-offset-4"
+            >
+              Digitar o peso à mão
+            </button>
+            <span className="flex-1" />
+            {/* Prato fora da balança e preços de pé: sem este botão, repesar
+                exigiria adivinhar que basta pôr outro prato. */}
+            <button
+              onClick={() => setPesoDecisao(null)}
+              className="min-h-11 rounded-[4px] border border-rule-strong px-4 text-[14px] font-semibold text-ink-soft"
+            >
+              Pesar de novo
+            </button>
+          </div>
+        )}
         </div>
 
         <p className="m-0 min-h-[21px] text-[15px] text-ink-muted">
-          {breakEvenHint(rates) ?? 'Toque na opção'}
+          {pratoLancado
+            ? 'Lançando…'
+            : decidindo
+              ? pratoSaiu
+                ? 'Prato fora da balança — os preços acima valem para ele'
+                : avontadeOk
+                  ? 'Toque na opção que preferir · vai repetir? o à vontade compensa'
+                  : 'Toque na opção que preferir'
+              : (breakEvenHint(rates) ?? 'Toque na opção')}
         </p>
       </div>
 
