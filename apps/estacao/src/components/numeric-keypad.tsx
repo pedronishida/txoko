@@ -26,6 +26,9 @@ export function NumericKeypad({
   onClose,
   altLabel,
   onAlt,
+  titulo = 'Peso do prato',
+  verbo = 'Lançar',
+  inicial,
 }: {
   busy: boolean
   onConfirm: (grams: number) => void
@@ -33,8 +36,16 @@ export function NumericKeypad({
   /** Atalho secundario abaixo do confirmar (ex.: a vontade, sem pesar). */
   altLabel?: string
   onAlt?: () => void
+  /** Rotulo do canto — o mesmo teclado tambem ajusta a tara. */
+  titulo?: string
+  /** Verbo do botao de confirmar: "Lançar" o prato, "Salvar" a tara. */
+  verbo?: string
+  /** Valor ja digitado ao abrir, pra corrigir em vez de redigitar. */
+  inicial?: number
 }) {
-  const [digits, setDigits] = useState('')
+  const [digits, setDigits] = useState(
+    inicial != null && inicial > 0 ? String(inicial) : ''
+  )
   const grams = digits === '' ? null : Number(digits)
   const ok = grams != null && grams > 0
 
@@ -60,7 +71,7 @@ export function NumericKeypad({
       >
         <div className="flex items-baseline">
           <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber">
-            Peso do prato
+            {titulo}
           </span>
           <span className="flex-1" />
           <button
@@ -127,7 +138,7 @@ export function NumericKeypad({
           }}
           className="mt-3 h-[64px] w-full rounded-[4px] bg-teal text-lg font-bold text-on-accent disabled:opacity-40"
         >
-          {ok ? `Lançar ${formatWeight(grams)}` : 'Digite o peso em gramas'}
+          {ok ? `${verbo} ${formatWeight(grams)}` : 'Digite o peso em gramas'}
         </button>
 
         {onAlt != null && altLabel != null && (

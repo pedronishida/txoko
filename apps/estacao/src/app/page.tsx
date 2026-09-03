@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseScan } from '@/lib/parse-scan'
 import {
   resolveBarcode,
@@ -44,6 +44,7 @@ import {
   serviceModeLabel,
 } from '@/lib/format'
 import { useBalanca, type Balanca } from '@/lib/balanca'
+import { useTara } from '@/lib/tara'
 import { NumericKeypad } from '@/components/numeric-keypad'
 
 /**
@@ -153,7 +154,29 @@ export default function StationPage() {
   const [confirmarFinal, setConfirmarFinal] = useState(false)
   const [online, setOnline] = useState(true)
   const [clock, setClock] = useState('')
-  const balanca = useBalanca()
+  const balancaBruta = useBalanca()
+  const { tara, definirTara } = useTara()
+  // Teclado da tara aberto (config do balcao, fora do caminho do cliente)
+  const [editandoTara, setEditandoTara] = useState(false)
+
+  /**
+   * A balanca que o resto da tela enxerga ja vem sem o prato.
+   *
+   * O desconto mora aqui, num lugar so, e nao em cada tela que mostra peso:
+   * um ponto esquecido cobraria a louca do cliente. O hook segue entregando o
+   * que a balanca diz — quem le hardware nao deve saber de regra de negocio,
+   * e a tela de diagnostico precisa do numero cru.
+   */
+  const balanca: Balanca = useMemo(
+    () => ({
+      ...balancaBruta,
+      gramas:
+        balancaBruta.gramas != null
+          ? Math.max(0, balancaBruta.gramas - tara)
+          : null,
+    }),
+    [balancaBruta, tara]
+  )
   /**
    * Ha um prato ja lancado ainda em cima da balanca.
    *
@@ -1112,6 +1135,8 @@ export default function StationPage() {
             online={online}
             naFila={pendentesTotal}
             balanca={balanca}
+            tara={tara}
+            onEditarTara={() => setEditandoTara(true)}
           />
           <input
             ref={inputRef}
@@ -1217,6 +1242,44 @@ export default function StationPage() {
         />
       )}
 
+      {editandoTara && (
+        <NumericKeypad
+          busy={busy}
+          titulo="Tara do prato"
+          verbo="Salvar"
+          inicial={tara}
+          onClose={() => setEditandoTara(false)}
+          onConfirm={(g) => {
+            definirTara(g)
+            setEditandoTara(false)
+            pushToast('ok', `Tara do prato: ${formatWeight(g)}`)
+          }}
+          // Pesar o prato vazio é mais confiável que lembrar o número: a
+          // louça varia entre peças e lasca com o uso. Só aparece com algo
+          // na balança, e o peso é o cru — descontar a tara aqui seria
+          // medir o prato contra ele mesmo.
+          altLabel={
+            balancaBruta.estado === 'lendo' &&
+            balancaBruta.gramas != null &&
+            balancaBruta.gramas > 0
+              ? `Usar ${formatWeight(balancaBruta.gramas)} da balança`
+              : undefined
+          }
+          onAlt={
+            balancaBruta.estado === 'lendo' &&
+            balancaBruta.gramas != null &&
+            balancaBruta.gramas > 0
+              ? () => {
+                  const g = balancaBruta.gramas as number
+                  definirTara(g)
+                  setEditandoTara(false)
+                  pushToast('ok', `Tara do prato: ${formatWeight(g)}`)
+                }
+              : undefined
+          }
+        />
+      )}
+
       {cancelTarget != null && (
         <CancelConfirm
           target={cancelTarget}
@@ -1260,12 +1323,16 @@ function IdleView({
   online,
   naFila,
   balanca,
+  tara,
+  onEditarTara,
 }: {
   clock: string
   busy: boolean
   online: boolean
   naFila: number
   balanca: Balanca
+  tara: number
+  onEditarTara: () => void
 }) {
   return (
     <>
@@ -1330,6 +1397,15 @@ function IdleView({
             Balança sem resposta — confira o cabo
           </span>
         )}
+        {/* A tara mora aqui, à vista de quem abre a casa e fora do caminho do
+            cliente: trocar a louça sem ajustar este número cobra o prato de
+            todo mundo, e é o tipo de erro que ninguém percebe olhando o total. */}
+        <button
+          onClick={onEditarTara}
+          className="min-h-11 rounded-[4px] px-3 text-[13px] font-semibold text-ink-muted"
+        >
+          Tara do prato <span className="font-mono text-ink-soft">{tara} g</span>
+        </button>
         {/* Fila que sobrou de comanda já encerrada. Aparece aqui para ninguém
             desligar o aparelho com lançamento por subir. */}
         {naFila > 0 && (
