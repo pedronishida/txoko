@@ -54,6 +54,12 @@ export type Balanca = {
   estado: EstadoBalanca
   /** Peso liquido em gramas; null enquanto nao houve leitura valida. */
   gramas: number | null
+  /**
+   * Tara programada na balanca, em gramas. Zero quando ela nao desconta nada.
+   * Quem for descontar o prato precisa olhar aqui antes, sob pena de
+   * descontar duas vezes.
+   */
+  taraGramas: number
   /** Peso parado ha AMOSTRAS_PARA_ESTAVEL leituras — pode lancar. */
   estavel: boolean
   erro: string | null
@@ -74,7 +80,25 @@ export type Balanca = {
  * mais recente.
  */
 export function extrairGramas(texto: string): number | null {
-  const achados = [...texto.matchAll(/PESO L:\s*(\d{1,3})[.,](\d{1,3})\s*kg/gi)]
+  return extrairCampoKg(texto, /PESO L:\s*(\d{1,3})[.,](\d{1,3})\s*kg/gi)
+}
+
+/**
+ * A tara que a PROPRIA balanca esta descontando.
+ *
+ * Importa porque muda o significado do PESO L. Com tara na balanca, o numero
+ * que ela manda ja e liquido — e a estacao descontar o prato de novo faria a
+ * comanda sair 766 g mais barata, um erro que ninguem percebe olhando a tela
+ * porque os dois numeros parecem plausiveis.
+ */
+export function extrairTaraGramas(texto: string): number | null {
+  return extrairCampoKg(texto, /TARA:\s*(\d{1,3})[.,](\d{1,3})\s*kg/gi)
+}
+
+/** Le um campo em quilos do quadro e devolve gramas inteiras. */
+function extrairCampoKg(texto: string, re: RegExp): number | null {
+  // A ultima ocorrencia e a mais recente: o buffer empilha respostas.
+  const achados = [...texto.matchAll(re)]
   const ultimo = achados[achados.length - 1]
   if (!ultimo) return null
   const kg = Number(ultimo[1])
@@ -95,6 +119,7 @@ function paraTexto(bytes: Uint8Array): string {
 export function useBalanca(): Balanca {
   const [estado, setEstado] = useState<EstadoBalanca>('desligada')
   const [gramas, setGramas] = useState<number | null>(null)
+  const [taraGramas, setTaraGramas] = useState(0)
   const [estavel, setEstavel] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -137,6 +162,7 @@ export function useBalanca(): Balanca {
     repeticaoRef.current = null
     setEstado('desligada')
     setGramas(null)
+    setTaraGramas(0)
     setEstavel(false)
   }, [])
 
@@ -215,6 +241,9 @@ export function useBalanca(): Balanca {
 
           setEstado('lendo')
           setGramas(lido)
+          // Vem no mesmo quadro; sem tara programada a balanca manda 0.000.
+          const taraLida = extrairTaraGramas(bufferRef.current)
+          if (taraLida != null) setTaraGramas(taraLida)
 
           const rep = repeticaoRef.current
           if (rep && rep.gramas === lido) {
@@ -307,5 +336,5 @@ export function useBalanca(): Balanca {
     }
   }, [abrir])
 
-  return { estado, gramas, estavel, erro, conectar, desconectar }
+  return { estado, gramas, taraGramas, estavel, erro, conectar, desconectar }
 }

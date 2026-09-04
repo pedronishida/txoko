@@ -160,6 +160,20 @@ export default function StationPage() {
   const [editandoTara, setEditandoTara] = useState(false)
 
   /**
+   * Quem desconta o prato: a balanca ou a estacao — nunca os dois.
+   *
+   * Com a tara programada na balanca, o PESO L que ela manda ja e liquido, e
+   * o campo TARA do quadro vem preenchido. Descontar de novo aqui faria a
+   * comanda sair um prato mais barata, e o erro nao aparece na tela: 228 g
+   * viram 0 g e 994 g viram 228 g — todos numeros plausiveis para um prato.
+   *
+   * Por isso a decisao e automatica e sai do que a balanca informa, e nao de
+   * uma chave que alguem precisa lembrar de virar ao mexer no menu dela.
+   */
+  const balancaTara = balancaBruta.taraGramas > 0
+  const taraAplicada = balancaTara ? 0 : tara
+
+  /**
    * A balanca que o resto da tela enxerga ja vem sem o prato.
    *
    * O desconto mora aqui, num lugar so, e nao em cada tela que mostra peso:
@@ -172,10 +186,10 @@ export default function StationPage() {
       ...balancaBruta,
       gramas:
         balancaBruta.gramas != null
-          ? Math.max(0, balancaBruta.gramas - tara)
+          ? Math.max(0, balancaBruta.gramas - taraAplicada)
           : null,
     }),
-    [balancaBruta, tara]
+    [balancaBruta, taraAplicada]
   )
   /**
    * Ha um prato ja lancado ainda em cima da balanca.
@@ -1135,7 +1149,8 @@ export default function StationPage() {
             online={online}
             naFila={pendentesTotal}
             balanca={balanca}
-            tara={tara}
+            tara={taraAplicada}
+            taraDaBalanca={balancaTara ? balancaBruta.taraGramas : null}
             onEditarTara={() => setEditandoTara(true)}
           />
           <input
@@ -1324,6 +1339,7 @@ function IdleView({
   naFila,
   balanca,
   tara,
+  taraDaBalanca,
   onEditarTara,
 }: {
   clock: string
@@ -1332,6 +1348,8 @@ function IdleView({
   naFila: number
   balanca: Balanca
   tara: number
+  /** Preenchido quando quem desconta o prato e a balanca, nao a estacao. */
+  taraDaBalanca: number | null
   onEditarTara: () => void
 }) {
   return (
@@ -1399,13 +1417,25 @@ function IdleView({
         )}
         {/* A tara mora aqui, à vista de quem abre a casa e fora do caminho do
             cliente: trocar a louça sem ajustar este número cobra o prato de
-            todo mundo, e é o tipo de erro que ninguém percebe olhando o total. */}
-        <button
-          onClick={onEditarTara}
-          className="min-h-11 rounded-[4px] px-3 text-[13px] font-semibold text-ink-muted"
-        >
-          Tara do prato <span className="font-mono text-ink-soft">{tara} g</span>
-        </button>
+            todo mundo, e é o tipo de erro que ninguém percebe olhando o total.
+
+            Quando quem desconta é a balança, isto vira only-read e diz de onde
+            vem o número — senão alguém ajusta aqui, não vê efeito nenhum na
+            tela, e ajusta de novo até desconfiar do sistema. */}
+        {taraDaBalanca != null ? (
+          <span className="rounded-[4px] px-3 py-1.5 text-[13px] font-semibold text-ink-muted">
+            Tara na balança{' '}
+            <span className="font-mono text-ink-soft">{taraDaBalanca} g</span>
+          </span>
+        ) : (
+          <button
+            onClick={onEditarTara}
+            className="min-h-11 rounded-[4px] px-3 text-[13px] font-semibold text-ink-muted"
+          >
+            Tara do prato{' '}
+            <span className="font-mono text-ink-soft">{tara} g</span>
+          </button>
+        )}
         {/* Fila que sobrou de comanda já encerrada. Aparece aqui para ninguém
             desligar o aparelho com lançamento por subir. */}
         {naFila > 0 && (
